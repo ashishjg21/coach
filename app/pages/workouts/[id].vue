@@ -97,7 +97,118 @@
               </UButton>
             </div>
             
-            <div v-if="workout.aiAnalysis" class="space-y-4">
+            <!-- Structured Analysis Display -->
+            <div v-if="workout.aiAnalysisJson" class="space-y-6">
+              <!-- Executive Summary -->
+              <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+                <h3 class="text-base font-semibold text-blue-900 dark:text-blue-100 mb-4 flex items-center gap-2">
+                  <span class="i-heroicons-light-bulb w-5 h-5"></span>
+                  Quick Take
+                </h3>
+                <p class="text-base text-gray-800 dark:text-gray-200 leading-relaxed">{{ workout.aiAnalysisJson.executive_summary }}</p>
+              </div>
+
+              <!-- Analysis Sections -->
+              <div v-if="workout.aiAnalysisJson.sections" class="grid grid-cols-1 gap-4">
+                <div
+                  v-for="(section, index) in workout.aiAnalysisJson.sections"
+                  :key="index"
+                  class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+                >
+                  <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ section.title }}</h3>
+                    <span :class="getStatusBadgeClass(section.status)">
+                      {{ section.status_label || section.status }}
+                    </span>
+                  </div>
+                  <div class="px-6 py-4">
+                    <ul class="space-y-2">
+                      <li
+                        v-for="(point, pIndex) in section.analysis_points"
+                        :key="pIndex"
+                        class="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
+                      >
+                        <span class="i-heroicons-chevron-right w-4 h-4 mt-0.5 text-primary-500 flex-shrink-0"></span>
+                        <span>{{ point }}</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recommendations -->
+              <div v-if="workout.aiAnalysisJson.recommendations && workout.aiAnalysisJson.recommendations.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <span class="i-heroicons-clipboard-document-list w-5 h-5"></span>
+                    Recommendations
+                  </h3>
+                </div>
+                <div class="px-6 py-4 space-y-4">
+                  <div
+                    v-for="(rec, index) in workout.aiAnalysisJson.recommendations"
+                    :key="index"
+                    class="border-l-4 pl-4 py-2"
+                    :class="getPriorityBorderClass(rec.priority)"
+                  >
+                    <div class="flex items-center gap-2 mb-1">
+                      <h4 class="font-semibold text-gray-900 dark:text-white">{{ rec.title }}</h4>
+                      <span v-if="rec.priority" :class="getPriorityBadgeClass(rec.priority)">
+                        {{ rec.priority }}
+                      </span>
+                    </div>
+                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ rec.description }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Strengths & Weaknesses -->
+              <div v-if="workout.aiAnalysisJson.strengths || workout.aiAnalysisJson.weaknesses" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Strengths -->
+                <div v-if="workout.aiAnalysisJson.strengths && workout.aiAnalysisJson.strengths.length > 0" class="bg-green-50 dark:bg-green-900/20 rounded-lg p-6 border border-green-200 dark:border-green-800">
+                  <h3 class="text-lg font-semibold text-green-900 dark:text-green-100 mb-3 flex items-center gap-2">
+                    <span class="i-heroicons-check-circle w-5 h-5"></span>
+                    Strengths
+                  </h3>
+                  <ul class="space-y-2">
+                    <li
+                      v-for="(strength, index) in workout.aiAnalysisJson.strengths"
+                      :key="index"
+                      class="flex items-start gap-2 text-sm text-green-800 dark:text-green-200"
+                    >
+                      <span class="i-heroicons-plus-circle w-4 h-4 mt-0.5 flex-shrink-0"></span>
+                      <span>{{ strength }}</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Weaknesses -->
+                <div v-if="workout.aiAnalysisJson.weaknesses && workout.aiAnalysisJson.weaknesses.length > 0" class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-6 border border-orange-200 dark:border-orange-800">
+                  <h3 class="text-lg font-semibold text-orange-900 dark:text-orange-100 mb-3 flex items-center gap-2">
+                    <span class="i-heroicons-exclamation-triangle w-5 h-5"></span>
+                    Areas for Improvement
+                  </h3>
+                  <ul class="space-y-2">
+                    <li
+                      v-for="(weakness, index) in workout.aiAnalysisJson.weaknesses"
+                      :key="index"
+                      class="flex items-start gap-2 text-sm text-orange-800 dark:text-orange-200"
+                    >
+                      <span class="i-heroicons-arrow-trending-up w-4 h-4 mt-0.5 flex-shrink-0"></span>
+                      <span>{{ weakness }}</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Timestamp -->
+              <div v-if="workout.aiAnalyzedAt" class="text-xs text-gray-500 dark:text-gray-400 text-center pt-4 border-t border-gray-200 dark:border-gray-700">
+                Analyzed on {{ formatDate(workout.aiAnalyzedAt) }}
+              </div>
+            </div>
+            
+            <!-- Fallback to Markdown if JSON not available -->
+            <div v-else-if="workout.aiAnalysis" class="space-y-4">
               <div class="prose prose-sm dark:prose-invert max-w-none">
                 <div v-html="renderedAnalysis" class="text-gray-700 dark:text-gray-300"></div>
               </div>
@@ -460,6 +571,7 @@ function startPolling() {
       
       // Update workout data
       workout.value.aiAnalysis = updated.aiAnalysis
+      workout.value.aiAnalysisJson = (updated as any).aiAnalysisJson
       workout.value.aiAnalysisStatus = (updated as any).aiAnalysisStatus
       workout.value.aiAnalyzedAt = updated.aiAnalyzedAt
       
@@ -573,6 +685,31 @@ function getSourceBadgeClass(source: string) {
   if (source === 'whoop') return `${baseClass} bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200`
   if (source === 'strava') return `${baseClass} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200`
   return `${baseClass} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200`
+}
+
+function getStatusBadgeClass(status: string) {
+  const baseClass = 'px-3 py-1 rounded-full text-xs font-semibold'
+  if (status === 'excellent') return `${baseClass} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`
+  if (status === 'good') return `${baseClass} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200`
+  if (status === 'moderate') return `${baseClass} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200`
+  if (status === 'needs_improvement') return `${baseClass} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200`
+  if (status === 'poor') return `${baseClass} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200`
+  return `${baseClass} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200`
+}
+
+function getPriorityBadgeClass(priority: string) {
+  const baseClass = 'px-2 py-0.5 rounded text-xs font-medium'
+  if (priority === 'high') return `${baseClass} bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200`
+  if (priority === 'medium') return `${baseClass} bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200`
+  if (priority === 'low') return `${baseClass} bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200`
+  return `${baseClass} bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200`
+}
+
+function getPriorityBorderClass(priority: string) {
+  if (priority === 'high') return 'border-red-500'
+  if (priority === 'medium') return 'border-yellow-500'
+  if (priority === 'low') return 'border-blue-500'
+  return 'border-gray-300'
 }
 
 // Load data on mount
