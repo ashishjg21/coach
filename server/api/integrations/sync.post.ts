@@ -46,22 +46,32 @@ export default defineEventHandler(async (event) => {
   const taskId = provider === 'intervals' ? 'ingest-intervals' : 'ingest-whoop'
   
   try {
+    console.log(`[Sync] Triggering task: ${taskId} for user: ${(session.user as any).id}`)
+    console.log(`[Sync] Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`)
+    
     const handle = await tasks.trigger(taskId, {
       userId: (session.user as any).id,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString()
     })
     
+    console.log(`[Sync] Task triggered successfully. Job ID: ${handle.id}`)
+    
     return {
       success: true,
       jobId: handle.id,
       provider,
-      message: `Started syncing ${provider} data`
+      message: `Started syncing ${provider} data`,
+      dateRange: {
+        start: startDate.toISOString(),
+        end: endDate.toISOString()
+      }
     }
   } catch (error) {
+    console.error(`[Sync] Failed to trigger task:`, error)
     throw createError({
       statusCode: 500,
-      message: `Failed to trigger sync: ${error instanceof Error ? error.message : 'Unknown error'}`
+      message: `Failed to trigger sync: ${error instanceof Error ? error.message : 'Unknown error'}. Make sure Trigger.dev dev server is running (pnpm dev:trigger)`
     })
   }
 })
