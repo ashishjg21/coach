@@ -162,6 +162,52 @@
           <MDC :value="report.markdown" />
         </UCard>
         
+        <!-- Workouts Analyzed -->
+        <UCard v-if="report.workouts && report.workouts.length > 0" class="mt-6">
+          <template #header>
+            <h3 class="text-xl font-semibold flex items-center gap-2">
+              <UIcon name="i-heroicons-list-bullet" class="w-6 h-6" />
+              Workouts Analyzed ({{ report.workouts.length }})
+            </h3>
+          </template>
+          
+          <div class="space-y-3">
+            <div
+              v-for="rw in report.workouts"
+              :key="rw.id"
+              class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+              @click="navigateTo(`/workouts/${rw.workout.id}`)"
+            >
+              <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                  <span class="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded">
+                    {{ rw.workout.type }}
+                  </span>
+                  <span class="text-sm text-gray-600 dark:text-gray-400">
+                    {{ formatDate(rw.workout.date) }}
+                  </span>
+                </div>
+                <h4 class="font-medium text-gray-900 dark:text-white">{{ rw.workout.title }}</h4>
+                <div class="flex gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                  <span v-if="rw.workout.durationSec">
+                    {{ Math.round(rw.workout.durationSec / 60) }} min
+                  </span>
+                  <span v-if="rw.workout.averageWatts">
+                    {{ rw.workout.averageWatts }}W avg
+                  </span>
+                  <span v-if="rw.workout.tss">
+                    {{ Math.round(rw.workout.tss) }} TSS
+                  </span>
+                  <span v-if="rw.workout.distanceMeters">
+                    {{ (rw.workout.distanceMeters / 1000).toFixed(1) }} km
+                  </span>
+                </div>
+              </div>
+              <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-gray-400" />
+            </div>
+          </div>
+        </UCard>
+        
         <!-- Suggestions (for daily coach) -->
         <UCard v-if="report.suggestions" class="mt-6">
           <template #header>
@@ -302,6 +348,14 @@ const getPriorityBorderClass = (priority: string) => {
     'low': 'border-green-500'
   }
   return classes[priority] || 'border-gray-300'
+}
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
 }
 
 const formatDateRange = (start: string, end: string) => {
