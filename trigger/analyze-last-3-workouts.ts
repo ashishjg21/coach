@@ -1,5 +1,5 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
-import { generateStructuredAnalysis } from "../server/utils/gemini";
+import { generateStructuredAnalysis, buildWorkoutSummary } from "../server/utils/gemini";
 import { prisma } from "../server/utils/db";
 
 // Reuse the flexible analysis schema (same as workout analysis)
@@ -89,29 +89,6 @@ const analysisSchema = {
     }
   },
   required: ["type", "title", "executive_summary", "sections"]
-}
-
-function buildWorkoutSummary(workouts: any[]) {
-  return workouts.map((w, idx) => `
-### Workout ${idx + 1}: ${w.title}
-- **Date**: ${new Date(w.date).toLocaleDateString()}
-- **Duration**: ${Math.round(w.durationSec / 60)} minutes
-- **Type**: ${w.type || 'Unknown'}
-${w.averageWatts ? `- **Average Power**: ${w.averageWatts}W` : ''}
-${w.normalizedPower ? `- **Normalized Power**: ${w.normalizedPower}W` : ''}
-${w.averageHr ? `- **Average HR**: ${w.averageHr} bpm` : ''}
-${w.maxHr ? `- **Max HR**: ${w.maxHr} bpm` : ''}
-${w.tss ? `- **TSS**: ${Math.round(w.tss)}` : ''}
-${w.trainingLoad ? `- **Training Load**: ${Math.round(w.trainingLoad)}` : ''}
-${w.intensity ? `- **Intensity Factor**: ${w.intensity.toFixed(2)}` : ''}
-${w.kilojoules ? `- **Energy**: ${w.kilojoules} kJ` : ''}
-${w.distanceMeters ? `- **Distance**: ${(w.distanceMeters / 1000).toFixed(1)} km` : ''}
-${w.elevationGain ? `- **Elevation**: ${w.elevationGain}m` : ''}
-${w.variabilityIndex ? `- **Variability Index**: ${w.variabilityIndex.toFixed(2)}` : ''}
-${w.rpe ? `- **RPE**: ${w.rpe}/10` : ''}
-${w.feel ? `- **Feel**: ${w.feel}/10` : ''}
-${w.description ? `\n**Description**: ${w.description}` : ''}
-  `).join('\n');
 }
 
 function buildAnalysisPrompt(workouts: any[], user: any) {
