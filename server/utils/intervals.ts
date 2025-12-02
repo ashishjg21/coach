@@ -187,6 +187,137 @@ export async function fetchIntervalsAthlete(accessToken: string, athleteId?: str
   return await response.json()
 }
 
+export async function fetchIntervalsAthleteProfile(integration: Integration) {
+  const athleteId = integration.externalUserId || 'i0'
+  const auth = Buffer.from(`API_KEY:${integration.accessToken}`).toString('base64')
+  
+  // Fetch athlete data
+  const athleteResponse = await fetch(`https://intervals.icu/api/v1/athlete/${athleteId}`, {
+    headers: {
+      'Authorization': `Basic ${auth}`
+    }
+  })
+  
+  if (!athleteResponse.ok) {
+    throw new Error(`Failed to fetch athlete profile: ${athleteResponse.statusText}`)
+  }
+  
+  const athlete = await athleteResponse.json()
+  
+  // Fetch recent wellness data (last 7 days)
+  const today = new Date()
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  
+  const wellnessData: any[] = []
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today)
+    date.setDate(date.getDate() - i)
+    const dateStr = date.toISOString().split('T')[0]
+    
+    try {
+      const wellnessResponse = await fetch(
+        `https://intervals.icu/api/v1/athlete/${athleteId}/wellness/${dateStr}`,
+        {
+          headers: {
+            'Authorization': `Basic ${auth}`
+          }
+        }
+      )
+      
+      if (wellnessResponse.ok) {
+        const wellness = await wellnessResponse.json()
+        if (wellness && Object.keys(wellness).length > 0) {
+          wellnessData.push({ date: dateStr, ...wellness })
+        }
+      }
+    } catch (error) {
+      // Continue on error for individual days
+      console.error(`Error fetching wellness for ${dateStr}:`, error)
+    }
+  }
+  
+  // Extract FTP and other metrics from type settings
+  let ftp = null
+  let lthr = null
+  let maxHR = null
+  
+  if (athlete.icu_type_settings && athlete.icu_type_settings.length > 0) {
+    // Look for cycling/ride FTP first
+    const cyclingSettings = athlete.icu_type_settings.find((s: any) =>
+      s.types && (s.types.includes('Ride') || s.types.includes('VirtualRide'))
+    )
+    if (cyclingSettings) {
+      ftp = cyclingSettings.ftp
+      lthr = cyclingSettings.lthr
+      maxHR = cyclingSettings.max_hr
+    } else {
+      // Use first type setting with FTP
+      const firstWithFtp = athlete.icu_type_settings.find((s: any) => s.ftp)
+      if (firstWithFtp) {
+        ftp = firstWithFtp.ftp
+        lthr = firstWithFtp.lthr
+        maxHR = firstWithFtp.max_hr
+      }
+    }
+  }
+  
+  // Calculate age from date of birth
+  const calculateAge = (dob: string): number | null => {
+    if (!dob) return null
+    const birthDate = new Date(dob)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    return age
+  }
+  
+  // Calculate recent HRV average
+  const recentHrvValues = wellnessData
+    .map(d => d.hrv)
+    .filter(v => v != null)
+  const avgRecentHRV = recentHrvValues.length > 0
+    ? recentHrvValues.reduce((a, b) => a + b, 0) / recentHrvValues.length
+    : null
+  
+  return {
+    // Basic info
+    name: athlete.name || null,
+    email: athlete.email || null,
+    sex: athlete.sex || null,
+    dateOfBirth: athlete.icu_date_of_birth || null,
+    age: athlete.icu_date_of_birth ? calculateAge(athlete.icu_date_of_birth) : null,
+    location: {
+      city: athlete.city || null,
+      state: athlete.state || null,
+      country: athlete.country || null
+    },
+    
+    // Physical metrics
+    weight: athlete.icu_weight || athlete.weight || null,
+    restingHR: athlete.icu_resting_hr || null,
+    
+    // Performance metrics (from type settings)
+    ftp,
+    lthr,
+    maxHR,
+    
+    // Recent wellness
+    recentHRV: wellnessData.length > 0 ? wellnessData[0].hrv : null,
+    avgRecentHRV: avgRecentHRV ? Math.round(avgRecentHRV * 10) / 10 : null,
+    recentWeight: wellnessData.find(d => d.weight)?.weight || null,
+    recentReadiness: wellnessData.length > 0 ? wellnessData[0].readiness : null,
+    
+    // Preferences
+    timezone: athlete.timezone || null,
+    locale: athlete.locale || null,
+    measurementPreference: athlete.measurement_preference || null
+  }
+}
+
 export async function fetchIntervalsWellness(
   integration: Integration,
   startDate: Date,
