@@ -14,10 +14,10 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { provider } = body
   
-  if (!provider || !['intervals', 'whoop', 'yazio'].includes(provider)) {
+  if (!provider || !['intervals', 'whoop', 'yazio', 'strava'].includes(provider)) {
     throw createError({
       statusCode: 400,
-      message: 'Invalid provider. Must be "intervals", "whoop", or "yazio"'
+      message: 'Invalid provider. Must be "intervals", "whoop", "yazio", or "strava"'
     })
   }
   
@@ -42,21 +42,24 @@ export default defineEventHandler(async (event) => {
   // For Intervals: last 90 days + next 30 days (to capture future planned workouts)
   // For Whoop: last 90 days
   // For Yazio: last 5 days (to avoid rate limiting - older data is kept as-is)
+  // For Strava: last 7 days (to respect API rate limits - 200 req/15min, 2000/day)
   const now = new Date()
   const startDate = new Date(now)
-  const daysBack = provider === 'yazio' ? 5 : 90
+  const daysBack = provider === 'yazio' ? 5 : provider === 'strava' ? 7 : 90
   startDate.setDate(startDate.getDate() - daysBack)
   
   const endDate = provider === 'intervals'
     ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)  // +30 days for planned workouts
-    : new Date(now)  // Today for Whoop and Yazio
+    : new Date(now)  // Today for Whoop, Yazio, and Strava
   
   // Trigger the appropriate job
   const taskId = provider === 'intervals'
     ? 'ingest-intervals'
     : provider === 'whoop'
     ? 'ingest-whoop'
-    : 'ingest-yazio'
+    : provider === 'yazio'
+    ? 'ingest-yazio'
+    : 'ingest-strava'
   
   try {
     console.log(`[Sync] Triggering task: ${taskId} for user: ${(session.user as any).id}`)

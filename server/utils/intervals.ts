@@ -109,6 +109,86 @@ interface IntervalsPlannedWorkout {
   [key: string]: any
 }
 
+export async function createIntervalsPlannedWorkout(
+  integration: Integration,
+  data: {
+    date: Date
+    title: string
+    description?: string
+    type: string
+    durationSec?: number
+    tss?: number
+  }
+): Promise<IntervalsPlannedWorkout> {
+  const athleteId = integration.externalUserId || 'i0'
+  
+  // Map workout types to Intervals.icu format
+  let category = 'WORKOUT'
+  let sport = data.type
+  
+  // Handle Gym workouts - use "WeightTraining" (no space) for Intervals.icu
+  if (data.type === 'Gym') {
+    sport = 'WeightTraining'
+  }
+  
+  // Format date as ISO datetime string (YYYY-MM-DDTHH:mm:ss)
+  const year = data.date.getFullYear()
+  const month = String(data.date.getMonth() + 1).padStart(2, '0')
+  const day = String(data.date.getDate()).padStart(2, '0')
+  const dateStr = `${year}-${month}-${day}T00:00:00`
+  
+  const eventData = {
+    start_date_local: dateStr,
+    name: data.title,
+    description: data.description || '',
+    category,
+    type: sport,
+    duration: data.durationSec,
+    tss: data.tss
+  }
+  
+  const url = `https://intervals.icu/api/v1/athlete/${athleteId}/events`
+  const auth = Buffer.from(`API_KEY:${integration.accessToken}`).toString('base64')
+    
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(eventData)
+  })
+  
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Intervals API error: ${response.status} ${errorText}`)
+  }
+  
+  return await response.json()
+}
+
+export async function deleteIntervalsPlannedWorkout(
+  integration: Integration,
+  eventId: string
+): Promise<void> {
+  const athleteId = integration.externalUserId || 'i0'
+  
+  const url = `https://intervals.icu/api/v1/athlete/${athleteId}/events/${eventId}`
+  const auth = Buffer.from(`API_KEY:${integration.accessToken}`).toString('base64')
+    
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Basic ${auth}`
+    }
+  })
+  
+  if (!response.ok && response.status !== 404) {
+    const errorText = await response.text()
+    throw new Error(`Intervals API error: ${response.status} ${errorText}`)
+  }
+}
+
 export async function fetchIntervalsPlannedWorkouts(
   integration: Integration,
   startDate: Date,

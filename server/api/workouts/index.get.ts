@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   }
   
   const query = getQuery(event)
-  const limit = query.limit ? parseInt(query.limit as string) : 10
+  const limit = query.limit ? parseInt(query.limit as string) : undefined
   const startDate = query.startDate ? new Date(query.startDate as string) : undefined
   const endDate = query.endDate ? new Date(query.endDate as string) : undefined
   
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
   const workouts = await prisma.workout.findMany({
     where,
     orderBy: { date: 'desc' },
-    take: limit
+    ...(limit && { take: limit })
   })
   
   return workouts
