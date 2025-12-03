@@ -6,7 +6,7 @@
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <div class="flex gap-2">
+          <div class="flex gap-2 flex-wrap">
             <UButton
               @click="generateReport('LAST_3_WORKOUTS')"
               :loading="generating"
@@ -23,6 +23,25 @@
             >
               <UIcon name="i-heroicons-calendar" class="w-4 h-4 mr-2" />
               Weekly Analysis
+            </UButton>
+            <UButton
+              @click="generateReport('LAST_3_NUTRITION')"
+              :loading="generating"
+              size="sm"
+              color="success"
+            >
+              <UIcon name="i-heroicons-cake" class="w-4 h-4 mr-2" />
+              Last 3 Days Nutrition
+            </UButton>
+            <UButton
+              @click="generateReport('LAST_7_NUTRITION')"
+              :loading="generating"
+              size="sm"
+              color="success"
+              variant="outline"
+            >
+              <UIcon name="i-heroicons-cake" class="w-4 h-4 mr-2" />
+              Weekly Nutrition
             </UButton>
           </div>
         </template>
@@ -52,13 +71,13 @@
           <div v-else-if="!reports?.length" class="p-8 text-center text-gray-600 dark:text-gray-400">
             <UIcon name="i-heroicons-document-text" class="w-16 h-16 text-muted mx-auto mb-4" />
             <p class="mb-4">No reports yet</p>
-            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <div class="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
               <UButton
                 @click="generateReport('LAST_3_WORKOUTS')"
                 :loading="generating"
               >
                 <UIcon name="i-heroicons-chart-bar" class="w-4 h-4 mr-2" />
-                Last 3 Workouts Analysis
+                Last 3 Workouts
               </UButton>
               <UButton
                 @click="generateReport('WEEKLY_ANALYSIS')"
@@ -67,6 +86,23 @@
               >
                 <UIcon name="i-heroicons-calendar" class="w-4 h-4 mr-2" />
                 Weekly Analysis
+              </UButton>
+              <UButton
+                @click="generateReport('LAST_3_NUTRITION')"
+                :loading="generating"
+                color="success"
+              >
+                <UIcon name="i-heroicons-cake" class="w-4 h-4 mr-2" />
+                Last 3 Days Nutrition
+              </UButton>
+              <UButton
+                @click="generateReport('LAST_7_NUTRITION')"
+                :loading="generating"
+                color="success"
+                variant="outline"
+              >
+                <UIcon name="i-heroicons-cake" class="w-4 h-4 mr-2" />
+                Weekly Nutrition
               </UButton>
             </div>
           </div>
@@ -178,6 +214,16 @@ const REPORT_TYPE_CONFIG = {
     label: 'Weekly Training Analysis',
     icon: 'i-heroicons-calendar',
     description: 'Comprehensive analysis of the last 30 days of training including workouts, recovery metrics, and recommendations.'
+  },
+  'LAST_3_NUTRITION': {
+    label: 'Last 3 Days Nutrition',
+    icon: 'i-heroicons-cake',
+    description: 'Nutrition analysis of your last 3 days of dietary intake including macros, calories, and recommendations.'
+  },
+  'LAST_7_NUTRITION': {
+    label: 'Weekly Nutrition Analysis',
+    icon: 'i-heroicons-cake',
+    description: 'Comprehensive weekly nutrition analysis including patterns, consistency, and optimization opportunities.'
   },
   'RACE_PREP': {
     label: 'Race Preparation Report',

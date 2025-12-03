@@ -155,6 +155,40 @@
               </div>
             </UCard>
 
+            <!-- Nutrition Profile -->
+            <UCard v-if="report.analysisJson.nutrition_profile">
+              <template #header>
+                <h3 class="text-xl font-semibold">Nutrition Profile</h3>
+              </template>
+              
+              <div class="space-y-4">
+                <div v-if="report.analysisJson.nutrition_profile.nutrition_pattern">
+                  <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Nutrition Pattern</h4>
+                  <p class="text-gray-700 dark:text-gray-300">{{ report.analysisJson.nutrition_profile.nutrition_pattern }}</p>
+                </div>
+                
+                <div v-if="report.analysisJson.nutrition_profile.caloric_balance">
+                  <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Caloric Balance</h4>
+                  <p class="text-gray-700 dark:text-gray-300">{{ report.analysisJson.nutrition_profile.caloric_balance }}</p>
+                </div>
+                
+                <div v-if="report.analysisJson.nutrition_profile.macro_distribution">
+                  <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Macro Distribution</h4>
+                  <p class="text-gray-700 dark:text-gray-300">{{ report.analysisJson.nutrition_profile.macro_distribution }}</p>
+                </div>
+                
+                <div v-if="report.analysisJson.nutrition_profile.key_observations?.length">
+                  <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Key Observations</h4>
+                  <div class="space-y-2">
+                    <div v-for="(obs, idx) in report.analysisJson.nutrition_profile.key_observations" :key="idx" class="flex gap-3">
+                      <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                      <p class="text-gray-700 dark:text-gray-300">{{ obs }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </UCard>
+
             <!-- Recent Performance -->
             <UCard v-if="report.analysisJson.recent_performance">
               <template #header>
@@ -367,6 +401,57 @@
           <MDC :value="report.markdown" />
         </UCard>
         
+        <!-- Nutrition Analyzed -->
+        <UCard v-if="report.nutrition && report.nutrition.length > 0" class="mt-6">
+          <template #header>
+            <h3 class="text-xl font-semibold flex items-center gap-2">
+              <UIcon name="i-heroicons-cake" class="w-6 h-6" />
+              Nutrition Days Analyzed ({{ report.nutrition.length }})
+            </h3>
+          </template>
+          
+          <div class="space-y-3">
+            <div
+              v-for="rn in report.nutrition"
+              :key="rn.id"
+              class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+              @click="navigateTo(`/nutrition/${rn.nutrition.id}`)"
+            >
+              <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                  <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs font-medium rounded">
+                    Nutrition
+                  </span>
+                  <span class="text-sm text-gray-600 dark:text-gray-400">
+                    {{ formatDate(rn.nutrition.date) }}
+                  </span>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                  <span v-if="rn.nutrition.calories">
+                    {{ rn.nutrition.calories }} cal
+                    <span v-if="rn.nutrition.caloriesGoal" class="text-xs">
+                      ({{ Math.round((rn.nutrition.calories / rn.nutrition.caloriesGoal) * 100) }}%)
+                    </span>
+                  </span>
+                  <span v-if="rn.nutrition.protein">
+                    {{ rn.nutrition.protein }}g protein
+                    <span v-if="rn.nutrition.proteinGoal" class="text-xs">
+                      ({{ Math.round((rn.nutrition.protein / rn.nutrition.proteinGoal) * 100) }}%)
+                    </span>
+                  </span>
+                  <span v-if="rn.nutrition.carbs">
+                    {{ rn.nutrition.carbs }}g carbs
+                  </span>
+                  <span v-if="rn.nutrition.fat">
+                    {{ rn.nutrition.fat }}g fat
+                  </span>
+                </div>
+              </div>
+              <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-gray-400" />
+            </div>
+          </div>
+        </UCard>
+        
         <!-- Workouts Analyzed -->
         <UCard v-if="report.workouts && report.workouts.length > 0" class="mt-6">
           <template #header>
@@ -479,25 +564,33 @@ const route = useRoute()
 const { signOut } = useAuth()
 const reportId = route.params.id as string
 
-const { data: report, pending } = await useFetch(`/api/reports/${reportId}`, {
-  // Refresh every 5 seconds if report is still processing
+const { data: report, pending, refresh: refreshReport } = await useFetch(`/api/reports/${reportId}`, {
   watch: false,
 })
 
-// Poll for updates if report is processing
-if (report.value?.status === 'PROCESSING') {
-  const interval = setInterval(async () => {
-    const { data } = await useFetch(`/api/reports/${reportId}`)
-    if (data.value) {
-      report.value = data.value
-      if (data.value.status !== 'PROCESSING') {
-        clearInterval(interval)
+// Poll for updates if report is processing or pending
+let pollInterval: NodeJS.Timeout | null = null
+
+onMounted(() => {
+  if (report.value?.status === 'PROCESSING' || report.value?.status === 'PENDING') {
+    pollInterval = setInterval(async () => {
+      await refreshReport()
+      if (report.value && report.value.status !== 'PROCESSING' && report.value.status !== 'PENDING') {
+        if (pollInterval) {
+          clearInterval(pollInterval)
+          pollInterval = null
+        }
       }
-    }
-  }, 5000)
-  
-  onUnmounted(() => clearInterval(interval))
-}
+    }, 3000) // Poll every 3 seconds
+  }
+})
+
+onUnmounted(() => {
+  if (pollInterval) {
+    clearInterval(pollInterval)
+    pollInterval = null
+  }
+})
 
 definePageMeta({
   middleware: 'auth'
@@ -508,6 +601,8 @@ const reportTitle = computed(() => {
   const titles: Record<string, string> = {
     'WEEKLY_ANALYSIS': 'Weekly Training Analysis',
     'LAST_3_WORKOUTS': 'Last 3 Workouts Analysis',
+    'LAST_3_NUTRITION': 'Last 3 Days Nutrition Analysis',
+    'LAST_7_NUTRITION': 'Weekly Nutrition Analysis',
     'RACE_PREP': 'Race Preparation Report',
     'DAILY_SUGGESTION': 'Daily Coaching Brief',
     'CUSTOM': 'Custom Report'

@@ -26,7 +26,7 @@
           <div class="mb-6">
             <div class="flex items-center justify-between mb-4">
               <div>
-                <h2 class="text-3xl font-bold">{{ profile.analysisJson?.title || 'Rider Profile' }}</h2>
+                <h2 class="text-3xl font-bold">{{ profile.analysisJson?.title || 'Athlete Profile' }}</h2>
                 <p class="text-gray-600 dark:text-gray-400 mt-2">
                   Generated: {{ formatDate(profile.createdAt) }}
                 </p>
@@ -43,7 +43,7 @@
             color="info"
             icon="i-heroicons-arrow-path"
             title="Generating Profile"
-            description="Analyzing your training data to create a comprehensive rider profile. This may take a few moments..."
+            description="Analyzing your training data to create a comprehensive athlete profile. This may take a few moments..."
             class="mb-6"
           />
           
@@ -168,6 +168,45 @@
                   <h4 class="font-medium mb-2">Key Observations:</h4>
                   <div class="space-y-2">
                     <div v-for="(obs, idx) in profile.analysisJson.recovery_profile.key_observations" :key="idx" class="flex gap-3">
+                      <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                      <p class="text-gray-700 dark:text-gray-300">{{ obs }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </UCard>
+
+            <!-- Nutrition Profile -->
+            <UCard v-if="profile.analysisJson.nutrition_profile">
+              <template #header>
+                <h3 class="text-xl font-semibold flex items-center gap-2">
+                  <UIcon name="i-heroicons-cake" class="w-6 h-6" />
+                  Nutrition Profile
+                </h3>
+              </template>
+              
+              <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div v-if="profile.analysisJson.nutrition_profile.nutrition_pattern">
+                    <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Nutrition Pattern</h4>
+                    <p class="text-gray-800 dark:text-gray-200">{{ profile.analysisJson.nutrition_profile.nutrition_pattern }}</p>
+                  </div>
+                  
+                  <div v-if="profile.analysisJson.nutrition_profile.caloric_balance">
+                    <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Caloric Balance</h4>
+                    <p class="text-gray-800 dark:text-gray-200">{{ profile.analysisJson.nutrition_profile.caloric_balance }}</p>
+                  </div>
+                  
+                  <div v-if="profile.analysisJson.nutrition_profile.macro_distribution" class="md:col-span-2">
+                    <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Macro Distribution</h4>
+                    <p class="text-gray-800 dark:text-gray-200">{{ profile.analysisJson.nutrition_profile.macro_distribution }}</p>
+                  </div>
+                </div>
+                
+                <div v-if="profile.analysisJson.nutrition_profile.key_observations?.length" class="pt-3 border-t">
+                  <h4 class="font-medium mb-2">Key Observations:</h4>
+                  <div class="space-y-2">
+                    <div v-for="(obs, idx) in profile.analysisJson.nutrition_profile.key_observations" :key="idx" class="flex gap-3">
                       <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                       <p class="text-gray-700 dark:text-gray-300">{{ obs }}</p>
                     </div>
@@ -315,7 +354,7 @@
         </div>
         
         <div v-else class="text-center py-20">
-          <p class="text-gray-600 dark:text-gray-400">No rider profile found</p>
+          <p class="text-gray-600 dark:text-gray-400">No athlete profile found</p>
           <UButton @click="generateNewProfile" class="mt-4" :loading="generating">
             Generate Profile
           </UButton>
@@ -333,7 +372,7 @@ definePageMeta({
   middleware: 'auth'
 })
 
-// Fetch the most recent rider profile
+// Fetch the most recent athlete profile
 const { data: profile, pending, refresh } = await useFetch('/api/reports', {
   query: { type: 'RIDER_PROFILE', limit: 1 },
   transform: (data: any) => data && data.length > 0 ? data[0] : null
@@ -449,7 +488,7 @@ async function generateNewProfile() {
       if (profile.value && profile.value.status === 'COMPLETED') {
         toast.add({
           title: 'Profile Ready',
-          description: 'Your rider profile has been generated',
+          description: 'Your athlete profile has been generated',
           color: 'success',
           icon: 'i-heroicons-check-badge'
         })
