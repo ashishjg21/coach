@@ -12,6 +12,33 @@
             Back to Dashboard
           </UButton>
         </template>
+        <template #trailing>
+          <UPopover>
+            <UButton color="neutral" variant="subtle" icon="i-heroicons-calendar">
+              {{ selectedDateLabel }}
+            </UButton>
+
+            <template #content>
+              <div class="p-2">
+                <UCalendar
+                  v-model="selectedDate"
+                  :max-value="today"
+                  @update:model-value="handleDateChange"
+                />
+                <div class="mt-2 pt-2 border-t flex justify-end">
+                  <UButton
+                    size="xs"
+                    color="neutral"
+                    variant="ghost"
+                    @click="resetToLatest"
+                  >
+                    View Latest
+                  </UButton>
+                </div>
+              </div>
+            </template>
+          </UPopover>
+        </template>
       </UDashboardNavbar>
     </template>
 
@@ -365,6 +392,8 @@
 </template>
 
 <script setup lang="ts">
+import { CalendarDate, getLocalTimeZone, today as getTodayDate } from '@internationalized/date'
+
 const toast = useToast()
 const generating = ref(false)
 
@@ -372,11 +401,57 @@ definePageMeta({
   middleware: 'auth'
 })
 
-// Fetch the most recent athlete profile
-const { data: profile, pending, refresh } = await useFetch('/api/reports', {
-  query: { type: 'ATHLETE_PROFILE', limit: 1 },
-  transform: (data: any) => data && data.length > 0 ? data[0] : null
+// Date selection state
+const today = getTodayDate(getLocalTimeZone())
+const selectedDate = ref<CalendarDate | null>(null)
+
+// Computed label for the date picker button
+const selectedDateLabel = computed(() => {
+  if (!selectedDate.value) {
+    return 'Latest Profile'
+  }
+  const date = selectedDate.value.toDate(getLocalTimeZone())
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(date)
 })
+
+// Build query parameters based on selected date
+const queryParams = computed(() => {
+  const params: any = {
+    type: 'ATHLETE_PROFILE',
+    limit: 1
+  }
+  
+  if (selectedDate.value) {
+    // Find profile on or before the selected date
+    const date = selectedDate.value.toDate(getLocalTimeZone())
+    params.beforeDate = date.toISOString()
+  }
+  
+  return params
+})
+
+// Fetch athlete profile based on selected date
+const { data: profile, pending, refresh } = await useFetch('/api/reports', {
+  query: queryParams,
+  transform: (data: any) => data && data.length > 0 ? data[0] : null,
+  watch: [queryParams]
+})
+
+// Date change handler
+const handleDateChange = async (date: CalendarDate) => {
+  selectedDate.value = date
+  // refresh will be triggered automatically by watch
+}
+
+// Reset to latest profile
+const resetToLatest = () => {
+  selectedDate.value = null
+  // refresh will be triggered automatically by watch
+}
 
 // Poll for updates if profile is processing
 if (profile.value?.status === 'PROCESSING') {
