@@ -198,7 +198,37 @@ const athleteProfileSchema = {
         },
         current_fitness_explanation: {
           type: "string",
-          description: "Detailed explanation of current fitness level: key factors affecting the score, specific strengths and weaknesses, and 2-3 concrete action steps to improve (e.g., 'Increase weekly volume by 10%', 'Add interval sessions')"
+          description: "Brief summary of current fitness level"
+        },
+        current_fitness_explanation_json: {
+          type: "object",
+          description: "Structured explanation of current fitness",
+          properties: {
+            executive_summary: { type: "string", description: "2-3 sentence overview" },
+            sections: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  status: { type: "string", enum: ["excellent", "good", "moderate", "needs_improvement"] },
+                  analysis_points: { type: "array", items: { type: "string" } }
+                }
+              }
+            },
+            recommendations: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  description: { type: "string" },
+                  priority: { type: "string", enum: ["high", "medium", "low"] }
+                }
+              }
+            }
+          },
+          required: ["executive_summary", "sections", "recommendations"]
         },
         recovery_capacity: {
           type: "number",
@@ -208,7 +238,37 @@ const athleteProfileSchema = {
         },
         recovery_capacity_explanation: {
           type: "string",
-          description: "Detailed explanation of recovery capacity: sleep quality, HRV trends, fatigue indicators, and specific recommendations for improvement (e.g., 'Prioritize 8+ hours sleep', 'Add recovery week every 3 weeks')"
+          description: "Brief summary of recovery capacity"
+        },
+        recovery_capacity_explanation_json: {
+          type: "object",
+          description: "Structured explanation of recovery capacity",
+          properties: {
+            executive_summary: { type: "string", description: "2-3 sentence overview" },
+            sections: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  status: { type: "string", enum: ["excellent", "good", "moderate", "needs_improvement"] },
+                  analysis_points: { type: "array", items: { type: "string" } }
+                }
+              }
+            },
+            recommendations: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  description: { type: "string" },
+                  priority: { type: "string", enum: ["high", "medium", "low"] }
+                }
+              }
+            }
+          },
+          required: ["executive_summary", "sections", "recommendations"]
         },
         nutrition_compliance: {
           type: "number",
@@ -488,6 +548,10 @@ Be specific, data-driven, and actionable. Reference actual metrics and patterns 
             recoveryCapacityExplanation: profileJson.athlete_scores?.recovery_capacity_explanation,
             nutritionComplianceExplanation: profileJson.athlete_scores?.nutrition_compliance_explanation,
             trainingConsistencyExplanation: profileJson.athlete_scores?.training_consistency_explanation,
+            currentFitnessExplanationJson: profileJson.athlete_scores?.current_fitness_explanation_json as any,
+            recoveryCapacityExplanationJson: profileJson.athlete_scores?.recovery_capacity_explanation_json as any,
+            nutritionComplianceExplanationJson: profileJson.athlete_scores?.nutrition_compliance_explanation_json as any,
+            trainingConsistencyExplanationJson: profileJson.athlete_scores?.training_consistency_explanation_json as any,
             profileLastUpdated: now
           }
         });
