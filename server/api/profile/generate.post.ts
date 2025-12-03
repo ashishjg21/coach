@@ -1,0 +1,43 @@
+import { getServerSession } from '#auth'
+import { tasks } from '@trigger.dev/sdk/v3'
+import { prisma } from '../../utils/db'
+
+export default defineEventHandler(async (event) => {
+  const session = await getServerSession(event)
+  
+  if (!session?.user) {
+    throw createError({ 
+      statusCode: 401,
+      message: 'Unauthorized' 
+    })
+  }
+  
+  const userId = (session.user as any).id
+  
+  // Create a report entry for the athlete profile
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const now = new Date()
+  
+  const report = await prisma.report.create({
+    data: {
+      userId,
+      type: 'ATHLETE_PROFILE',
+      status: 'PENDING',
+      dateRangeStart: thirtyDaysAgo,
+      dateRangeEnd: now
+    }
+  })
+  
+  // Trigger the background job
+  const handle = await tasks.trigger('generate-athlete-profile', {
+    userId,
+    reportId: report.id
+  })
+  
+  return {
+    success: true,
+    reportId: report.id,
+    jobId: handle.id,
+    message: 'Generating athlete profile'
+  }
+})
