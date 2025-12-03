@@ -2,6 +2,34 @@ import { logger, task } from "@trigger.dev/sdk/v3";
 import { generateCoachAnalysis, generateStructuredAnalysis } from "../server/utils/gemini";
 import { prisma } from "../server/utils/db";
 
+// TypeScript interface for the structured analysis
+interface StructuredAnalysis {
+  type: string;
+  title: string;
+  date?: string;
+  executive_summary: string;
+  sections?: Array<{
+    title: string;
+    status: string;
+    status_label?: string;
+    analysis_points: string[];
+  }>;
+  recommendations?: Array<{
+    title: string;
+    description: string;
+    priority?: string;
+  }>;
+  strengths?: string[];
+  weaknesses?: string[];
+  metrics_summary?: {
+    avg_power?: number;
+    ftp?: number;
+    intensity?: number;
+    duration_minutes?: number;
+    tss?: number;
+  };
+}
+
 // Flexible analysis schema that works for workouts, reports, planning, etc.
 const analysisSchema = {
   type: "object",
@@ -147,7 +175,7 @@ export const analyzeWorkoutTask = task({
       logger.log("Generating structured analysis with Gemini Flash");
       
       // Generate structured JSON analysis
-      const structuredAnalysis = await generateStructuredAnalysis(prompt, analysisSchema, 'flash');
+      const structuredAnalysis = await generateStructuredAnalysis<StructuredAnalysis>(prompt, analysisSchema, 'flash');
       
       // Also generate markdown for fallback/export
       const markdownAnalysis = convertStructuredToMarkdown(structuredAnalysis);
@@ -279,18 +307,146 @@ function buildWorkoutAnalysisData(workout: any) {
   
   return data
 }
+/**
+ * Get workout type-specific guidance for the AI
+ */
+function getWorkoutTypeGuidance(workoutType: string, isCardio: boolean, isStrength: boolean): string {
+  if (isStrength) {
+    return `Focus your analysis on strength training aspects like volume, intensity, rest periods, and exercise selection. 
+Metrics like cadence, power output, and aerobic efficiency are NOT RELEVANT for this workout type - DO NOT analyze them.
+Instead, analyze heart rate in the context of training intensity zones for resistance training.`
+  }
+  
+  if (isCardio) {
+    if (workoutType.toLowerCase().includes('run')) {
+      return `This is a running workout. Focus on running-specific metrics like pace, cadence (steps per minute), and heart rate zones.
+Power metrics may not be available and that's normal for running workouts.`
+    }
+    if (workoutType.toLowerCase().includes('ride') || workoutType.toLowerCase().includes('bike')) {
+      return `This is a cycling workout. Analyze power metrics, pacing, cadence (RPM), and pedaling efficiency where available.`
+    }
+    return `This is a cardio workout. Focus on pacing, effort distribution, and aerobic efficiency.
+Analyze available metrics like heart rate, pace/speed, and any power data if present.`
+  }
+  
+  return `Analyze this workout based on the available metrics. Focus on what's most relevant for this activity type.`
+}
+
+/**
+ * Get workout type-specific analysis section guidance
+ */
+function getAnalysisSectionsGuidance(workoutType: string, isCardio: boolean, isStrength: boolean): string {
+  if (isStrength) {
+    return `Provide a structured analysis with these sections:
+
+1. **Executive Summary**: Write 2-3 friendly, encouraging sentences highlighting the most important findings. Keep it conversational and positive.
+
+2. **Training Volume**: Analyze workout duration, estimated sets/reps if available from description, and overall training load
+   - Assign status: excellent/good/moderate/needs_improvement/poor
+   - Provide 3-5 separate, concise bullet points (each as a separate array item, not paragraphs)
+   - Each point should be 1-2 sentences maximum
+
+3. **Intensity Management**: Evaluate effort level based on heart rate zones and RPE if available
+   - Assign status: excellent/good/moderate/needs_improvement/poor
+   - Provide 3-5 separate, concise bullet points (each as a separate array item)
+   - Each point should be 1-2 sentences maximum
+
+4. **Recovery & Pacing**: Assess rest periods and workout structure based on duration and heart rate patterns
+   - Assign status: excellent/good/moderate/needs_improvement/poor
+   - Provide 3-5 separate, concise bullet points (each as a separate array item)
+   - Each point should be 1-2 sentences maximum
+
+5. **Workout Execution**: Evaluate overall session quality and adherence to training principles
+   - Assign status: excellent/good/moderate/needs_improvement/poor
+   - Provide 3-5 separate, concise bullet points (each as a separate array item)
+   - Each point should be 1-2 sentences maximum`
+  }
+  
+  if (isCardio && workoutType.toLowerCase().includes('run')) {
+    return `Provide a structured analysis with these sections:
+
+1. **Executive Summary**: Write 2-3 friendly, encouraging sentences highlighting the most important findings. Keep it conversational and positive.
+
+2. **Pacing Strategy**: Analyze pace consistency, effort distribution, and pacing discipline
+   - Assign status: excellent/good/moderate/needs_improvement/poor
+   - Provide 3-5 separate, concise bullet points (each as a separate array item, not paragraphs)
+   - Each point should be 1-2 sentences maximum
+
+3. **Running Form**: Evaluate cadence patterns (steps per minute) and stride efficiency
+   - Assign status: excellent/good/moderate/needs_improvement/poor
+   - Provide 3-5 separate, concise bullet points (each as a separate array item)
+   - Each point should be 1-2 sentences maximum
+
+4. **Effort Management**: Assess heart rate zones and perceived exertion
+   - Assign status: excellent/good/moderate/needs_improvement/poor
+   - Provide 3-5 separate, concise bullet points (each as a separate array item)
+   - Each point should be 1-2 sentences maximum
+
+5. **Workout Execution**: Evaluate target achievement and interval quality if applicable
+   - Assign status: excellent/good/moderate/needs_improvement/poor
+   - Provide 3-5 separate, concise bullet points (each as a separate array item)
+   - Each point should be 1-2 sentences maximum`
+  }
+  
+  // Default to cycling/bike-focused sections
+  return `Provide a structured analysis with these sections:
+
+1. **Executive Summary**: Write 2-3 friendly, encouraging sentences highlighting the most important findings. Keep it conversational and positive.
+
+2. **Pacing Strategy**: Analyze power variability (VI), surging behavior, and pacing discipline
+   - Assign status: excellent/good/moderate/needs_improvement/poor
+   - Provide 3-5 separate, concise bullet points (each as a separate array item, not paragraphs)
+   - Each point should be 1-2 sentences maximum
+
+3. **Pedaling Efficiency**: Evaluate cadence patterns, L/R balance, and technique
+   - Assign status: excellent/good/moderate/needs_improvement/poor
+   - Provide 3-5 separate, concise bullet points (each as a separate array item)
+   - Each point should be 1-2 sentences maximum
+
+4. **Power Application**: Assess consistency, fade patterns, and zone adherence
+   - Assign status: excellent/good/moderate/needs_improvement/poor
+   - Provide 3-5 separate, concise bullet points (each as a separate array item)
+   - Each point should be 1-2 sentences maximum
+
+5. **Workout Execution**: Evaluate target achievement and interval quality
+   - Assign status: excellent/good/moderate/needs_improvement/poor
+   - Provide 3-5 separate, concise bullet points (each as a separate array item)
+   - Each point should be 1-2 sentences maximum`
+}
+
 
 function buildWorkoutAnalysisPrompt(workoutData: any): string {
   const formatMetric = (value: any, decimals = 1) => {
     return value !== undefined && value !== null ? Number(value).toFixed(decimals) : 'N/A'
   }
   
-  let prompt = `You are an expert cycling coach analyzing a workout. Provide a comprehensive technique-focused analysis.
+  // Determine the workout type for context-aware analysis
+  const workoutType = workoutData.type || 'Unknown'
+  const isCardio = ['Ride', 'Run', 'Swim', 'VirtualRide', 'VirtualRun'].some(t =>
+    workoutType.toLowerCase().includes(t.toLowerCase())
+  )
+  const isStrength = ['Gym', 'WeightTraining', 'Strength', 'CrossFit'].some(t =>
+    workoutType.toLowerCase().includes(t.toLowerCase())
+  )
+  
+  // Set appropriate coach persona and focus based on workout type
+  let coachType = 'fitness coach'
+  if (isCardio && workoutType.toLowerCase().includes('ride')) {
+    coachType = 'cycling coach'
+  } else if (isCardio && workoutType.toLowerCase().includes('run')) {
+    coachType = 'running coach'
+  } else if (isStrength) {
+    coachType = 'strength and conditioning coach'
+  }
+  
+  let prompt = `You are an expert ${coachType} analyzing a workout. Provide a comprehensive technique-focused analysis.
+
+**IMPORTANT - Workout Type Context**: This is a **${workoutType}** workout. ${getWorkoutTypeGuidance(workoutType, isCardio, isStrength)}
 
 ## Workout Details
 - **Date**: ${new Date(workoutData.date).toLocaleDateString()}
 - **Title**: ${workoutData.title}
-- **Type**: ${workoutData.type || 'N/A'}
+- **Type**: ${workoutType}
 - **Duration**: ${workoutData.duration_m} minutes (${workoutData.duration_s}s)
 `
 
@@ -302,39 +458,59 @@ function buildWorkoutAnalysisPrompt(workoutData: any): string {
     prompt += `- **Elevation Gain**: ${workoutData.elevation_gain}m\n`
   }
 
-  prompt += '\n## Power Metrics\n'
-  if (workoutData.avg_power) prompt += `- Average Power: ${workoutData.avg_power}W\n`
-  if (workoutData.max_power) prompt += `- Max Power: ${workoutData.max_power}W\n`
-  if (workoutData.normalized_power) prompt += `- Normalized Power: ${workoutData.normalized_power}W\n`
-  if (workoutData.weighted_avg_power) prompt += `- Weighted Avg Power: ${workoutData.weighted_avg_power}W\n`
-  if (workoutData.ftp) prompt += `- FTP at time: ${workoutData.ftp}W\n`
-  if (workoutData.intensity) prompt += `- Intensity Factor: ${formatMetric(workoutData.intensity, 3)}\n`
+  // Only include power metrics for cardio workouts where they're relevant
+  if (isCardio && (workoutData.avg_power || workoutData.max_power || workoutData.normalized_power)) {
+    prompt += '\n## Power Metrics\n'
+    if (workoutData.avg_power) prompt += `- Average Power: ${workoutData.avg_power}W\n`
+    if (workoutData.max_power) prompt += `- Max Power: ${workoutData.max_power}W\n`
+    if (workoutData.normalized_power) prompt += `- Normalized Power: ${workoutData.normalized_power}W\n`
+    if (workoutData.weighted_avg_power) prompt += `- Weighted Avg Power: ${workoutData.weighted_avg_power}W\n`
+    if (workoutData.ftp) prompt += `- FTP at time: ${workoutData.ftp}W\n`
+    if (workoutData.intensity) prompt += `- Intensity Factor: ${formatMetric(workoutData.intensity, 3)}\n`
+  }
 
-  prompt += '\n## Heart Rate & Cadence\n'
-  if (workoutData.avg_hr) prompt += `- Average HR: ${workoutData.avg_hr} bpm\n`
-  if (workoutData.max_hr) prompt += `- Max HR: ${workoutData.max_hr} bpm\n`
-  if (workoutData.avg_cadence) prompt += `- Average Cadence: ${workoutData.avg_cadence} rpm\n`
-  if (workoutData.max_cadence) prompt += `- Max Cadence: ${workoutData.max_cadence} rpm\n`
+  // Heart rate is relevant for all workout types
+  if (workoutData.avg_hr || workoutData.max_hr || workoutData.avg_cadence) {
+    prompt += '\n## Heart Rate'
+    // Only include cadence label for cardio workouts
+    if (isCardio && workoutData.avg_cadence) {
+      prompt += ' & Cadence'
+    }
+    prompt += '\n'
+    
+    if (workoutData.avg_hr) prompt += `- Average HR: ${workoutData.avg_hr} bpm\n`
+    if (workoutData.max_hr) prompt += `- Max HR: ${workoutData.max_hr} bpm\n`
+    
+    // Cadence is only relevant for cardio (cycling/running)
+    if (isCardio) {
+      if (workoutData.avg_cadence) prompt += `- Average Cadence: ${workoutData.avg_cadence} ${workoutType.toLowerCase().includes('run') ? 'spm' : 'rpm'}\n`
+      if (workoutData.max_cadence) prompt += `- Max Cadence: ${workoutData.max_cadence} ${workoutType.toLowerCase().includes('run') ? 'spm' : 'rpm'}\n`
+    }
+  }
 
-  prompt += '\n## Performance Indicators\n'
-  if (workoutData.variability_index) {
-    prompt += `- Variability Index (VI): ${formatMetric(workoutData.variability_index, 3)}\n`
-    prompt += `  - 1.00-1.05 = Excellent pacing, 1.05-1.10 = Good, >1.10 = Poor pacing\n`
-  }
-  if (workoutData.efficiency_factor) {
-    prompt += `- Efficiency Factor (EF): ${formatMetric(workoutData.efficiency_factor, 2)} (Watts/HR - higher is better)\n`
-  }
-  if (workoutData.decoupling !== undefined) {
-    const decouplingPct = workoutData.decoupling * 100
-    prompt += `- Decoupling: ${formatMetric(decouplingPct, 1)}%\n`
-    prompt += `  - <5% = Excellent aerobic efficiency, 5-10% = Good, >10% = Needs aerobic work\n`
-  }
-  if (workoutData.power_hr_ratio) {
-    prompt += `- Power/HR Ratio: ${formatMetric(workoutData.power_hr_ratio, 2)}\n`
-  }
-  if (workoutData.lr_balance) {
-    prompt += `- L/R Balance: ${formatMetric(workoutData.lr_balance, 1)}%\n`
-    prompt += `  - 48-52% = Acceptable, 50/50 = Ideal, >53% = Significant imbalance\n`
+  // Performance indicators are primarily relevant for cardio workouts
+  if (isCardio && (workoutData.variability_index || workoutData.efficiency_factor ||
+      workoutData.decoupling !== undefined || workoutData.power_hr_ratio || workoutData.lr_balance)) {
+    prompt += '\n## Performance Indicators\n'
+    if (workoutData.variability_index) {
+      prompt += `- Variability Index (VI): ${formatMetric(workoutData.variability_index, 3)}\n`
+      prompt += `  - 1.00-1.05 = Excellent pacing, 1.05-1.10 = Good, >1.10 = Poor pacing\n`
+    }
+    if (workoutData.efficiency_factor) {
+      prompt += `- Efficiency Factor (EF): ${formatMetric(workoutData.efficiency_factor, 2)} (Watts/HR - higher is better)\n`
+    }
+    if (workoutData.decoupling !== undefined) {
+      const decouplingPct = workoutData.decoupling * 100
+      prompt += `- Decoupling: ${formatMetric(decouplingPct, 1)}%\n`
+      prompt += `  - <5% = Excellent aerobic efficiency, 5-10% = Good, >10% = Needs aerobic work\n`
+    }
+    if (workoutData.power_hr_ratio) {
+      prompt += `- Power/HR Ratio: ${formatMetric(workoutData.power_hr_ratio, 2)}\n`
+    }
+    if (workoutData.lr_balance) {
+      prompt += `- L/R Balance: ${formatMetric(workoutData.lr_balance, 1)}%\n`
+      prompt += `  - 48-52% = Acceptable, 50/50 = Ideal, >53% = Significant imbalance\n`
+    }
   }
 
   prompt += '\n## Training Load\n'
@@ -386,31 +562,9 @@ function buildWorkoutAnalysisPrompt(workoutData: any): string {
 
 ## Analysis Request
 
-You are a friendly, supportive cycling coach analyzing this workout. Use an encouraging, conversational tone.
+You are a friendly, supportive ${coachType} analyzing this workout. Use an encouraging, conversational tone.
 
-Provide a structured analysis with these sections:
-
-1. **Executive Summary**: Write 2-3 friendly, encouraging sentences highlighting the most important findings. Keep it conversational and positive.
-
-2. **Pacing Strategy**: Analyze power variability (VI), surging behavior, and pacing discipline
-   - Assign status: excellent/good/moderate/needs_improvement/poor
-   - Provide 3-5 separate, concise bullet points (each as a separate array item, not paragraphs)
-   - Each point should be 1-2 sentences maximum
-
-3. **Pedaling Efficiency**: Evaluate cadence patterns, L/R balance, and technique
-   - Assign status: excellent/good/moderate/needs_improvement/poor
-   - Provide 3-5 separate, concise bullet points (each as a separate array item)
-   - Each point should be 1-2 sentences maximum
-
-4. **Power Application**: Assess consistency, fade patterns, and zone adherence
-   - Assign status: excellent/good/moderate/needs_improvement/poor
-   - Provide 3-5 separate, concise bullet points (each as a separate array item)
-   - Each point should be 1-2 sentences maximum
-
-5. **Workout Execution**: Evaluate target achievement and interval quality
-   - Assign status: excellent/good/moderate/needs_improvement/poor
-   - Provide 3-5 separate, concise bullet points (each as a separate array item)
-   - Each point should be 1-2 sentences maximum
+${getAnalysisSectionsGuidance(workoutType, isCardio, isStrength)}
 
 6. **Recommendations**: Provide 2-4 specific, actionable recommendations with:
    - Clear, friendly title
@@ -425,7 +579,8 @@ IMPORTANT:
 - Each analysis_point must be a separate, concise item in the array
 - Use a friendly, supportive coaching tone throughout
 - Be specific with numbers but keep language conversational
-- Focus on encouragement and actionable advice`
+- Focus on encouragement and actionable advice
+- Tailor your analysis to the workout type (${workoutType}) - ignore metrics that don't apply`
 
   return prompt
 }
