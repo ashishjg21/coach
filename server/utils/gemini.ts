@@ -6,7 +6,7 @@ export type GeminiModel = 'flash' | 'pro'
 
 const MODEL_NAMES = {
   flash: 'gemini-2.0-flash-exp',
-  pro: 'gemini-2.0-flash-thinking-exp-1219'
+  pro: 'gemini-3-pro-preview'  // Using Gemini 3.0 Pro for advanced reasoning
 } as const
 
 export async function generateCoachAnalysis(
