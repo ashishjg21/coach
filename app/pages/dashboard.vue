@@ -20,19 +20,9 @@
           <!-- Athlete Profile Card - shown when connected -->
           <UCard v-if="intervalsConnected">
             <template #header>
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <UIcon name="i-heroicons-user-circle" class="w-5 h-5" />
-                  <h3 class="font-semibold">Athlete Profile</h3>
-                </div>
-                <UButton
-                  size="xs"
-                  variant="ghost"
-                  icon="i-heroicons-arrow-path"
-                  @click="generateAthleteProfile"
-                  :loading="generatingProfile"
-                  :disabled="generatingProfile"
-                />
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-user-circle" class="w-5 h-5" />
+                <h3 class="font-semibold">Athlete Profile</h3>
               </div>
             </template>
             
@@ -95,9 +85,20 @@
             </div>
             
             <template #footer>
-              <UButton to="/profile/athlete" block variant="outline">
-                View Details
-              </UButton>
+              <div class="flex gap-2">
+                <UButton to="/profile/athlete" block variant="outline">
+                  View Details
+                </UButton>
+                <UButton
+                  variant="outline"
+                  @click="generateAthleteProfile"
+                  :loading="generatingProfile"
+                  :disabled="generatingProfile"
+                  icon="i-heroicons-arrow-path"
+                >
+                  Regenerate
+                </UButton>
+              </div>
             </template>
           </UCard>
           
@@ -120,46 +121,43 @@
               Analyzing...
             </div>
             
-            <div v-else-if="!todayRecommendation" class="space-y-3">
+            <div v-else-if="!todayRecommendation">
               <p class="text-sm text-muted">
                 Get AI-powered guidance for today's training based on your recovery and planned workout.
               </p>
-              <UButton
-                @click="generateTodayRecommendation"
-                block
-                :loading="generatingRecommendation"
-                :disabled="generatingRecommendation"
-              >
-                {{ generatingRecommendation ? 'Analyzing...' : 'Get Today\'s Recommendation' }}
-              </UButton>
             </div>
             
-            <div v-else class="space-y-3">
+            <div v-else>
               <p class="text-sm">{{ todayRecommendation.reasoning }}</p>
               
-              <div v-if="todayRecommendation.analysisJson?.suggested_modifications" class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+              <div v-if="todayRecommendation.analysisJson?.suggested_modifications" class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mt-3">
                 <p class="text-sm font-medium mb-2">Suggested Modification:</p>
                 <p class="text-sm">{{ todayRecommendation.analysisJson.suggested_modifications.description }}</p>
               </div>
-              
+            </div>
+            
+            <template #footer>
               <div class="flex gap-2">
                 <UButton
+                  v-if="todayRecommendation"
                   variant="outline"
-                  size="sm"
                   @click="openRecommendationModal"
+                  block
                 >
                   View Details
                 </UButton>
                 <UButton
-                  size="sm"
+                  variant="outline"
                   @click="generateTodayRecommendation"
                   :loading="generatingRecommendation"
                   :disabled="generatingRecommendation"
+                  :block="!todayRecommendation"
+                  icon="i-heroicons-arrow-path"
                 >
-                  {{ generatingRecommendation ? 'Analyzing...' : 'Refresh' }}
+                  {{ generatingRecommendation ? 'Analyzing...' : (todayRecommendation ? 'Refresh' : 'Get Recommendation') }}
                 </UButton>
               </div>
-            </div>
+            </template>
           </UCard>
           
           <!-- Getting Started Card - shown when not connected -->
