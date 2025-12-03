@@ -89,6 +89,30 @@ const athleteProfileSchema = {
       },
       required: ["recovery_pattern", "key_observations"]
     },
+    nutrition_profile: {
+      type: "object",
+      description: "Nutrition patterns and adequacy",
+      properties: {
+        nutrition_pattern: {
+          type: "string",
+          description: "Overall nutrition trend and consistency"
+        },
+        caloric_balance: {
+          type: "string",
+          description: "Assessment of caloric intake relative to training demands"
+        },
+        macro_distribution: {
+          type: "string",
+          description: "Protein/carbs/fat balance assessment"
+        },
+        key_observations: {
+          type: "array",
+          items: { type: "string" },
+          description: "Important nutrition observations"
+        }
+      },
+      required: ["nutrition_pattern", "key_observations"]
+    },
     recent_performance: {
       type: "object",
       description: "Recent performance analysis from workout AI analysis",
@@ -188,7 +212,7 @@ export const generateAthleteProfileTask = task({
       logger.log("Fetching comprehensive athlete data");
       
       // Fetch all relevant data
-      const [user, recentWorkouts, recentWellness, recentReports, recentRecommendations] = await Promise.all([
+      const [user, recentWorkouts, recentWellness, recentNutrition, recentReports, recentRecommendations] = await Promise.all([
         prisma.user.findUnique({
           where: { id: userId },
           select: { ftp: true, weight: true, maxHr: true, dob: true }
@@ -220,6 +244,28 @@ export const generateAthleteProfileTask = task({
           },
           orderBy: { date: 'desc' },
           take: 30
+        }),
+        prisma.nutrition.findMany({
+          where: {
+            userId,
+            date: { gte: sevenDaysAgo, lte: now },
+            calories: { not: null } // Only include days with tracked data
+          },
+          orderBy: { date: 'desc' },
+          take: 14, // Last 2 weeks
+          select: {
+            id: true,
+            date: true,
+            calories: true,
+            protein: true,
+            carbs: true,
+            fat: true,
+            fiber: true,
+            caloriesGoal: true,
+            proteinGoal: true,
+            carbsGoal: true,
+            fatGoal: true
+          }
         }),
         prisma.report.findMany({
           where: {
