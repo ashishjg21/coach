@@ -15,156 +15,157 @@
       
       <!-- Chart -->
       <div class="relative" style="height: 300px;">
-        <svg :viewBox="`0 0 ${width} ${height}`" class="w-full h-full">
-          <!-- Grid lines -->
-          <g v-for="i in 5" :key="`grid-${i}`">
-            <line
-              :x1="padding"
-              :y1="padding + (i * gridSpacing)"
-              :x2="width - padding"
-              :y2="padding + (i * gridSpacing)"
-              stroke="currentColor"
-              :stroke-opacity="0.1"
-              class="text-gray-400"
-            />
-            <text
-              :x="padding - 10"
-              :y="padding + (i * gridSpacing) + 4"
-              text-anchor="end"
-              class="text-gray-500 dark:text-gray-400"
-              style="font-size: 10px"
-            >
-              {{ 10 - (i * 2) }}
-            </text>
-          </g>
-          
-          <!-- Lines -->
-          <g v-for="metric in visibleMetrics" :key="`line-${metric.key}`">
-            <polyline
-              :points="getLinePoints(metric.key)"
-              fill="none"
-              :stroke="metric.strokeColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            
-            <!-- Points -->
-            <circle
-              v-for="(point, idx) in getPoints(metric.key)"
-              :key="`point-${metric.key}-${idx}`"
-              :cx="point.x"
-              :cy="point.y"
-              r="4"
-              :fill="metric.strokeColor"
-              class="hover:r-6 transition-all cursor-pointer"
-            >
-              <title>{{ point.label }}: {{ point.value }}/10</title>
-            </circle>
-          </g>
-          
-          <!-- X-axis labels -->
-          <g v-for="(point, idx) in xAxisPoints" :key="`x-label-${idx}`">
-            <text
-              :x="point.x"
-              :y="height - padding + 20"
-              text-anchor="middle"
-              class="text-gray-500 dark:text-gray-400"
-              style="font-size: 9px"
-            >
-              {{ point.label }}
-            </text>
-          </g>
-        </svg>
+        <Line :data="chartData" :options="chartOptions" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Line } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+)
+
 const props = defineProps<{
   data: any[]
   type: 'workout' | 'nutrition'
 }>()
 
-const width = 800
-const height = 350
-const padding = 50
-const gridSpacing = (height - 2 * padding) / 5
+const colorMode = useColorMode()
 
 const metrics = computed(() => {
   if (props.type === 'workout') {
     return [
-      { key: 'overallScore', label: 'Overall', color: 'bg-yellow-500', strokeColor: '#eab308' },
-      { key: 'technicalScore', label: 'Technical', color: 'bg-blue-500', strokeColor: '#3b82f6' },
-      { key: 'effortScore', label: 'Effort', color: 'bg-red-500', strokeColor: '#ef4444' },
-      { key: 'pacingScore', label: 'Pacing', color: 'bg-green-500', strokeColor: '#22c55e' },
-      { key: 'executionScore', label: 'Execution', color: 'bg-purple-500', strokeColor: '#a855f7' }
+      { key: 'overallScore', label: 'Overall', color: 'bg-yellow-500', strokeColor: 'rgb(234, 179, 8)' },
+      { key: 'technicalScore', label: 'Technical', color: 'bg-blue-500', strokeColor: 'rgb(59, 130, 246)' },
+      { key: 'effortScore', label: 'Effort', color: 'bg-red-500', strokeColor: 'rgb(239, 68, 68)' },
+      { key: 'pacingScore', label: 'Pacing', color: 'bg-green-500', strokeColor: 'rgb(34, 197, 94)' },
+      { key: 'executionScore', label: 'Execution', color: 'bg-purple-500', strokeColor: 'rgb(168, 85, 247)' }
     ]
   } else {
     return [
-      { key: 'overallScore', label: 'Overall', color: 'bg-yellow-500', strokeColor: '#eab308' },
-      { key: 'macroBalanceScore', label: 'Macro Balance', color: 'bg-blue-500', strokeColor: '#3b82f6' },
-      { key: 'qualityScore', label: 'Quality', color: 'bg-green-500', strokeColor: '#22c55e' },
-      { key: 'adherenceScore', label: 'Adherence', color: 'bg-purple-500', strokeColor: '#a855f7' },
-      { key: 'hydrationScore', label: 'Hydration', color: 'bg-cyan-500', strokeColor: '#06b6d4' }
+      { key: 'overallScore', label: 'Overall', color: 'bg-yellow-500', strokeColor: 'rgb(234, 179, 8)' },
+      { key: 'macroBalanceScore', label: 'Macro Balance', color: 'bg-blue-500', strokeColor: 'rgb(59, 130, 246)' },
+      { key: 'qualityScore', label: 'Quality', color: 'bg-green-500', strokeColor: 'rgb(34, 197, 94)' },
+      { key: 'adherenceScore', label: 'Adherence', color: 'bg-purple-500', strokeColor: 'rgb(168, 85, 247)' },
+      { key: 'hydrationScore', label: 'Hydration', color: 'bg-cyan-500', strokeColor: 'rgb(6, 182, 212)' }
     ]
   }
 })
 
 const visibleMetrics = computed(() => metrics.value)
 
-const xAxisPoints = computed(() => {
-  if (!props.data || props.data.length === 0) return []
-  
-  const chartWidth = width - 2 * padding
-  const step = chartWidth / Math.max(props.data.length - 1, 1)
-  
-  // Show max 7 labels to avoid crowding
-  const labelInterval = Math.ceil(props.data.length / 7)
-  
-  return props.data.map((item, idx) => ({
-    x: padding + idx * step,
-    label: idx % labelInterval === 0 ? formatDate(item.date) : ''
-  })).filter(p => p.label)
-})
-
-const getLinePoints = (key: string) => {
-  if (!props.data || props.data.length === 0) return ''
-  
-  const chartWidth = width - 2 * padding
-  const chartHeight = height - 2 * padding
-  const step = chartWidth / Math.max(props.data.length - 1, 1)
-  
-  return props.data
-    .map((item, idx) => {
-      const value = item[key] || 0
-      const x = padding + idx * step
-      const y = padding + chartHeight - (value / 10) * chartHeight
-      return `${x},${y}`
-    })
-    .join(' ')
-}
-
-const getPoints = (key: string) => {
-  if (!props.data || props.data.length === 0) return []
-  
-  const chartWidth = width - 2 * padding
-  const chartHeight = height - 2 * padding
-  const step = chartWidth / Math.max(props.data.length - 1, 1)
-  
-  return props.data.map((item, idx) => {
-    const value = item[key] || 0
-    return {
-      x: padding + idx * step,
-      y: padding + chartHeight - (value / 10) * chartHeight,
-      value: value.toFixed(1),
-      label: key.replace('Score', '').replace(/([A-Z])/g, ' $1').trim()
-    }
-  })
-}
-
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
+
+const chartData = computed(() => {
+  if (!props.data || props.data.length === 0) {
+    return { labels: [], datasets: [] }
+  }
+
+  const labels = props.data.map(item => formatDate(item.date))
+  
+  const datasets = visibleMetrics.value.map(metric => ({
+    label: metric.label,
+    data: props.data.map(item => item[metric.key] || 0),
+    borderColor: metric.strokeColor,
+    backgroundColor: metric.strokeColor.replace('rgb', 'rgba').replace(')', ', 0.1)'),
+    tension: 0.4,
+    borderWidth: 2,
+    pointRadius: 4,
+    pointHoverRadius: 6,
+    pointBackgroundColor: metric.strokeColor,
+    pointBorderColor: '#fff',
+    pointHoverBackgroundColor: '#fff',
+    pointHoverBorderColor: metric.strokeColor,
+    pointBorderWidth: 2
+  }))
+
+  return { labels, datasets }
+})
+
+const chartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    mode: 'index' as const,
+    intersect: false
+  },
+  plugins: {
+    legend: {
+      display: false
+    },
+    tooltip: {
+      backgroundColor: colorMode.value === 'dark' ? 'rgb(31, 41, 55)' : 'rgb(255, 255, 255)',
+      titleColor: colorMode.value === 'dark' ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
+      bodyColor: colorMode.value === 'dark' ? 'rgb(209, 213, 219)' : 'rgb(55, 65, 81)',
+      borderColor: colorMode.value === 'dark' ? 'rgb(75, 85, 99)' : 'rgb(229, 231, 235)',
+      borderWidth: 1,
+      padding: 12,
+      displayColors: true,
+      callbacks: {
+        label: (context: any) => {
+          return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}/10`
+        }
+      }
+    }
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false,
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 0.5)'
+      },
+      ticks: {
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        },
+        maxRotation: 0,
+        autoSkipPadding: 20
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    },
+    y: {
+      min: 0,
+      max: 10,
+      ticks: {
+        stepSize: 2,
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        }
+      },
+      grid: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 0.5)'
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    }
+  }
+}))
 </script>
