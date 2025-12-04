@@ -60,6 +60,7 @@ model User {
   activityRecommendations ActivityRecommendation[]
   trainingAvailability TrainingAvailability[]
   weeklyTrainingPlans WeeklyTrainingPlan[]
+  scoreTrendExplanations ScoreTrendExplanation[]
 }
 
 model Account {
@@ -621,4 +622,37 @@ model WeeklyTrainingPlan {
   
   @@index([userId, weekStartDate])
   @@index([userId, status])
+}
+
+// --------------------------------------
+// Score Trend Explanations
+// --------------------------------------
+
+// Stores AI-generated trend explanations for workout and nutrition scores
+// These are pre-generated for instant access and cached with expiration
+model ScoreTrendExplanation {
+  id          String   @id @default(uuid())
+  userId      String
+  
+  // Type and metrics
+  type        String   // "nutrition" or "workout"
+  period      Int      // Number of days (7, 14, 30, 90)
+  metric      String   // "overall", "macroBalance", "quality", "adherence", "hydration" OR "overall", "technical", "effort", "pacing", "execution"
+  score       Float?   // The average score for this metric
+  
+  // AI-generated analysis (structured JSON)
+  analysisData Json    // Contains: executive_summary, sections[], recommendations[]
+  
+  // Cache management
+  generatedAt DateTime @default(now())
+  expiresAt   DateTime // When this explanation should be regenerated
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([userId, type, period, metric])
+  @@index([userId, type, period])
+  @@index([expiresAt]) // For cleanup jobs
 }
