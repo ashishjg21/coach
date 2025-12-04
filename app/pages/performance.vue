@@ -6,11 +6,9 @@
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <USelectMenu
+          <USelect
             v-model="selectedPeriod"
-            :options="periodOptions"
-            value-attribute="value"
-            option-attribute="label"
+            :items="periodOptions"
           />
         </template>
       </UDashboardNavbar>
