@@ -82,7 +82,7 @@
             class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
           >
             <div class="flex items-start gap-3">
-              <!-- Status Icon -->
+              <!-- Status Icon (Clickable for pending tasks) -->
               <div class="flex-shrink-0 mt-1">
                 <div v-if="getTaskState(task.id)?.status === 'completed'" class="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
                   <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
@@ -100,9 +100,15 @@
                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
                   </svg>
                 </div>
-                <div v-else class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <button
+                  v-else
+                  @click="triggerSingleTask(task.id)"
+                  :disabled="isRunning"
+                  class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900 flex items-center justify-center transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                  :title="'Click to run ' + task.name"
+                >
                   <div class="w-3 h-3 rounded-full border-2 border-gray-400 dark:border-gray-500"></div>
-                </div>
+                </button>
               </div>
 
               <!-- Task Info -->
@@ -111,7 +117,16 @@
                   <h4 class="text-sm font-medium text-gray-900 dark:text-white">
                     {{ task.name }}
                   </h4>
-                  <span :class="getTaskStatusBadgeClass(task.id)">
+                  <button
+                    v-if="!getTaskState(task.id) || getTaskState(task.id)?.status === 'pending'"
+                    @click="triggerSingleTask(task.id)"
+                    :disabled="isRunning"
+                    :class="[getTaskStatusBadgeClass(task.id), 'cursor-pointer hover:opacity-80 transition-opacity disabled:cursor-not-allowed']"
+                    :title="'Click to run ' + task.name"
+                  >
+                    {{ getTaskStatusLabel(task.id) }}
+                  </button>
+                  <span v-else :class="getTaskStatusBadgeClass(task.id)">
                     {{ getTaskStatusLabel(task.id) }}
                   </span>
                 </div>
@@ -378,6 +393,93 @@ async function fetchTaskMetadata() {
     console.log('Processed metadata:', taskMetadata.value)
   } catch (error) {
     console.error('Error fetching task metadata:', error)
+  }
+}
+
+// Trigger a single task
+async function triggerSingleTask(taskId: string) {
+  if (isRunning.value) return
+  
+  const task = TASK_DEPENDENCIES[taskId]
+  if (!task) return
+  
+  try {
+    // Set task as running
+    taskStates.value[taskId] = {
+      taskId,
+      status: 'running',
+      startTime: new Date(),
+      progress: 0
+    }
+    
+    toast.add({
+      title: 'Starting Task',
+      description: `Running: ${task.name}`,
+      color: 'info',
+      icon: 'i-heroicons-play'
+    })
+    
+    let result
+    
+    // Execute task based on type
+    if (task.endpoint) {
+      if (task.category === 'ingestion') {
+        // Sync integration
+        const provider = taskId.replace('ingest-', '')
+        result = await $fetch(task.endpoint, {
+          method: 'POST',
+          body: { provider }
+        })
+      } else if (task.category === 'analysis') {
+        // Analysis tasks
+        result = await $fetch(task.endpoint, {
+          method: 'POST'
+        })
+      } else {
+        // Generation tasks (profile, reports, plans)
+        result = await $fetch(task.endpoint, {
+          method: 'POST'
+        })
+      }
+    }
+    
+    // Update state to completed
+    taskStates.value[taskId] = {
+      taskId,
+      status: 'completed',
+      startTime: taskStates.value[taskId].startTime,
+      endTime: new Date(),
+      progress: 100,
+      result
+    }
+    
+    toast.add({
+      title: 'Task Completed',
+      description: `${task.name} finished successfully`,
+      color: 'success',
+      icon: 'i-heroicons-check-badge'
+    })
+    
+    // Refresh metadata to show updated counts
+    await fetchTaskMetadata()
+    
+  } catch (error: any) {
+    console.error(`Task ${taskId} failed:`, error)
+    
+    taskStates.value[taskId] = {
+      taskId,
+      status: 'failed',
+      startTime: taskStates.value[taskId]?.startTime,
+      endTime: new Date(),
+      error: error.data?.message || error.message || 'Task execution failed'
+    }
+    
+    toast.add({
+      title: 'Task Failed',
+      description: error.data?.message || error.message || `${TASK_DEPENDENCIES[taskId]?.name} failed`,
+      color: 'error',
+      icon: 'i-heroicons-exclamation-circle'
+    })
   }
 }
 
