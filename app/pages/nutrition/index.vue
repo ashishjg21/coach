@@ -59,6 +59,41 @@
           </div>
         </div>
 
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Calorie Tracking Chart -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Calorie Tracking</h3>
+            <ClientOnly>
+              <Line :data="calorieTrackingData" :options="lineChartOptions" />
+            </ClientOnly>
+          </div>
+          
+          <!-- Macro Distribution Chart -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Macro Distribution</h3>
+            <ClientOnly>
+              <Doughnut :data="macroDistributionData" :options="doughnutChartOptions" />
+            </ClientOnly>
+          </div>
+          
+          <!-- Nutrition Scores Chart -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Nutrition Scores</h3>
+            <ClientOnly>
+              <Line :data="nutritionScoresData" :options="lineChartOptions" />
+            </ClientOnly>
+          </div>
+          
+          <!-- Hydration Chart -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Hydration Tracking</h3>
+            <ClientOnly>
+              <Bar :data="hydrationData" :options="barChartOptions" />
+            </ClientOnly>
+          </div>
+        </div>
+
         <!-- Filters -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -221,11 +256,40 @@
 </template>
 
 <script setup lang="ts">
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js'
+import { Line, Doughnut, Bar } from 'vue-chartjs'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+)
+
 definePageMeta({
   middleware: 'auth',
   layout: 'default'
 })
 
+const colorMode = useColorMode()
 const toast = useToast()
 const loading = ref(true)
 const analyzingNutrition = ref(false)
@@ -405,6 +469,219 @@ async function analyzeAllNutrition() {
     analyzingNutrition.value = false
   }
 }
+
+// Chart data computed properties
+const calorieTrackingData = computed(() => {
+  const last30Days = allNutrition.value
+    .filter(n => n.calories)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-30)
+  
+  return {
+    labels: last30Days.map(n => formatDate(n.date)),
+    datasets: [
+      {
+        label: 'Calories Consumed',
+        data: last30Days.map(n => n.calories),
+        borderColor: colorMode.value === 'dark' ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)',
+        backgroundColor: colorMode.value === 'dark' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(37, 99, 235, 0.1)',
+        fill: true,
+        tension: 0.4
+      },
+      {
+        label: 'Calorie Goal',
+        data: last30Days.map(n => n.caloriesGoal || 0),
+        borderColor: colorMode.value === 'dark' ? 'rgb(251, 146, 60)' : 'rgb(249, 115, 22)',
+        backgroundColor: colorMode.value === 'dark' ? 'rgba(251, 146, 60, 0.1)' : 'rgba(249, 115, 22, 0.1)',
+        borderDash: [5, 5],
+        fill: false,
+        tension: 0.4
+      }
+    ]
+  }
+})
+
+const macroDistributionData = computed(() => {
+  const withMacros = allNutrition.value.filter(n => n.protein && n.carbs && n.fat)
+  if (withMacros.length === 0) {
+    return {
+      labels: ['Protein', 'Carbs', 'Fat'],
+      datasets: [{
+        data: [0, 0, 0],
+        backgroundColor: []
+      }]
+    }
+  }
+  
+  const avgProtein = withMacros.reduce((sum, n) => sum + n.protein, 0) / withMacros.length
+  const avgCarbs = withMacros.reduce((sum, n) => sum + n.carbs, 0) / withMacros.length
+  const avgFat = withMacros.reduce((sum, n) => sum + n.fat, 0) / withMacros.length
+  
+  return {
+    labels: ['Protein', 'Carbs', 'Fat'],
+    datasets: [{
+      data: [Math.round(avgProtein), Math.round(avgCarbs), Math.round(avgFat)],
+      backgroundColor: [
+        colorMode.value === 'dark' ? 'rgba(34, 197, 94, 0.8)' : 'rgba(22, 163, 74, 0.8)',
+        colorMode.value === 'dark' ? 'rgba(59, 130, 246, 0.8)' : 'rgba(37, 99, 235, 0.8)',
+        colorMode.value === 'dark' ? 'rgba(251, 146, 60, 0.8)' : 'rgba(249, 115, 22, 0.8)'
+      ],
+      borderColor: [
+        colorMode.value === 'dark' ? 'rgb(34, 197, 94)' : 'rgb(22, 163, 74)',
+        colorMode.value === 'dark' ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)',
+        colorMode.value === 'dark' ? 'rgb(251, 146, 60)' : 'rgb(249, 115, 22)'
+      ],
+      borderWidth: 2
+    }]
+  }
+})
+
+const nutritionScoresData = computed(() => {
+  const withScores = allNutrition.value
+    .filter(n => (n as any).overallScore)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-30)
+  
+  return {
+    labels: withScores.map(n => formatDate(n.date)),
+    datasets: [{
+      label: 'Nutrition Score',
+      data: withScores.map(n => (n as any).overallScore),
+      borderColor: colorMode.value === 'dark' ? 'rgb(168, 85, 247)' : 'rgb(147, 51, 234)',
+      backgroundColor: colorMode.value === 'dark' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(147, 51, 234, 0.1)',
+      fill: true,
+      tension: 0.4
+    }]
+  }
+})
+
+const hydrationData = computed(() => {
+  const withWater = allNutrition.value
+    .filter(n => n.waterMl)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-30)
+  
+  return {
+    labels: withWater.map(n => formatDate(n.date)),
+    datasets: [{
+      label: 'Water (Liters)',
+      data: withWater.map(n => parseFloat((n.waterMl / 1000).toFixed(1))),
+      backgroundColor: colorMode.value === 'dark' ? 'rgba(56, 189, 248, 0.8)' : 'rgba(14, 165, 233, 0.8)',
+      borderColor: colorMode.value === 'dark' ? 'rgb(56, 189, 248)' : 'rgb(14, 165, 233)',
+      borderWidth: 2
+    }]
+  }
+})
+
+// Chart options
+const lineChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: true,
+  aspectRatio: 2,
+  plugins: {
+    legend: {
+      labels: {
+        color: colorMode.value === 'dark' ? '#9ca3af' : '#4b5563'
+      }
+    },
+    tooltip: {
+      backgroundColor: colorMode.value === 'dark' ? '#1f2937' : '#ffffff',
+      titleColor: colorMode.value === 'dark' ? '#f3f4f6' : '#111827',
+      bodyColor: colorMode.value === 'dark' ? '#d1d5db' : '#374151',
+      borderColor: colorMode.value === 'dark' ? '#374151' : '#e5e7eb',
+      borderWidth: 1
+    }
+  },
+  scales: {
+    x: {
+      ticks: {
+        color: colorMode.value === 'dark' ? '#9ca3af' : '#6b7280',
+        maxRotation: 45,
+        minRotation: 45
+      },
+      grid: {
+        color: colorMode.value === 'dark' ? '#374151' : '#e5e7eb'
+      }
+    },
+    y: {
+      ticks: {
+        color: colorMode.value === 'dark' ? '#9ca3af' : '#6b7280'
+      },
+      grid: {
+        color: colorMode.value === 'dark' ? '#374151' : '#e5e7eb'
+      }
+    }
+  }
+}))
+
+const doughnutChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: true,
+  aspectRatio: 2,
+  plugins: {
+    legend: {
+      position: 'bottom' as const,
+      labels: {
+        color: colorMode.value === 'dark' ? '#9ca3af' : '#4b5563',
+        padding: 15
+      }
+    },
+    tooltip: {
+      backgroundColor: colorMode.value === 'dark' ? '#1f2937' : '#ffffff',
+      titleColor: colorMode.value === 'dark' ? '#f3f4f6' : '#111827',
+      bodyColor: colorMode.value === 'dark' ? '#d1d5db' : '#374151',
+      borderColor: colorMode.value === 'dark' ? '#374151' : '#e5e7eb',
+      borderWidth: 1,
+      callbacks: {
+        label: function(context: any) {
+          const label = context.label || ''
+          const value = context.parsed || 0
+          return `${label}: ${value}g`
+        }
+      }
+    }
+  }
+}))
+
+const barChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: true,
+  aspectRatio: 2,
+  plugins: {
+    legend: {
+      labels: {
+        color: colorMode.value === 'dark' ? '#9ca3af' : '#4b5563'
+      }
+    },
+    tooltip: {
+      backgroundColor: colorMode.value === 'dark' ? '#1f2937' : '#ffffff',
+      titleColor: colorMode.value === 'dark' ? '#f3f4f6' : '#111827',
+      bodyColor: colorMode.value === 'dark' ? '#d1d5db' : '#374151',
+      borderColor: colorMode.value === 'dark' ? '#374151' : '#e5e7eb',
+      borderWidth: 1
+    }
+  },
+  scales: {
+    x: {
+      ticks: {
+        color: colorMode.value === 'dark' ? '#9ca3af' : '#6b7280',
+        maxRotation: 45,
+        minRotation: 45
+      },
+      grid: {
+        color: colorMode.value === 'dark' ? '#374151' : '#e5e7eb'
+      }
+    },
+    y: {
+      ticks: {
+        color: colorMode.value === 'dark' ? '#9ca3af' : '#6b7280'
+      },
+      grid: {
+        color: colorMode.value === 'dark' ? '#374151' : '#e5e7eb'
+      }
+    }
+  }
+}))
 
 // Watch filters and reset to page 1
 watch([filterAnalysis, filterCalories], () => {

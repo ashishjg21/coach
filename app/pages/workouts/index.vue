@@ -59,6 +59,57 @@
           </div>
         </div>
 
+        <!-- Charts Section -->
+        <div v-if="!loading && allWorkouts.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Activity Type Distribution -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Activity Distribution
+            </h3>
+            <div class="flex justify-center" style="height: 300px;">
+              <ClientOnly>
+                <Doughnut :data="activityDistributionData" :options="doughnutChartOptions" />
+              </ClientOnly>
+            </div>
+          </div>
+
+          <!-- Workout Scores Trend -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Average Workout Scores (Last 30 Days)
+            </h3>
+            <div style="height: 300px;">
+              <ClientOnly>
+                <Line :data="scoresTimelineData" :options="lineChartOptions" />
+              </ClientOnly>
+            </div>
+          </div>
+
+          <!-- Training Load Trend -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Training Load (Last 30 Days)
+            </h3>
+            <div style="height: 300px;">
+              <ClientOnly>
+                <Bar :data="trainingLoadData" :options="barChartOptions" />
+              </ClientOnly>
+            </div>
+          </div>
+
+          <!-- Weekly Training Volume -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Weekly Training Hours (Last 8 Weeks)
+            </h3>
+            <div style="height: 300px;">
+              <ClientOnly>
+                <Bar :data="weeklyVolumeData" :options="barChartOptions" />
+              </ClientOnly>
+            </div>
+          </div>
+        </div>
+
         <!-- Filters -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -229,12 +280,41 @@
 </template>
 
 <script setup lang="ts">
+import { Doughnut, Line, Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+)
+
 definePageMeta({
   middleware: 'auth',
   layout: 'default'
 })
 
 const toast = useToast()
+const colorMode = useColorMode()
 const loading = ref(true)
 const analyzingWorkouts = ref(false)
 const allWorkouts = ref<any[]>([])
@@ -434,6 +514,292 @@ async function analyzeAllWorkouts() {
     analyzingWorkouts.value = false
   }
 }
+// Chart data computations
+const activityDistributionData = computed(() => {
+  const typeCounts: Record<string, number> = {}
+  allWorkouts.value.forEach(w => {
+    const type = w.type || 'Other'
+    typeCounts[type] = (typeCounts[type] || 0) + 1
+  })
+  
+  const labels = Object.keys(typeCounts)
+  const data = Object.values(typeCounts)
+  
+  return {
+    labels,
+    datasets: [{
+      data,
+      backgroundColor: [
+        'rgba(59, 130, 246, 0.8)',  // blue for Run
+        'rgba(34, 197, 94, 0.8)',   // green for Ride
+        'rgba(234, 179, 8, 0.8)',   // yellow for Swim
+        'rgba(168, 85, 247, 0.8)',  // purple for Other
+        'rgba(239, 68, 68, 0.8)',   // red
+        'rgba(6, 182, 212, 0.8)'    // cyan
+      ],
+      borderColor: [
+        'rgb(59, 130, 246)',
+        'rgb(34, 197, 94)',
+        'rgb(234, 179, 8)',
+        'rgb(168, 85, 247)',
+        'rgb(239, 68, 68)',
+        'rgb(6, 182, 212)'
+      ],
+      borderWidth: 2
+    }]
+  }
+})
+
+const scoresTimelineData = computed(() => {
+  // Get workouts from last 30 days with scores
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  
+  const recentWorkouts = allWorkouts.value
+    .filter(w => w.overallScore && new Date(w.date) >= thirtyDaysAgo)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  
+  // Group by date and calculate average
+  const scoresByDate: Record<string, number[]> = {}
+  recentWorkouts.forEach(w => {
+    const dateStr = new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    if (!scoresByDate[dateStr]) scoresByDate[dateStr] = []
+    scoresByDate[dateStr].push(w.overallScore)
+  })
+  
+  const labels = Object.keys(scoresByDate)
+  const avgScores = labels.map(date => {
+    const scores = scoresByDate[date]
+    if (!scores || scores.length === 0) return 0
+    return scores.reduce((sum, s) => sum + s, 0) / scores.length
+  })
+  
+  return {
+    labels,
+    datasets: [{
+      label: 'Average Score',
+      data: avgScores,
+      borderColor: 'rgb(59, 130, 246)',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      tension: 0.4,
+      borderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      fill: true
+    }]
+  }
+})
+
+const trainingLoadData = computed(() => {
+  // Get workouts from last 30 days with training load
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  
+  const recentWorkouts = allWorkouts.value
+    .filter(w => w.trainingLoad && new Date(w.date) >= thirtyDaysAgo)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  
+  // Group by date and sum training load
+  const loadByDate: Record<string, number> = {}
+  recentWorkouts.forEach(w => {
+    const dateStr = new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    loadByDate[dateStr] = (loadByDate[dateStr] || 0) + w.trainingLoad
+  })
+  
+  const labels = Object.keys(loadByDate)
+  const loads = Object.values(loadByDate)
+  
+  return {
+    labels,
+    datasets: [{
+      label: 'Training Load',
+      data: loads,
+      backgroundColor: 'rgba(34, 197, 94, 0.8)',
+      borderColor: 'rgb(34, 197, 94)',
+      borderWidth: 2
+    }]
+  }
+})
+
+const weeklyVolumeData = computed(() => {
+  // Get workouts from last 8 weeks
+  const eightWeeksAgo = new Date()
+  eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
+  
+  const recentWorkouts = allWorkouts.value
+    .filter(w => new Date(w.date) >= eightWeeksAgo)
+  
+  // Group by week
+  const volumeByWeek: Record<string, number> = {}
+  recentWorkouts.forEach(w => {
+    const date = new Date(w.date)
+    const weekStart = new Date(date)
+    weekStart.setDate(date.getDate() - date.getDay()) // Start of week (Sunday)
+    const weekLabel = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    
+    const hours = (w.durationSec || 0) / 3600
+    volumeByWeek[weekLabel] = (volumeByWeek[weekLabel] || 0) + hours
+  })
+  
+  const labels = Object.keys(volumeByWeek)
+  const hours = Object.values(volumeByWeek)
+  
+  return {
+    labels,
+    datasets: [{
+      label: 'Hours',
+      data: hours,
+      backgroundColor: 'rgba(168, 85, 247, 0.8)',
+      borderColor: 'rgb(168, 85, 247)',
+      borderWidth: 2
+    }]
+  }
+})
+
+// Chart options
+const doughnutChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom' as const,
+      labels: {
+        color: colorMode.value === 'dark' ? 'rgb(209, 213, 219)' : 'rgb(55, 65, 81)',
+        padding: 15,
+        font: {
+          size: 12
+        }
+      }
+    },
+    tooltip: {
+      backgroundColor: colorMode.value === 'dark' ? 'rgb(31, 41, 55)' : 'rgb(255, 255, 255)',
+      titleColor: colorMode.value === 'dark' ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
+      bodyColor: colorMode.value === 'dark' ? 'rgb(209, 213, 219)' : 'rgb(55, 65, 81)',
+      borderColor: colorMode.value === 'dark' ? 'rgb(75, 85, 99)' : 'rgb(229, 231, 235)',
+      borderWidth: 1,
+      padding: 12
+    }
+  }
+}))
+
+const lineChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    mode: 'index' as const,
+    intersect: false
+  },
+  plugins: {
+    legend: {
+      display: false
+    },
+    tooltip: {
+      backgroundColor: colorMode.value === 'dark' ? 'rgb(31, 41, 55)' : 'rgb(255, 255, 255)',
+      titleColor: colorMode.value === 'dark' ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
+      bodyColor: colorMode.value === 'dark' ? 'rgb(209, 213, 219)' : 'rgb(55, 65, 81)',
+      borderColor: colorMode.value === 'dark' ? 'rgb(75, 85, 99)' : 'rgb(229, 231, 235)',
+      borderWidth: 1,
+      padding: 12,
+      callbacks: {
+        label: (context: any) => {
+          return `Score: ${context.parsed.y.toFixed(1)}/10`
+        }
+      }
+    }
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false
+      },
+      ticks: {
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        },
+        maxRotation: 45,
+        minRotation: 45
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    },
+    y: {
+      min: 0,
+      max: 10,
+      ticks: {
+        stepSize: 2,
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        }
+      },
+      grid: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 0.5)'
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    }
+  }
+}))
+
+const barChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false
+    },
+    tooltip: {
+      backgroundColor: colorMode.value === 'dark' ? 'rgb(31, 41, 55)' : 'rgb(255, 255, 255)',
+      titleColor: colorMode.value === 'dark' ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
+      bodyColor: colorMode.value === 'dark' ? 'rgb(209, 213, 219)' : 'rgb(55, 65, 81)',
+      borderColor: colorMode.value === 'dark' ? 'rgb(75, 85, 99)' : 'rgb(229, 231, 235)',
+      borderWidth: 1,
+      padding: 12,
+      callbacks: {
+        label: (context: any) => {
+          return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}`
+        }
+      }
+    }
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false
+      },
+      ticks: {
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        },
+        maxRotation: 45,
+        minRotation: 45
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    },
+    y: {
+      beginAtZero: true,
+      ticks: {
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        }
+      },
+      grid: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 0.5)'
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    }
+  }
+}))
+
 
 // Watch filters and reset to page 1
 watch([filterType, filterAnalysis, filterSource], () => {

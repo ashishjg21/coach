@@ -49,6 +49,57 @@
           </div>
         </div>
 
+        <!-- Charts Section -->
+        <div v-if="!loading && allWellness.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Recovery Score Trend -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Recovery Score (Last 30 Days)
+            </h3>
+            <div style="height: 300px;">
+              <ClientOnly>
+                <Line :data="recoveryTrendData" :options="lineChartOptions" />
+              </ClientOnly>
+            </div>
+          </div>
+
+          <!-- Sleep Hours Trend -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Sleep Duration (Last 30 Days)
+            </h3>
+            <div style="height: 300px;">
+              <ClientOnly>
+                <Bar :data="sleepTrendData" :options="barChartOptions" />
+              </ClientOnly>
+            </div>
+          </div>
+
+          <!-- HRV Trend -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Heart Rate Variability (Last 30 Days)
+            </h3>
+            <div style="height: 300px;">
+              <ClientOnly>
+                <Line :data="hrvTrendData" :options="hrvLineChartOptions" />
+              </ClientOnly>
+            </div>
+          </div>
+
+          <!-- Resting HR Trend -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Resting Heart Rate (Last 30 Days)
+            </h3>
+            <div style="height: 300px;">
+              <ClientOnly>
+                <Line :data="restingHrTrendData" :options="hrLineChartOptions" />
+              </ClientOnly>
+            </div>
+          </div>
+        </div>
+
         <!-- Filters -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -211,12 +262,39 @@
 </template>
 
 <script setup lang="ts">
+import { Line, Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+)
+
 definePageMeta({
   middleware: 'auth',
   layout: 'default'
 })
 
 const toast = useToast()
+const colorMode = useColorMode()
 const loading = ref(true)
 const allWellness = ref<any[]>([])
 const currentPage = ref(1)
@@ -370,6 +448,356 @@ function navigateToWellness(id: string) {
 }
 
 // Watch filters and reset to page 1
+// Chart data computations
+const recoveryTrendData = computed(() => {
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  
+  const recentWellness = allWellness.value
+    .filter(w => w.recoveryScore && new Date(w.date) >= thirtyDaysAgo)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  
+  const labels = recentWellness.map(w => 
+    new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  )
+  
+  return {
+    labels,
+    datasets: [{
+      label: 'Recovery Score',
+      data: recentWellness.map(w => w.recoveryScore),
+      borderColor: 'rgb(34, 197, 94)',
+      backgroundColor: 'rgba(34, 197, 94, 0.1)',
+      tension: 0.4,
+      borderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      fill: true
+    }]
+  }
+})
+
+const sleepTrendData = computed(() => {
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  
+  const recentWellness = allWellness.value
+    .filter(w => w.sleepHours && new Date(w.date) >= thirtyDaysAgo)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  
+  const labels = recentWellness.map(w => 
+    new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  )
+  
+  return {
+    labels,
+    datasets: [{
+      label: 'Hours',
+      data: recentWellness.map(w => w.sleepHours),
+      backgroundColor: 'rgba(59, 130, 246, 0.8)',
+      borderColor: 'rgb(59, 130, 246)',
+      borderWidth: 2
+    }]
+  }
+})
+
+const hrvTrendData = computed(() => {
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  
+  const recentWellness = allWellness.value
+    .filter(w => w.hrv && new Date(w.date) >= thirtyDaysAgo)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  
+  const labels = recentWellness.map(w => 
+    new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  )
+  
+  return {
+    labels,
+    datasets: [{
+      label: 'HRV (ms)',
+      data: recentWellness.map(w => w.hrv),
+      borderColor: 'rgb(168, 85, 247)',
+      backgroundColor: 'rgba(168, 85, 247, 0.1)',
+      tension: 0.4,
+      borderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      fill: true
+    }]
+  }
+})
+
+const restingHrTrendData = computed(() => {
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  
+  const recentWellness = allWellness.value
+    .filter(w => w.restingHr && new Date(w.date) >= thirtyDaysAgo)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  
+  const labels = recentWellness.map(w => 
+    new Date(w.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  )
+  
+  return {
+    labels,
+    datasets: [{
+      label: 'Resting HR (bpm)',
+      data: recentWellness.map(w => w.restingHr),
+      borderColor: 'rgb(239, 68, 68)',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+      tension: 0.4,
+      borderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      fill: true
+    }]
+  }
+})
+
+// Chart options
+const lineChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    mode: 'index' as const,
+    intersect: false
+  },
+  plugins: {
+    legend: {
+      display: false
+    },
+    tooltip: {
+      backgroundColor: colorMode.value === 'dark' ? 'rgb(31, 41, 55)' : 'rgb(255, 255, 255)',
+      titleColor: colorMode.value === 'dark' ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
+      bodyColor: colorMode.value === 'dark' ? 'rgb(209, 213, 219)' : 'rgb(55, 65, 81)',
+      borderColor: colorMode.value === 'dark' ? 'rgb(75, 85, 99)' : 'rgb(229, 231, 235)',
+      borderWidth: 1,
+      padding: 12,
+      callbacks: {
+        label: (context: any) => {
+          return `Recovery: ${context.parsed.y.toFixed(0)}%`
+        }
+      }
+    }
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false
+      },
+      ticks: {
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        },
+        maxRotation: 45,
+        minRotation: 45
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    },
+    y: {
+      min: 0,
+      max: 100,
+      ticks: {
+        stepSize: 20,
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        }
+      },
+      grid: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 0.5)'
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    }
+  }
+}))
+
+const barChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false
+    },
+    tooltip: {
+      backgroundColor: colorMode.value === 'dark' ? 'rgb(31, 41, 55)' : 'rgb(255, 255, 255)',
+      titleColor: colorMode.value === 'dark' ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
+      bodyColor: colorMode.value === 'dark' ? 'rgb(209, 213, 219)' : 'rgb(55, 65, 81)',
+      borderColor: colorMode.value === 'dark' ? 'rgb(75, 85, 99)' : 'rgb(229, 231, 235)',
+      borderWidth: 1,
+      padding: 12,
+      callbacks: {
+        label: (context: any) => {
+          return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}h`
+        }
+      }
+    }
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false
+      },
+      ticks: {
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        },
+        maxRotation: 45,
+        minRotation: 45
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    },
+    y: {
+      beginAtZero: true,
+      max: 12,
+      ticks: {
+        stepSize: 2,
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        }
+      },
+      grid: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 0.5)'
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    }
+  }
+}))
+
+const hrvLineChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    mode: 'index' as const,
+    intersect: false
+  },
+  plugins: {
+    legend: {
+      display: false
+    },
+    tooltip: {
+      backgroundColor: colorMode.value === 'dark' ? 'rgb(31, 41, 55)' : 'rgb(255, 255, 255)',
+      titleColor: colorMode.value === 'dark' ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
+      bodyColor: colorMode.value === 'dark' ? 'rgb(209, 213, 219)' : 'rgb(55, 65, 81)',
+      borderColor: colorMode.value === 'dark' ? 'rgb(75, 85, 99)' : 'rgb(229, 231, 235)',
+      borderWidth: 1,
+      padding: 12,
+      callbacks: {
+        label: (context: any) => {
+          return `HRV: ${context.parsed.y.toFixed(0)}ms`
+        }
+      }
+    }
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false
+      },
+      ticks: {
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        },
+        maxRotation: 45,
+        minRotation: 45
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    },
+    y: {
+      beginAtZero: true,
+      ticks: {
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        }
+      },
+      grid: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 0.5)'
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    }
+  }
+}))
+
+const hrLineChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    mode: 'index' as const,
+    intersect: false
+  },
+  plugins: {
+    legend: {
+      display: false
+    },
+    tooltip: {
+      backgroundColor: colorMode.value === 'dark' ? 'rgb(31, 41, 55)' : 'rgb(255, 255, 255)',
+      titleColor: colorMode.value === 'dark' ? 'rgb(229, 231, 235)' : 'rgb(17, 24, 39)',
+      bodyColor: colorMode.value === 'dark' ? 'rgb(209, 213, 219)' : 'rgb(55, 65, 81)',
+      borderColor: colorMode.value === 'dark' ? 'rgb(75, 85, 99)' : 'rgb(229, 231, 235)',
+      borderWidth: 1,
+      padding: 12,
+      callbacks: {
+        label: (context: any) => {
+          return `HR: ${context.parsed.y.toFixed(0)} bpm`
+        }
+      }
+    }
+  },
+  scales: {
+    x: {
+      grid: {
+        display: false
+      },
+      ticks: {
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        },
+        maxRotation: 45,
+        minRotation: 45
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    },
+    y: {
+      beginAtZero: true,
+      ticks: {
+        color: colorMode.value === 'dark' ? 'rgb(156, 163, 175)' : 'rgb(107, 114, 128)',
+        font: {
+          size: 11
+        }
+      },
+      grid: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 0.5)'
+      },
+      border: {
+        color: colorMode.value === 'dark' ? 'rgba(75, 85, 99, 0.3)' : 'rgba(229, 231, 235, 0.8)'
+      }
+    }
+  }
+}))
+
 watch([filterRecovery, filterSleep], () => {
   currentPage.value = 1
 })
