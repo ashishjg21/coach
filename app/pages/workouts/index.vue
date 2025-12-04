@@ -6,14 +6,26 @@
           <UDashboardSidebarCollapse />
         </template>
         <template #right>
-          <button
-            @click="analyzeAllWorkouts"
-            :disabled="analyzingWorkouts"
-            class="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
-          >
-            <span v-if="analyzingWorkouts">Analyzing...</span>
-            <span v-else>Analyze All</span>
-          </button>
+          <div class="flex gap-2">
+            <button
+              @click="generateExplanations"
+              :disabled="generatingExplanations"
+              class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm flex items-center gap-2"
+            >
+              <UIcon v-if="generatingExplanations" name="i-heroicons-arrow-path" class="animate-spin" />
+              <UIcon v-else name="i-heroicons-sparkles" />
+              <span v-if="generatingExplanations">Generating...</span>
+              <span v-else>Generate Insights</span>
+            </button>
+            <button
+              @click="analyzeAllWorkouts"
+              :disabled="analyzingWorkouts"
+              class="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+            >
+              <span v-if="analyzingWorkouts">Analyzing...</span>
+              <span v-else>Analyze All</span>
+            </button>
+          </div>
         </template>
       </UDashboardNavbar>
     </template>
@@ -66,6 +78,106 @@
             </div>
           </div>
         </div>
+
+        <!-- Workout Performance Scores -->
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Workout Performance</h2>
+            <USelect
+              v-model="selectedPeriod"
+              :items="periodOptions"
+            />
+          </div>
+          
+          <div v-if="workoutTrendsLoading" class="flex justify-center py-12">
+            <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary" />
+          </div>
+          
+          <div v-else-if="workoutTrendsData" class="space-y-6">
+            <!-- Score Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <ScoreCard
+                title="Overall"
+                :score="workoutTrendsData.summary?.avgOverall"
+                icon="i-heroicons-star"
+                color="yellow"
+                compact
+                explanation="Click for AI-generated insights"
+                @click="() => workoutTrendsData && openWorkoutModal('Overall Workout Performance', workoutTrendsData.summary?.avgOverall, 'yellow')"
+              />
+              <ScoreCard
+                title="Technical"
+                :score="workoutTrendsData.summary?.avgTechnical"
+                icon="i-heroicons-cog"
+                color="blue"
+                compact
+                explanation="Click for AI-generated insights"
+                @click="() => workoutTrendsData && openWorkoutModal('Technical Execution', workoutTrendsData.summary?.avgTechnical, 'blue')"
+              />
+              <ScoreCard
+                title="Effort"
+                :score="workoutTrendsData.summary?.avgEffort"
+                icon="i-heroicons-fire"
+                color="red"
+                compact
+                explanation="Click for AI-generated insights"
+                @click="() => workoutTrendsData && openWorkoutModal('Effort Management', workoutTrendsData.summary?.avgEffort, 'red')"
+              />
+              <ScoreCard
+                title="Pacing"
+                :score="workoutTrendsData.summary?.avgPacing"
+                icon="i-heroicons-chart-bar"
+                color="green"
+                compact
+                explanation="Click for AI-generated insights"
+                @click="() => workoutTrendsData && openWorkoutModal('Pacing Strategy', workoutTrendsData.summary?.avgPacing, 'green')"
+              />
+              <ScoreCard
+                title="Execution"
+                :score="workoutTrendsData.summary?.avgExecution"
+                icon="i-heroicons-check-circle"
+                color="purple"
+                compact
+                explanation="Click for AI-generated insights"
+                @click="() => workoutTrendsData && openWorkoutModal('Workout Execution', workoutTrendsData.summary?.avgExecution, 'purple')"
+              />
+            </div>
+
+            <!-- Trend Chart and Radar Chart Side by Side -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <!-- Score Trends (2/3 width) -->
+              <div class="lg:col-span-2">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Score Trends</h3>
+                <TrendChart :data="workoutTrendsData.workouts" type="workout" />
+              </div>
+
+              <!-- Current Balance (1/3 width) -->
+              <div class="lg:col-span-1">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Current Balance</h3>
+                <RadarChart
+                  :scores="{
+                    overall: workoutTrendsData.summary?.avgOverall,
+                    technical: workoutTrendsData.summary?.avgTechnical,
+                    effort: workoutTrendsData.summary?.avgEffort,
+                    pacing: workoutTrendsData.summary?.avgPacing,
+                    execution: workoutTrendsData.summary?.avgExecution
+                  }"
+                  type="workout"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Score Detail Modal -->
+        <ScoreDetailModal
+          v-model="showModal"
+          :title="modalData.title"
+          :score="modalData.score"
+          :explanation="modalData.explanation"
+          :analysis-data="modalData.analysisData"
+          :color="modalData.color"
+        />
 
         <!-- Charts Section -->
         <div v-if="!loading && allWorkouts.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -281,9 +393,66 @@
               </div>
             </div>
           </div>
+
+        <!-- AI Recommendations Section -->
+        <div v-if="!loading && allRecommendations.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            🎯 AI-Generated Workout Recommendations
+          </h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Based on your last {{ selectedPeriod }} days of workout data
+          </p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div
+              v-for="(rec, index) in allRecommendations"
+              :key="index"
+              class="border rounded-lg p-4"
+              :class="{
+                'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20': rec.priority === 'high',
+                'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20': rec.priority === 'medium',
+                'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20': rec.priority === 'low'
+              }"
+            >
+              <div class="flex items-start gap-3">
+                <div class="flex-shrink-0">
+                  <span
+                    class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold"
+                    :class="{
+                      'bg-red-500 text-white': rec.priority === 'high',
+                      'bg-yellow-500 text-white': rec.priority === 'medium',
+                      'bg-blue-500 text-white': rec.priority === 'low'
+                    }"
+                  >
+                    {{ rec.priority === 'high' ? 'H' : rec.priority === 'medium' ? 'M' : 'L' }}
+                  </span>
+                </div>
+                <div class="flex-1">
+                  <h4 class="font-semibold text-sm mb-2" :class="{
+                    'text-red-900 dark:text-red-100': rec.priority === 'high',
+                    'text-yellow-900 dark:text-yellow-100': rec.priority === 'medium',
+                    'text-blue-900 dark:text-blue-100': rec.priority === 'low'
+                  }">
+                    {{ rec.title }}
+                  </h4>
+                  <p class="text-sm" :class="{
+                    'text-red-700 dark:text-red-300': rec.priority === 'high',
+                    'text-yellow-700 dark:text-yellow-300': rec.priority === 'medium',
+                    'text-blue-700 dark:text-blue-300': rec.priority === 'low'
+                  }">
+                    {{ rec.description }}
+                  </p>
+                  <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    From: {{ rec.metric }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </template>
+    </div>
+  </template>
   </UDashboardPanel>
 </template>
 
@@ -522,6 +691,176 @@ async function analyzeAllWorkouts() {
     analyzingWorkouts.value = false
   }
 }
+
+// Score trends and insights functionality
+const generatingExplanations = ref(false)
+const selectedPeriod = ref(30)
+const periodOptions = [
+  { label: '7 Days', value: 7 },
+  { label: '14 Days', value: 14 },
+  { label: '30 Days', value: 30 },
+  { label: '90 Days', value: 90 }
+]
+
+// Fetch workout trends data
+const { data: workoutTrendsData, pending: workoutTrendsLoading } = await useFetch('/api/scores/workout-trends', {
+  query: { days: selectedPeriod }
+})
+
+// Modal state
+const showModal = ref(false)
+const modalData = ref<{
+  title: string
+  score: number | null
+  explanation: string | null
+  analysisData?: any
+  color?: 'gray' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'cyan'
+}>({
+  title: '',
+  score: null,
+  explanation: null,
+  analysisData: undefined,
+  color: undefined
+})
+
+const allRecommendations = ref<any[]>([])
+
+// Generate all score explanations (batch job)
+async function generateExplanations() {
+  generatingExplanations.value = true
+  try {
+    const response: any = await $fetch('/api/scores/generate-explanations', {
+      method: 'POST'
+    })
+    
+    toast.add({
+      title: 'Generating Insights',
+      description: response.message || 'AI is analyzing your workout data. This may take a few minutes.',
+      color: 'success',
+      icon: 'i-heroicons-sparkles'
+    })
+    
+    // Refresh recommendations after a delay
+    setTimeout(async () => {
+      await fetchAllRecommendations()
+    }, 5000)
+  } catch (error: any) {
+    toast.add({
+      title: 'Generation Failed',
+      description: error.data?.message || error.message || 'Failed to generate insights',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-circle'
+    })
+  } finally {
+    generatingExplanations.value = false
+  }
+}
+
+// Open workout modal with AI insights
+async function openWorkoutModal(title: string, score: number | null, color?: string) {
+  if (!score) return
+  
+  const metricName = getWorkoutMetricName(title)
+  
+  modalData.value = {
+    title,
+    score,
+    explanation: 'Loading insights...',
+    analysisData: undefined,
+    color: color as any
+  }
+  showModal.value = true
+  
+  try {
+    const response: any = await $fetch('/api/scores/explanation', {
+      query: {
+        type: 'workout',
+        period: selectedPeriod.value.toString(),
+        metric: metricName
+      }
+    })
+    
+    if (response.cached === false && response.generating) {
+      // Wait 3 seconds and retry
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      const retryResponse: any = await $fetch('/api/scores/explanation', {
+        query: {
+          type: 'workout',
+          period: selectedPeriod.value.toString(),
+          metric: metricName
+        }
+      })
+      modalData.value.analysisData = retryResponse.analysis
+      modalData.value.explanation = null
+    } else {
+      modalData.value.analysisData = response.analysis
+      modalData.value.explanation = null
+    }
+  } catch (error) {
+    console.error('Error fetching workout explanation:', error)
+    modalData.value.explanation = 'Failed to load explanation. Please try again.'
+  }
+}
+
+// Map display names to metric names
+function getWorkoutMetricName(title: string): string {
+  const mapping: Record<string, string> = {
+    'Overall': 'overall',
+    'Technical Execution': 'technical',
+    'Effort Management': 'effort',
+    'Pacing Strategy': 'pacing',
+    'Workout Execution': 'execution'
+  }
+  return mapping[title] || title.toLowerCase()
+}
+
+// Fetch all recommendations from all metrics
+async function fetchAllRecommendations() {
+  const metrics = ['overall', 'technical', 'effort', 'pacing', 'execution']
+  const metricLabels: Record<string, string> = {
+    'overall': 'Overall Performance',
+    'technical': 'Technical Execution',
+    'effort': 'Effort Management',
+    'pacing': 'Pacing Strategy',
+    'execution': 'Workout Execution'
+  }
+  
+  const allRecs: any[] = []
+  
+  for (const metric of metrics) {
+    try {
+      const response: any = await $fetch('/api/scores/explanation', {
+        query: {
+          type: 'workout',
+          period: selectedPeriod.value.toString(),
+          metric
+        }
+      })
+      
+      if (response.analysis?.recommendations) {
+        response.analysis.recommendations.forEach((rec: any) => {
+          allRecs.push({
+            ...rec,
+            metric: metricLabels[metric]
+          })
+        })
+      }
+    } catch (error) {
+      console.error(`Error fetching ${metric} recommendations:`, error)
+    }
+  }
+  
+  // Sort by priority: high > medium > low
+  const priorityOrder: Record<string, number> = { high: 1, medium: 2, low: 3 }
+  allRecs.sort((a, b) => {
+    const aPriority = priorityOrder[a.priority] || 999
+    const bPriority = priorityOrder[b.priority] || 999
+    return aPriority - bPriority
+  })
+  
+  allRecommendations.value = allRecs
+}
+
 // Chart data computations
 const activityDistributionData = computed(() => {
   const typeCounts: Record<string, number> = {}
@@ -814,8 +1153,14 @@ watch([filterType, filterAnalysis, filterSource], () => {
   currentPage.value = 1
 })
 
+// Watch period changes and refetch recommendations
+watch(selectedPeriod, async () => {
+  await fetchAllRecommendations()
+})
+
 // Load data on mount
 onMounted(() => {
   fetchWorkouts()
+  fetchAllRecommendations()
 })
 </script>

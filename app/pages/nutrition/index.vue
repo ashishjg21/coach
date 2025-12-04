@@ -1010,13 +1010,63 @@ watch([filterAnalysis, filterCalories], () => {
   currentPage.value = 1
 })
 
+// Fetch all recommendations from stored explanations
+const allRecommendations = ref<any[]>([])
+
+async function fetchAllRecommendations() {
+  const recommendations: any[] = []
+  const metrics = ['overall', 'macroBalance', 'quality', 'adherence', 'hydration']
+  const metricNames: Record<string, string> = {
+    overall: 'Overall Quality',
+    macroBalance: 'Macro Balance',
+    quality: 'Food Quality',
+    adherence: 'Goal Adherence',
+    hydration: 'Hydration'
+  }
+  
+  for (const metric of metrics) {
+    try {
+      const response: any = await $fetch('/api/scores/explanation', {
+        query: {
+          type: 'nutrition',
+          period: selectedPeriod.value,
+          metric
+        }
+      })
+      
+      if (response.cached && response.analysis?.recommendations) {
+        // Add metric name to each recommendation
+        response.analysis.recommendations.forEach((rec: any) => {
+          recommendations.push({
+            ...rec,
+            metric: metricNames[metric]
+          })
+        })
+      }
+    } catch (error) {
+      console.error(`Error fetching recommendations for ${metric}:`, error)
+    }
+  }
+  
+  // Sort by priority (high first, then medium, then low)
+  const priorityOrder = { high: 0, medium: 1, low: 2 }
+  recommendations.sort((a, b) => {
+    return (priorityOrder[a.priority as keyof typeof priorityOrder] || 99) -
+           (priorityOrder[b.priority as keyof typeof priorityOrder] || 99)
+  })
+  
+  allRecommendations.value = recommendations
+}
+
 // Watch for period changes and refetch nutrition trends
 watch(selectedPeriod, async () => {
   await refreshNuxtData('nutrition-trends')
+  await fetchAllRecommendations()
 })
 
 // Load data on mount
-onMounted(() => {
-  fetchNutrition()
+onMounted(async () => {
+  await fetchNutrition()
+  await fetchAllRecommendations()
 })
 </script>
