@@ -74,7 +74,7 @@
                 {{ getCategoryProgress(category.id) }}
               </span>
               <button
-                v-if="getCategoryStatus(category.id) !== 'Complete'"
+                v-if="getCategoryStatus(category.id) === 'Pending' || getCategoryStatus(category.id) === 'Outdated'"
                 @click="runCategoryTasks(category.id)"
                 :disabled="isRunning"
                 :class="[getCategoryStatusClass(category.id), 'cursor-pointer hover:opacity-80 transition-opacity disabled:cursor-not-allowed']"
@@ -132,7 +132,7 @@
                     {{ task.name }}
                   </h4>
                   <button
-                    v-if="!getTaskState(task.id) || getTaskState(task.id)?.status === 'pending'"
+                    v-if="getTaskStatusLabel(task.id) === 'Pending' || getTaskStatusLabel(task.id) === 'Outdated'"
                     @click="triggerSingleTask(task.id)"
                     :disabled="isRunning"
                     :class="[getTaskStatusBadgeClass(task.id), 'cursor-pointer hover:opacity-80 transition-opacity disabled:cursor-not-allowed']"
@@ -234,7 +234,7 @@ const overallProgress = ref(0)
 const currentPhase = ref('')
 const errorMessage = ref('')
 const eventSource = ref<EventSource | null>(null)
-const taskMetadata = ref<Record<string, { pendingCount?: number; totalCount?: number; lastSync?: Date; duplicateCount?: number }>>({})
+const taskMetadata = ref<Record<string, { pendingCount?: number; totalCount?: number; lastSync?: Date; duplicateCount?: number; isUpToDate?: boolean }>>({})
 
 // Categories configuration
 const categories = [
@@ -310,52 +310,105 @@ function getTaskName(taskId: string): string {
 
 function getTaskStatusLabel(taskId: string): string {
   const state = taskStates.value[taskId]
-  if (!state) return 'Pending'
+  const metadata = taskMetadata.value[taskId]
   
-  switch (state.status) {
-    case 'completed': return 'Completed'
-    case 'running': return 'Running'
-    case 'failed': return 'Failed'
-    case 'skipped': return 'Skipped'
-    default: return 'Pending'
+  // If task is actively running or just completed in this session
+  if (state) {
+    switch (state.status) {
+      case 'completed': return 'Completed'
+      case 'running': return 'Running'
+      case 'failed': return 'Failed'
+      case 'skipped': return 'Skipped'
+      default: break
+    }
   }
+  
+  // Check if task is up to date based on metadata
+  if (metadata?.isUpToDate) {
+    return 'Completed'
+  }
+  
+  // Check for outdated status
+  if (metadata?.lastSync) {
+    return 'Outdated'
+  }
+  
+  return 'Pending'
 }
 
 function getTaskStatusBadgeClass(taskId: string): string {
   const state = taskStates.value[taskId]
+  const metadata = taskMetadata.value[taskId]
   const baseClass = 'px-2 py-1 rounded text-xs font-medium whitespace-nowrap'
   
-  if (!state || state.status === 'pending') {
-    return `${baseClass} bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300`
+  // If task is actively running or just completed in this session
+  if (state) {
+    switch (state.status) {
+      case 'completed':
+        return `${baseClass} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`
+      case 'running':
+        return `${baseClass} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200`
+      case 'failed':
+        return `${baseClass} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200`
+      case 'skipped':
+        return `${baseClass} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200`
+      default:
+        break
+    }
   }
   
-  switch (state.status) {
-    case 'completed':
-      return `${baseClass} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`
-    case 'running':
-      return `${baseClass} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200`
-    case 'failed':
-      return `${baseClass} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200`
-    case 'skipped':
-      return `${baseClass} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200`
-    default:
-      return `${baseClass} bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300`
+  // Check if task is up to date - show as completed (green)
+  if (metadata?.isUpToDate) {
+    return `${baseClass} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`
   }
+  
+  // Check for outdated status - show as warning (orange)
+  if (metadata?.lastSync) {
+    return `${baseClass} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200`
+  }
+  
+  // Default pending state
+  return `${baseClass} bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300`
 }
 
 function getCategoryProgress(categoryId: string): string {
   const tasks = getTasksByCategory(categoryId)
-  const completed = tasks.filter(t => taskStates.value[t.id]?.status === 'completed').length
+  const completed = tasks.filter(t => {
+    // Count as completed if actively completed in this session
+    if (taskStates.value[t.id]?.status === 'completed') {
+      return true
+    }
+    // Or if task is up to date based on metadata
+    const metadata = taskMetadata.value[t.id]
+    return metadata?.isUpToDate === true
+  }).length
   return `${completed}/${tasks.length}`
 }
 
 function getCategoryStatus(categoryId: string): string {
   const tasks = getTasksByCategory(categoryId)
-  const states = tasks.map(t => taskStates.value[t.id]?.status)
   
-  if (states.every(s => s === 'completed')) return 'Complete'
+  // Check active task states first
+  const states = tasks.map(t => taskStates.value[t.id]?.status)
   if (states.some(s => s === 'running')) return 'Running'
   if (states.some(s => s === 'failed')) return 'Failed'
+  if (states.every(s => s === 'completed')) return 'Complete'
+  
+  // Check metadata-based status
+  const allUpToDate = tasks.every(t => {
+    const metadata = taskMetadata.value[t.id]
+    return metadata?.isUpToDate === true
+  })
+  
+  if (allUpToDate && tasks.length > 0) return 'Complete'
+  
+  const anyOutdated = tasks.some(t => {
+    const metadata = taskMetadata.value[t.id]
+    return metadata?.lastSync && !metadata?.isUpToDate
+  })
+  
+  if (anyOutdated) return 'Outdated'
+  
   return 'Pending'
 }
 
@@ -370,6 +423,8 @@ function getCategoryStatusClass(categoryId: string): string {
       return `${baseClass} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200`
     case 'Failed':
       return `${baseClass} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200`
+    case 'Outdated':
+      return `${baseClass} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200`
     default:
       return `${baseClass} bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300`
   }
