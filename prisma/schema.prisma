@@ -216,14 +216,22 @@ model Workout {
   
   // Raw Data storage (for re-analysis and accessing original data)
   rawJson         Json?    // Store the original full payload
-
+  
+  // Duplicate Detection & Management
+  isDuplicate     Boolean  @default(false) // True if this workout is a duplicate
+  duplicateOf     String?  // ID of the canonical workout this is a duplicate of
+  completenessScore Int?   // Score used to determine which workout is the "best" version
+  
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   reports         ReportWorkout[]
+  duplicates      Workout[] @relation("WorkoutDuplicates") // Workouts that are duplicates of this one
+  canonicalWorkout Workout? @relation("WorkoutDuplicates", fields: [duplicateOf], references: [id], onDelete: SetNull)
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@index([userId, date])
+  @@index([userId, isDuplicate]) // Optimize queries filtering duplicates
   @@unique([userId, source, externalId]) // Prevent duplicates
 }
 
