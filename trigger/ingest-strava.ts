@@ -1,4 +1,4 @@
-import { logger, task } from "@trigger.dev/sdk/v3";
+import { logger, task, tasks } from "@trigger.dev/sdk/v3";
 import {
   fetchStravaActivities,
   fetchStravaActivityDetails,
@@ -110,7 +110,7 @@ export const ingestStravaTask = task({
         
         const workout = normalizeStravaActivity(detailedActivity, userId);
         
-        await prisma.workout.upsert({
+        const upsertedWorkout = await prisma.workout.upsert({
           where: {
             userId_source_externalId: {
               userId,
@@ -122,6 +122,17 @@ export const ingestStravaTask = task({
           create: workout
         });
         workoutsUpserted++;
+        
+        // Trigger stream ingestion for activities with pacing data
+        const pacingActivityTypes = ['Run', 'Ride', 'VirtualRide', 'Walk', 'Hike'];
+        if (pacingActivityTypes.includes(upsertedWorkout.type)) {
+          logger.log(`Triggering stream ingestion for ${upsertedWorkout.type} workout: ${upsertedWorkout.id}`);
+          await tasks.trigger('ingest-strava-streams', {
+            userId,
+            workoutId: upsertedWorkout.id,
+            activityId: activity.id
+          });
+        }
         
         // Add a small delay to avoid rate limiting (Strava allows 100 requests per 15 minutes)
         // With 7-day sync window, we expect ~7-14 activities max, well under rate limits

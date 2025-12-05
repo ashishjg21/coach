@@ -356,9 +356,11 @@ function buildWorkoutAnalysisData(workout: any) {
   // L/R Balance
   if (workout.lrBalance) data.lr_balance = workout.lrBalance
   
-  // Extract intervals from rawJson if available
+  // Extract intervals and pacing splits from rawJson if available
   if (workout.rawJson && typeof workout.rawJson === 'object') {
     const raw = workout.rawJson as any
+    
+    // Intervals.icu intervals
     if (raw.icu_intervals && Array.isArray(raw.icu_intervals)) {
       data.intervals = raw.icu_intervals.slice(0, 10).map((interval: any) => ({
         type: interval.type,
@@ -379,6 +381,34 @@ function buildWorkoutAnalysisData(workout: any) {
         elevation_gain: interval.total_elevation_gain,
         avg_gradient: interval.average_gradient
       }))
+    }
+    
+    // Strava splits (lap pacing data)
+    const splits = raw.splits_metric || raw.splits_standard
+    if (splits && Array.isArray(splits) && splits.length > 0) {
+      data.lap_splits = splits.map((split: any, index: number) => {
+        const time = split.moving_time || split.elapsed_time
+        const paceMinPerKm = split.distance > 0 ? time / 60 / (split.distance / 1000) : 0
+        const paceMin = Math.floor(paceMinPerKm)
+        const paceSec = Math.round((paceMinPerKm - paceMin) * 60)
+        
+        return {
+          lap: index + 1,
+          distance_m: split.distance,
+          time_s: time,
+          pace_min_per_km: `${paceMin}:${paceSec.toString().padStart(2, '0')}`,
+          avg_speed_ms: split.average_speed,
+          avg_hr: split.average_heartrate
+        }
+      })
+      
+      // Calculate pacing consistency
+      const paces = data.lap_splits.map((s: any) => s.time_s / (s.distance_m / 1000))
+      if (paces.length > 1) {
+        const avgPace = paces.reduce((sum: number, p: number) => sum + p, 0) / paces.length
+        const variance = paces.reduce((sum: number, p: number) => sum + Math.pow(p - avgPace, 2), 0) / paces.length
+        data.pace_variability_seconds = Math.sqrt(variance)
+      }
     }
   }
   
@@ -617,6 +647,49 @@ function buildWorkoutAnalysisPrompt(workoutData: any): string {
     if (workoutData.avg_temp !== undefined) prompt += `- Avg Temperature: ${formatMetric(workoutData.avg_temp, 1)}°C\n`
   }
 
+  // Add lap splits pacing analysis if available
+  if (workoutData.lap_splits && workoutData.lap_splits.length > 0) {
+    prompt += '\n## Lap Pacing Analysis\n'
+    prompt += `Split-by-split pacing data showing consistency and strategy:\n\n`
+    
+    workoutData.lap_splits.forEach((split: any) => {
+      prompt += `**Lap ${split.lap}**: `
+      prompt += `${(split.distance_m / 1000).toFixed(2)}km in ${Math.floor(split.time_s / 60)}:${(split.time_s % 60).toString().padStart(2, '0')} `
+      prompt += `(${split.pace_min_per_km}/km pace)`
+      if (split.avg_hr) prompt += `, HR ${Math.round(split.avg_hr)} bpm`
+      if (split.avg_speed_ms) prompt += `, ${formatMetric(split.avg_speed_ms, 2)} m/s`
+      prompt += '\n'
+    })
+    
+    if (workoutData.pace_variability_seconds) {
+      prompt += `\n**Pace Consistency**: ${formatMetric(workoutData.pace_variability_seconds, 1)} seconds standard deviation\n`
+      prompt += `- Lower is better (more consistent pacing)\n`
+      prompt += `- <10s = Excellent consistency, 10-20s = Good, >20s = Variable pacing\n`
+    }
+    
+    // Add first/second half comparison
+    if (workoutData.lap_splits.length >= 2) {
+      const halfwayIndex = Math.floor(workoutData.lap_splits.length / 2)
+      const firstHalf = workoutData.lap_splits.slice(0, halfwayIndex)
+      const secondHalf = workoutData.lap_splits.slice(halfwayIndex)
+      
+      const firstHalfAvgPace = firstHalf.reduce((sum: number, s: any) => sum + (s.time_s / (s.distance_m / 1000)), 0) / firstHalf.length
+      const secondHalfAvgPace = secondHalf.reduce((sum: number, s: any) => sum + (s.time_s / (s.distance_m / 1000)), 0) / secondHalf.length
+      
+      const splitDiff = secondHalfAvgPace - firstHalfAvgPace
+      const splitType = splitDiff > 10 ? 'Positive Split (slowed down)' :
+                       splitDiff < -10 ? 'Negative Split (sped up)' :
+                       'Even Split'
+      
+      prompt += `\n**Split Strategy**: ${splitType}\n`
+      prompt += `- First half avg: ${formatMetric(firstHalfAvgPace, 1)}s/km\n`
+      prompt += `- Second half avg: ${formatMetric(secondHalfAvgPace, 1)}s/km\n`
+      prompt += `- Difference: ${formatMetric(Math.abs(splitDiff), 1)}s/km ${splitDiff > 0 ? 'slower' : 'faster'} in second half\n`
+    }
+    
+    prompt += '\n'
+  }
+  
   // Add interval analysis if available
   if (workoutData.intervals && workoutData.intervals.length > 0) {
     prompt += '\n## Interval Breakdown\n'

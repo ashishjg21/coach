@@ -1,4 +1,4 @@
-import { logger, task } from "@trigger.dev/sdk/v3";
+import { logger, task, tasks } from "@trigger.dev/sdk/v3";
 import {
   fetchIntervalsWorkouts,
   fetchIntervalsWellness,
@@ -106,10 +106,12 @@ export const ingestIntervalsTask = task({
       
       // Upsert workouts
       let workoutsUpserted = 0;
+      const pacingActivityTypes = ['Run', 'Ride', 'VirtualRide', 'Walk', 'Hike'];
+      
       for (const activity of activities) {
         const workout = normalizeIntervalsWorkout(activity, userId);
         
-        await prisma.workout.upsert({
+        const upsertedWorkout = await prisma.workout.upsert({
           where: {
             userId_source_externalId: {
               userId,
@@ -121,6 +123,16 @@ export const ingestIntervalsTask = task({
           create: workout
         });
         workoutsUpserted++;
+        
+        // Trigger stream ingestion for activities with pacing data
+        if (pacingActivityTypes.includes(upsertedWorkout.type)) {
+          logger.log(`Triggering stream ingestion for ${upsertedWorkout.type} workout: ${upsertedWorkout.id}`);
+          await tasks.trigger('ingest-intervals-streams', {
+            userId,
+            workoutId: upsertedWorkout.id,
+            activityId: activity.id
+          });
+        }
       }
       
       logger.log(`Upserted ${workoutsUpserted} workouts`);
