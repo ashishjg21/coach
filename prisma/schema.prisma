@@ -61,6 +61,7 @@ model User {
   trainingAvailability TrainingAvailability[]
   weeklyTrainingPlans WeeklyTrainingPlan[]
   scoreTrendExplanations ScoreTrendExplanation[]
+  chatParticipations ChatParticipant[]
 }
 
 model Account {
@@ -705,4 +706,54 @@ model ScoreTrendExplanation {
   @@unique([userId, type, period, metric])
   @@index([userId, type, period])
   @@index([expiresAt]) // For cleanup jobs
+}
+
+// --------------------------------------
+// Chat System
+// --------------------------------------
+
+model ChatRoom {
+  id          String   @id @default(uuid())
+  name        String?
+  avatar      String?
+  
+  // Relations
+  users       ChatParticipant[]
+  messages    ChatMessage[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ChatParticipant {
+  id          String   @id @default(uuid())
+  userId      String
+  roomId      String
+  
+  // Status
+  lastSeen    DateTime?
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room        ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, roomId])
+}
+
+model ChatMessage {
+  id          String   @id @default(uuid())
+  content     String   @db.Text
+  roomId      String
+  senderId    String   // ID of the User who sent it (or 'ai_agent' for bot)
+  
+  // Metadata
+  files       Json?    // Array of file objects if needed
+  replyToId   String?  // For threading
+  seen        Json?    // Map of userId -> timestamp
+  
+  room        ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([roomId, createdAt])
 }
