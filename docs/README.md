@@ -31,6 +31,16 @@ Detailed documentation of the PostgreSQL database schema:
 
 **Essential reading** for understanding data models and database interactions.
 
+### [Chat Feature](./chat-feature.md)
+**AI Chat System Architecture**
+
+Guide to the chat implementation:
+- Architecture and components
+- Database schema for chat
+- API endpoints and data flow
+- Frontend integration with vue-advanced-chat
+- AI integration details
+
 ### [Project Structure](./project-structure.md)
 **File organization and code conventions**
 
