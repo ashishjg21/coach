@@ -78,6 +78,7 @@ export default defineEventHandler(async (event) => {
           userId,
           isDuplicate: false,
           OR: [
+            { aiAnalysisStatus: 'NOT_STARTED' },
             { aiAnalysisStatus: 'PENDING' },
             { aiAnalysisStatus: null }
           ]
@@ -87,6 +88,7 @@ export default defineEventHandler(async (event) => {
         where: {
           userId,
           OR: [
+            { aiAnalysisStatus: 'NOT_STARTED' },
             { aiAnalysisStatus: 'PENDING' },
             { aiAnalysisStatus: null }
           ]
