@@ -229,7 +229,17 @@ export const analyzeNutritionTask = task({
       logger.log("Generating structured analysis with Gemini Flash");
       
       // Generate structured JSON analysis
-      const structuredAnalysis = await generateStructuredAnalysis(prompt, nutritionAnalysisSchema, 'flash');
+      const structuredAnalysis = await generateStructuredAnalysis(
+        prompt,
+        nutritionAnalysisSchema,
+        'flash',
+        {
+          userId: nutrition.userId,
+          operation: 'nutrition_analysis',
+          entityType: 'Nutrition',
+          entityId: nutrition.id
+        }
+      );
       
       // Also generate markdown for fallback/export
       const markdownAnalysis = convertStructuredToMarkdown(structuredAnalysis);

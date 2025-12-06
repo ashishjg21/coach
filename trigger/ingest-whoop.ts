@@ -4,14 +4,19 @@ import { prisma } from "../server/utils/db";
 
 export const ingestWhoopTask = task({
   id: "ingest-whoop",
-  run: async (payload: { 
-    userId: string; 
-    startDate: string; 
+  run: async (payload: {
+    userId: string;
+    startDate: string;
     endDate: string;
   }) => {
     const { userId, startDate, endDate } = payload;
     
-    logger.log("Starting Whoop ingestion", { userId, startDate, endDate });
+    logger.log("[Whoop Ingest] Starting ingestion", {
+      userId,
+      startDate,
+      endDate,
+      daysToSync: Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (24 * 60 * 60 * 1000))
+    });
     
     // Fetch integration
     const integration = await prisma.integration.findUnique({
@@ -41,7 +46,7 @@ export const ingestWhoopTask = task({
         new Date(endDate)
       );
       
-      logger.log(`Fetched ${recoveryData.length} recovery records from Whoop`);
+      logger.log(`[Whoop Ingest] Fetched ${recoveryData.length} recovery records`);
       
       // Re-fetch integration to get any updated tokens from the recovery fetch
       const updatedIntegration = await prisma.integration.findUnique({
@@ -54,11 +59,12 @@ export const ingestWhoopTask = task({
       
       // Upsert wellness data
       let upsertedCount = 0;
+      let skippedCount = 0;
+      
       for (const recovery of recoveryData) {
         // Fetch corresponding sleep data if available
         let sleepData = null;
         if (recovery.sleep_id) {
-          logger.log(`Fetching sleep data for sleep_id: ${recovery.sleep_id}`);
           sleepData = await fetchWhoopSleep(updatedIntegration, recovery.sleep_id);
         }
         
@@ -66,6 +72,7 @@ export const ingestWhoopTask = task({
         
         // Skip if recovery wasn't scored yet
         if (!wellness) {
+          skippedCount++;
           continue;
         }
         
@@ -82,7 +89,11 @@ export const ingestWhoopTask = task({
         upsertedCount++;
       }
       
-      logger.log(`Upserted ${upsertedCount} wellness entries from WHOOP`);
+      logger.log(`[Whoop Ingest] Complete - Saved: ${upsertedCount}, Skipped (unscored): ${skippedCount}`);
+      
+      if (skippedCount > 0) {
+        logger.info(`[Whoop Ingest] Note: ${skippedCount} recovery records were skipped because they haven't been scored yet. This is normal for recent/current day data.`);
+      }
       
       // Update sync status
       await prisma.integration.update({
@@ -97,12 +108,13 @@ export const ingestWhoopTask = task({
       return {
         success: true,
         count: upsertedCount,
+        skipped: skippedCount,
         userId,
         startDate,
         endDate
       };
     } catch (error) {
-      logger.error("Error ingesting Whoop data", { error });
+      logger.error("[Whoop Ingest] Error ingesting data", { error });
       
       // Update error status
       await prisma.integration.update({
