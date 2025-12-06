@@ -250,11 +250,14 @@ async function fetchWellness() {
 
 // Utility functions
 function formatDate(date: string | Date) {
+  // Parse date in UTC to avoid timezone conversion issues
+  // Database stores dates as YYYY-MM-DD (date-only, no time component)
   return new Date(date).toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
+    timeZone: 'UTC'  // Force UTC to prevent timezone shifts
   })
 }
 

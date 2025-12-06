@@ -332,6 +332,18 @@ async function fetchWellness() {
   loading.value = true
   try {
     const wellness = await $fetch('/api/wellness')
+    
+    // Debug: Log fetched wellness data
+    console.log('[Fitness] Fetched wellness data:', {
+      totalRecords: wellness.length,
+      latestDate: wellness.length > 0 ? wellness[0].date : 'none',
+      recentDates: wellness.slice(0, 5).map((w: any) => ({
+        date: w.date,
+        recoveryScore: w.recoveryScore,
+        dateType: typeof w.date
+      }))
+    })
+    
     allWellness.value = wellness
   } catch (error) {
     console.error('Error fetching wellness:', error)
@@ -349,10 +361,31 @@ async function fetchWellness() {
 const filteredWellness = computed(() => {
   let wellness = [...allWellness.value]
   
-  // Filter out future dates
-  const today = new Date()
-  today.setHours(23, 59, 59, 999) // End of today
-  wellness = wellness.filter(w => new Date(w.date) <= today)
+  // Filter out future dates - compare using UTC dates only
+  const now = new Date()
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999))
+  
+  // Debug: Log date filtering
+  console.log('[Fitness] Date filter check:', {
+    nowLocal: now.toLocaleString(),
+    todayUTC: todayUTC.toISOString(),
+    beforeFilter: wellness.length,
+    sampleDates: wellness.slice(0, 3).map(w => ({
+      date: w.date,
+      parsed: new Date(w.date).toISOString(),
+      comparison: new Date(w.date) <= todayUTC
+    }))
+  })
+  
+  wellness = wellness.filter(w => {
+    const wellnessDate = new Date(w.date)
+    return wellnessDate <= todayUTC
+  })
+  
+  console.log('[Fitness] After date filter:', {
+    count: wellness.length,
+    filteredOut: allWellness.value.length - wellness.length
+  })
   
   if (filterRecovery.value) {
     wellness = wellness.filter(w => {
@@ -423,11 +456,25 @@ const paginatedWellness = computed(() => {
 
 // Functions
 function formatDate(date: string | Date) {
-  return new Date(date).toLocaleDateString('en-US', {
+  // Parse date in UTC to avoid timezone conversion issues
+  // Database stores dates as YYYY-MM-DD (date-only, no time component)
+  const d = new Date(date)
+  const formatted = d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
+    timeZone: 'UTC'  // Force UTC to prevent timezone shifts
   })
+  
+  // Debug logging to track date conversion
+  console.log('[Fitness] Date conversion:', {
+    input: date,
+    parsed: d.toISOString(),
+    formatted,
+    inputType: typeof date
+  })
+  
+  return formatted
 }
 
 function getRecoveryBadgeClass(score: number) {
