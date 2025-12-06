@@ -396,11 +396,31 @@ Keep suggestions short (5-8 words), actionable, and directly related to what you
     historyForModel = historyForModel.slice(1)
   }
 
-  // 7. Initialize Model with Tools
+  // 7. Initialize Model with Tools and JSON Response Format
   const model = genAI.getGenerativeModel({
     model: 'gemini-2.0-flash-exp',
     systemInstruction,
     tools: [{ functionDeclarations: chatToolDeclarations }],
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "object",
+        properties: {
+          response: {
+            type: "string",
+            description: "The main response content to display to the user"
+          },
+          suggestions: {
+            type: "array",
+            description: "2-3 follow-up questions or actions the user might want to explore next",
+            items: {
+              type: "string"
+            }
+          }
+        },
+        required: ["response", "suggestions"]
+      }
+    }
   })
 
   // 8. Start Chat with History
