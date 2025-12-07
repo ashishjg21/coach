@@ -12,15 +12,11 @@ async function backfillStreams() {
   
   console.log('🔍 Finding Strava workouts missing stream data...\n')
   
-  // Find all Strava workouts with HR/power data but no streams
+  // Find all Strava workouts with no streams
   const workouts = await prisma.workout.findMany({
     where: {
       source: 'strava',
-      streams: null,
-      OR: [
-        { averageHr: { not: null } },
-        { averageWatts: { not: null } }
-      ]
+      streams: null
     },
     orderBy: {
       date: 'desc'
@@ -46,7 +42,7 @@ async function backfillStreams() {
   
   workouts.forEach((w, i) => {
     console.log(`${i + 1}. ${w.title} (${w.date.toLocaleDateString()})`)
-    console.log(`   Type: ${w.type}, HR: ${w.averageHr || 'N/A'}, Power: ${w.averageWatts || 'N/A'}`)
+    console.log(`   Type: ${w.type}${w.averageHr ? `, HR: ${w.averageHr}` : ''}${w.averageWatts ? `, Power: ${w.averageWatts}` : ''}`)
   })
   
   console.log(`\n🚀 Triggering stream ingestion for ${workouts.length} workouts...\n`)
