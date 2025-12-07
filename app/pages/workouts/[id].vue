@@ -773,10 +773,10 @@ function getScoreCircleClass(score: number) {
 
 function shouldShowPacing(workout: any) {
   if (!workout) return false
-  // Show for Strava and Intervals.icu workouts with supported activity types
-  const supportedTypes = ['Run', 'Ride', 'VirtualRide', 'Walk', 'Hike']
+  // Show timeline if workout has stream data (time-series HR, power, velocity, etc.)
+  // This includes any activity type with streams, not just runs/rides
   const supportedSources = ['strava', 'intervals']
-  return supportedSources.includes(workout.source) && workout.type && supportedTypes.includes(workout.type)
+  return supportedSources.includes(workout.source) && workout.streams
 }
 
 // Scroll to section

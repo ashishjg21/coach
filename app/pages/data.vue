@@ -525,6 +525,12 @@
                     Score
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Avg HR
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Stream Data
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     AI Analysis
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -559,6 +565,19 @@
                       {{ workout.overallScore }}/10
                     </span>
                     <span v-else class="text-gray-400">-</span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                    {{ workout.averageHr ? workout.averageHr + ' bpm' : '-' }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <span v-if="workout.streams?.id || workout.streams?.length" class="text-green-600 dark:text-green-400 flex items-center gap-1">
+                      <UIcon name="i-heroicons-check-circle" class="w-4 h-4" />
+                      <span>Yes</span>
+                    </span>
+                    <span v-else class="text-gray-400 flex items-center gap-1">
+                      <UIcon name="i-heroicons-x-circle" class="w-4 h-4" />
+                      <span>No</span>
+                    </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <span :class="getAnalysisStatusBadgeClass(workout.aiAnalysisStatus)">
