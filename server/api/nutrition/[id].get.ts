@@ -40,5 +40,9 @@ export default defineEventHandler(async (event) => {
     })
   }
   
-  return nutrition
+  // Format date to avoid timezone issues
+  return {
+    ...nutrition,
+    date: nutrition.date.toISOString().split('T')[0] // YYYY-MM-DD format
+  }
 })

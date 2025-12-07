@@ -24,10 +24,16 @@ export default defineEventHandler(async (event) => {
       take: limit
     })
     
+    // Format dates to avoid timezone issues
+    const formattedNutrition = nutrition.map(n => ({
+      ...n,
+      date: n.date.toISOString().split('T')[0] // YYYY-MM-DD format
+    }))
+    
     return {
       success: true,
-      count: nutrition.length,
-      nutrition
+      count: formattedNutrition.length,
+      nutrition: formattedNutrition
     }
   } catch (error) {
     console.error('Error fetching nutrition data:', error)

@@ -143,6 +143,58 @@ export default defineEventHandler(async (event) => {
     }
   })
 
+  // Fetch planned workouts (next 14 days)
+  const fourteenDaysAhead = new Date()
+  fourteenDaysAhead.setDate(fourteenDaysAhead.getDate() + 14)
+  
+  const plannedWorkouts = await prisma.plannedWorkout.findMany({
+    where: {
+      userId,
+      date: {
+        gte: new Date(),
+        lte: fourteenDaysAhead
+      },
+      completed: false
+    },
+    orderBy: { date: 'asc' },
+    take: 20,
+    select: {
+      id: true,
+      date: true,
+      title: true,
+      description: true,
+      type: true,
+      durationSec: true,
+      tss: true,
+      syncStatus: true
+    }
+  })
+
+  // Fetch training availability
+  const trainingAvailability = await prisma.trainingAvailability.findMany({
+    where: { userId },
+    orderBy: { dayOfWeek: 'asc' }
+  })
+
+  // Fetch current training plan
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const currentWeekStart = new Date(today)
+  const day = currentWeekStart.getDay()
+  const diff = currentWeekStart.getDate() - day + (day === 0 ? -6 : 1)
+  currentWeekStart.setDate(diff)
+  
+  const currentPlan = await prisma.weeklyTrainingPlan.findFirst({
+    where: {
+      userId,
+      weekStartDate: { lte: currentWeekStart }
+    },
+    orderBy: [
+      { status: 'asc' },
+      { weekStartDate: 'desc' }
+    ]
+  })
+
   // 5. Build Comprehensive Athlete Context
   let athleteContext = '\n\n## Athlete Profile\n'
   
@@ -265,6 +317,80 @@ export default defineEventHandler(async (event) => {
     athleteContext += '\n### Wellness & Recovery\nNo wellness data in the last 7 days\n'
   }
 
+  // Training Plan Context
+  athleteContext += '\n\n## Training Plan & Schedule\n'
+  
+  // Current Training Plan
+  if (currentPlan) {
+    athleteContext += `\n### Current Training Plan\n`
+    athleteContext += `- **Week**: ${currentPlan.weekStartDate.toLocaleDateString()} - ${currentPlan.weekEndDate.toLocaleDateString()}\n`
+    athleteContext += `- **Status**: ${currentPlan.status}\n`
+    if (currentPlan.totalTSS) athleteContext += `- **Weekly TSS Target**: ${Math.round(currentPlan.totalTSS)}\n`
+    if (currentPlan.workoutCount) athleteContext += `- **Workouts Planned**: ${currentPlan.workoutCount}\n`
+    if (currentPlan.totalDuration) athleteContext += `- **Total Duration**: ${Math.round(currentPlan.totalDuration / 60)} minutes\n`
+    if (currentPlan.notes) athleteContext += `- **Notes**: ${currentPlan.notes}\n`
+    if (currentPlan.createdAt) {
+      athleteContext += `\n*Plan generated: ${new Date(currentPlan.createdAt).toLocaleDateString()}*\n`
+    }
+  } else {
+    athleteContext += '\n### Current Training Plan\nNo active training plan\n'
+  }
+  
+  // Training Availability
+  if (trainingAvailability.length > 0) {
+    athleteContext += `\n### Weekly Training Availability\n`
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    for (const avail of trainingAvailability) {
+      const dayName = dayNames[avail.dayOfWeek]
+      athleteContext += `- **${dayName}**: `
+      const slots: string[] = []
+      if (avail.morning) slots.push('Morning')
+      if (avail.afternoon) slots.push('Afternoon')
+      if (avail.evening) slots.push('Evening')
+      
+      if (slots.length > 0) {
+        athleteContext += `Available (${slots.join(', ')})`
+        const constraints: string[] = []
+        if (avail.indoorOnly) constraints.push('indoor only')
+        if (avail.outdoorOnly) constraints.push('outdoor only')
+        if (avail.gymAccess) constraints.push('gym access')
+        if (avail.bikeAccess) constraints.push('bike access')
+        if (constraints.length > 0) {
+          athleteContext += ` - ${constraints.join(', ')}`
+        }
+      } else {
+        athleteContext += `Not available`
+      }
+      athleteContext += '\n'
+    }
+  } else {
+    athleteContext += '\n### Weekly Training Availability\nNo availability preferences set\n'
+  }
+  
+  // Planned Workouts (Next 14 Days)
+  if (plannedWorkouts.length > 0) {
+    athleteContext += `\n### Upcoming Planned Workouts (Next 14 Days)\n`
+    athleteContext += `*Total: ${plannedWorkouts.length} workouts scheduled*\n\n`
+    for (const workout of plannedWorkouts) {
+      const syncIcon = workout.syncStatus === 'SYNCED' ? '✓' :
+                      workout.syncStatus === 'PENDING' ? '⏳' :
+                      workout.syncStatus === 'FAILED' ? '⚠' : '○'
+      athleteContext += `- ${syncIcon} **${workout.date.toLocaleDateString()}**: ${workout.title || workout.type || 'Workout'}\n`
+      if (workout.description) athleteContext += `  - ${workout.description}\n`
+      const details: string[] = []
+      if (workout.type) details.push(`Type: ${workout.type}`)
+      if (workout.durationSec) details.push(`Duration: ${Math.round(workout.durationSec / 60)} min`)
+      if (workout.tss) details.push(`TSS: ${Math.round(workout.tss)}`)
+      if (details.length > 0) {
+        athleteContext += `  - ${details.join(' | ')}\n`
+      }
+      athleteContext += `  - ID: ${workout.id}\n`
+    }
+    athleteContext += `\n*Legend: ✓ Synced to Intervals.icu | ⏳ Sync pending | ⚠ Sync failed | ○ Local only*\n`
+  } else {
+    athleteContext += '\n### Upcoming Planned Workouts\nNo workouts currently scheduled for the next 14 days\n'
+  }
+
   // 5. Build System Instruction with Current Time Context
   const now = new Date()
   const userTimeZone = 'America/New_York' // TODO: Get from user preferences
@@ -285,12 +411,63 @@ export default defineEventHandler(async (event) => {
   else if (hourOfDay >= 17 && hourOfDay < 21) timeOfDay = 'evening'
   else if (hourOfDay >= 21 || hourOfDay < 5) timeOfDay = 'late night'
   
+  // Calculate upcoming days for relative date understanding
+  const getNextDays = (count: number) => {
+    const days = [];
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    
+    for (let i = 0; i < count; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const dayName = date.toLocaleDateString('en-US', {
+        timeZone: userTimeZone,
+        weekday: 'long'
+      });
+      const dateStr = date.toLocaleDateString('en-US', {
+        timeZone: userTimeZone,
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      days.push({ dayName, dateStr, date: date.toISOString().split('T')[0] });
+    }
+    return days;
+  };
+  
+  const nextSevenDays = getNextDays(7);
+  const dateReference = nextSevenDays.map((d, i) => {
+    if (i === 0) return `- **Today (${d.dayName})**: ${d.dateStr}`;
+    if (i === 1) return `- **Tomorrow (${d.dayName})**: ${d.dateStr}`;
+    return `- **${d.dayName}**: ${d.dateStr}`;
+  }).join('\n');
+  
   const systemInstruction = `You are Coach Watts, a spirited, cool/edgy cycling coach with a gritty, high-energy personality.
 You are the ultimate riding buddy who happens to be an expert in physiology. You believe in "Ride Hard, Recover Harder."
 
 ## Current Context
+
+### Date & Time Reference
 **Current Time**: ${userTime} (${timeOfDay})
 
+**Today's Date**: ${now.toLocaleDateString('en-US', {
+  timeZone: userTimeZone,
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric'
+})}
+
+**Upcoming Days**:
+${dateReference}
+
+**IMPORTANT - Understanding Date References**:
+When users say "next Monday", "this weekend", "tomorrow", etc., refer to the date reference above.
+- "Tomorrow" = ${nextSevenDays[1].dayName}, ${nextSevenDays[1].dateStr}
+- "This weekend" = Saturday & Sunday in the list above
+- Use the exact dates (YYYY-MM-DD format) when creating or modifying workouts
+
+### Time of Day Context
 **IMPORTANT**: You are aware of the current time. Use this context when analyzing data:
 - **Morning (5am-12pm)**: It's normal to only have breakfast logged, no lunch/dinner yet
 - **Afternoon (12pm-5pm)**: Breakfast and lunch should be logged, dinner is pending
@@ -361,6 +538,52 @@ Look at the "Recent Activity (Last 7 Days)" section - it contains:
 Don't waste time making redundant tool calls. Be smart and efficient.
 
 Remember: You're the coach analyzing the provided data. The tools are for specific lookups, not your default behavior!
+
+## Training Plan Management
+
+**CRITICAL: You MUST use tools to make changes to the training plan!**
+
+The "Training Plan & Schedule" section above shows:
+- **Current Training Plan**: Active weekly plan with goals and targets
+- **Weekly Training Availability**: When the athlete can train (days/times/constraints)
+- **Upcoming Planned Workouts**: Next 14 days of scheduled workouts with sync status
+
+**TOOL USAGE RULES - READ CAREFULLY:**
+
+**1. VIEWING DATA:** The schedule is already in your context - just reference it! Do NOT use tools to view data you already have.
+
+**2. MAKING CHANGES (CRITICAL):**
+   - **ADD workout** → You MUST call \`create_planned_workout\` tool - NEVER just describe adding it!
+   - **MODIFY workout** → You MUST call \`update_planned_workout\` tool - NEVER just describe updating it!
+   - **DELETE workout** → You MUST call \`delete_planned_workout\` tool - NEVER just describe removing it!
+   - **CHANGE availability** → You MUST call \`update_training_availability\` tool
+   - **GENERATE plan** → You MUST call \`generate_training_plan\` tool (requires user confirmation!)
+
+**DO NOT:**
+- ❌ Say "I'm adding it now" without calling the tool
+- ❌ Describe what you would do - DO IT by calling the tool
+- ❌ List workout details as if you created it - actually CREATE it with the tool
+- ❌ Say "Consider it DONE" unless the tool confirms success
+
+**DO:**
+- ✅ Call the appropriate tool immediately when user requests a change
+- ✅ Wait for tool confirmation before saying it's done
+- ✅ Use exact workout types: Ride, Run, Swim, Walk, Hike, **Ski**, Gym, Yoga, Row, Other
+- ✅ For skiing → use type "Ski" NOT "Other"!
+
+**Sync Status Indicators:**
+- ✓ = Synced to Intervals.icu
+- ⏳ = Sync pending (will auto-retry)
+- ⚠ = Sync failed (may need attention)
+- ○ = Local only (not connected to Intervals)
+
+**Example Correct Behavior:**
+User: "Add a 2-hour ski session tomorrow"
+You: [Call create_planned_workout tool with type="Ski"]
+Tool: [Returns success confirmation]
+You: "Done! Added your 2-hour ski session for tomorrow. Ready to shred! ⛷️"
+
+**Remember:** Changes are saved locally immediately and synced to Intervals.icu automatically. If sync fails, it will retry in the background.
 
 ${athleteContext}
 

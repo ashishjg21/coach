@@ -22,6 +22,9 @@ export default defineEventHandler(async (event) => {
   const workout = await prisma.workout.findUnique({
     where: {
       id
+    },
+    include: {
+      streams: true
     }
   })
   

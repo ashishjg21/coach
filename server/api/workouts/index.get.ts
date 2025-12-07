@@ -31,7 +31,14 @@ export default defineEventHandler(async (event) => {
   const workouts = await prisma.workout.findMany({
     where,
     orderBy: { date: 'desc' },
-    ...(limit && { take: limit })
+    ...(limit && { take: limit }),
+    include: {
+      streams: {
+        select: {
+          id: true
+        }
+      }
+    }
   })
   
   return workouts
