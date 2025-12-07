@@ -177,8 +177,14 @@ async function retryWithBackoff<T>(
         if (typeof result === 'object' && result !== null) {
           const anyResult = result as any
           
-          // For generateContent responses
-          if (anyResult.usageMetadata) {
+          // For generateContent responses - check response.usageMetadata
+          if (anyResult.response?.usageMetadata) {
+            promptTokens = anyResult.response.usageMetadata.promptTokenCount
+            completionTokens = anyResult.response.usageMetadata.candidatesTokenCount
+            totalTokens = anyResult.response.usageMetadata.totalTokenCount
+          }
+          // Direct usageMetadata (for some response types)
+          else if (anyResult.usageMetadata) {
             promptTokens = anyResult.usageMetadata.promptTokenCount
             completionTokens = anyResult.usageMetadata.candidatesTokenCount
             totalTokens = anyResult.usageMetadata.totalTokenCount
@@ -190,6 +196,12 @@ async function retryWithBackoff<T>(
           } else if (anyResult.text && typeof anyResult.text === 'function') {
             try {
               responseText = anyResult.text()
+            } catch (e) {
+              // Ignore errors getting text
+            }
+          } else if (anyResult.response?.text && typeof anyResult.response.text === 'function') {
+            try {
+              responseText = anyResult.response.text()
             } catch (e) {
               // Ignore errors getting text
             }
