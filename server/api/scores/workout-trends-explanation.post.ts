@@ -143,7 +143,17 @@ Provide a structured analysis focusing on patterns and actionable insights.`
   }
 
   try {
-    const analysis = await generateStructuredAnalysis<TrendAnalysis>(prompt, schema, 'flash')
+    const analysis = await generateStructuredAnalysis<TrendAnalysis>(
+      prompt,
+      schema,
+      'flash',
+      {
+        userId: user.id,
+        operation: 'workout_trends_explanation',
+        entityType: 'Workout',
+        entityId: undefined // This is a trend analysis, not a specific entity
+      }
+    )
     
     return {
       analysis,

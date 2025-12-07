@@ -144,7 +144,17 @@ Provide structured analysis focusing on patterns and actionable nutrition improv
   }
 
   try {
-    const analysis = await generateStructuredAnalysis<TrendAnalysis>(prompt, schema, 'flash')
+    const analysis = await generateStructuredAnalysis<TrendAnalysis>(
+      prompt,
+      schema,
+      'flash',
+      {
+        userId: user.id,
+        operation: 'nutrition_trends_explanation',
+        entityType: 'Nutrition',
+        entityId: undefined // This is a trend analysis, not a specific entity
+      }
+    )
     
     return {
       analysis,

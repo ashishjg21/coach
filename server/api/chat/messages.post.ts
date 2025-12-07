@@ -718,10 +718,6 @@ OR
   if (messageCount === 2) {
     // This is the first AI response - generate a concise title
     try {
-      const titleModel = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash-exp',
-      })
-      
       const titlePrompt = `Based on this conversation, generate a very concise, descriptive title (max 6 words). Just return the title, nothing else.
 
 User: ${content}
@@ -729,8 +725,18 @@ AI: ${aiResponseText.substring(0, 500)}
 
 Title:`
 
-      const titleResult = await titleModel.generateContent(titlePrompt)
-      let roomTitle = titleResult.response.text().trim()
+      const { generateCoachAnalysis } = await import('../../utils/gemini')
+      let roomTitle = await generateCoachAnalysis(
+        titlePrompt,
+        'flash',
+        {
+          userId,
+          operation: 'chat_title_generation',
+          entityType: 'ChatRoom',
+          entityId: roomId
+        }
+      )
+      roomTitle = roomTitle.trim()
       
       // Clean up the title - remove quotes, limit length
       roomTitle = roomTitle.replace(/^["']|["']$/g, '').substring(0, 60)
