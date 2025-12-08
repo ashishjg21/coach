@@ -229,11 +229,15 @@ model Workout {
   duplicateOf     String?  // ID of the canonical workout this is a duplicate of
   completenessScore Int?   // Score used to determine which workout is the "best" version
   
+  // Planned Workout Link (reverse relationship)
+  plannedWorkoutId String? // ID of the planned workout this workout completed
+  
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   reports         ReportWorkout[]
   duplicates      Workout[] @relation("WorkoutDuplicates") // Workouts that are duplicates of this one
   canonicalWorkout Workout? @relation("WorkoutDuplicates", fields: [duplicateOf], references: [id], onDelete: SetNull)
   streams         WorkoutStream? // Time-series pacing data
+  plannedWorkout  PlannedWorkout? @relation(fields: [plannedWorkoutId], references: [id], onDelete: SetNull)
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -297,7 +301,6 @@ model PlannedWorkout {
   
   // Status
   completed       Boolean? @default(false)
-  workoutId       String?  // Link to actual workout if completed
   
   // Sync Management
   syncStatus      String?  @default("SYNCED") // SYNCED, PENDING, FAILED, LOCAL_ONLY
@@ -310,6 +313,7 @@ model PlannedWorkout {
   
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   recommendations ActivityRecommendation[]
+  completedWorkouts Workout[] // Workouts that completed this planned workout
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
