@@ -602,7 +602,6 @@ export function normalizeIntervalsPlannedWorkout(event: IntervalsPlannedWorkout,
     tss: event.tss || null,
     workIntensity: event.work || null,
     completed: false,
-    workoutId: null,
     rawJson: event
   }
 }

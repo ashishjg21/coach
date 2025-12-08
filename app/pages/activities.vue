@@ -60,7 +60,11 @@
             <span>Completed</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <div class="w-2 h-2 rounded-full bg-gray-400"></div>
+            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+            <span>From Plan</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <div class="w-2 h-2 rounded-full bg-amber-500"></div>
             <span>Planned</span>
           </div>
           <div class="flex items-center gap-1.5">
@@ -148,57 +152,127 @@
       </div>
 
       <!-- List View -->
-      <div v-else class="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden h-full flex flex-col">
-        <!-- Debug: Activities count -->
-        <!-- <div class="p-2 text-xs text-gray-500 border-b dark:border-gray-800">
-          Showing {{ sortedActivities.length }} activities
-        </div> -->
-
+      <div v-else class="bg-white dark:bg-gray-900 rounded-lg shadow overflow-x-auto h-full flex flex-col">
+        <div v-if="sortedActivities.length === 0 && status !== 'pending'" class="flex items-center justify-center h-full text-gray-500">
+          No activities found for this month
+        </div>
+        
         <UTable
-          :rows="sortedActivities"
+          v-else
+          :data="sortedActivities"
           :columns="listColumns"
-          @select="openActivity"
           :loading="status === 'pending'"
-          class="flex-1"
+          class="flex-1 w-full"
+          @select="openActivity"
           :ui="{
-            th: { base: 'text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky top-0 bg-white dark:bg-gray-900 z-10' },
-            td: { base: 'text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap' }
+            root: 'w-full',
+            base: 'w-full table-auto',
+            th: 'text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider sticky top-0 bg-white dark:bg-gray-900 z-10 px-4 py-3',
+            td: 'text-sm text-gray-900 dark:text-gray-100 cursor-pointer px-4 py-3',
+            tbody: 'divide-y divide-gray-200 dark:divide-gray-800'
           }"
         >
-          <template #type-data="{ row }">
-            <UIcon :name="getActivityIcon(row.type)" class="w-4 h-4" />
+          <template #type-cell="{ row }">
+            <div class="flex items-center gap-2">
+              <UIcon :name="getActivityIcon(row.original.type)" class="w-4 h-4 flex-shrink-0" />
+              <span class="hidden sm:inline">{{ row.original.type }}</span>
+            </div>
           </template>
           
-          <template #date-data="{ row }">
-            {{ formatDateSafe(row.date) }}
+          <template #date-cell="{ row }">
+            <div class="whitespace-nowrap">
+              {{ formatDateForList(row.original.date) }}
+            </div>
           </template>
 
-          <template #duration-data="{ row }">
-            {{ formatDurationDetailed(row.duration || row.plannedDuration || 0) }}
+          <template #title-cell="{ row }">
+            <div class="max-w-xs truncate" :title="row.original.title">
+              {{ row.original.title }}
+            </div>
           </template>
 
-          <template #distance-data="{ row }">
-            <span v-if="row.distance || row.plannedDistance">
-              {{ ((row.distance || row.plannedDistance) / 1000).toFixed(2) }} km
+          <template #duration-cell="{ row }">
+            <span v-if="row.original.duration || row.original.plannedDuration">
+              {{ formatDurationCompact(row.original.duration || row.original.plannedDuration || 0) }}
             </span>
-            <span v-else>-</span>
+            <span v-else class="text-gray-400">-</span>
           </template>
 
-          <template #tss-data="{ row }">
-             <span v-if="row.tss || row.plannedTss">
-              {{ Math.round(row.tss || row.plannedTss) }}
-             </span>
-             <span v-else>-</span>
+          <template #distance-cell="{ row }">
+            <span v-if="row.original.distance || row.original.plannedDistance" class="whitespace-nowrap">
+              {{ ((row.original.distance || row.original.plannedDistance) / 1000).toFixed(1) }} km
+            </span>
+            <span v-else class="text-gray-400">-</span>
+          </template>
+
+          <template #intensity-cell="{ row }">
+            <span v-if="row.original.intensity != null">
+              {{ (row.original.intensity * 100).toFixed(0) }}%
+            </span>
+            <span v-else class="text-gray-400">-</span>
+          </template>
+
+          <template #tss-cell="{ row }">
+            <span v-if="row.original.tss || row.original.plannedTss">
+              {{ Math.round(row.original.tss || row.original.plannedTss) }}
+            </span>
+            <span v-else class="text-gray-400">-</span>
+          </template>
+
+          <template #rpe-cell="{ row }">
+            <span v-if="row.original.rpe">
+              {{ row.original.rpe }}/10
+            </span>
+            <span v-else class="text-gray-400">-</span>
+          </template>
+
+          <template #source-cell="{ row }">
+            <UBadge
+              :color="row.original.source === 'completed' ? 'green' : 'gray'"
+              variant="subtle"
+              size="xs"
+            >
+              {{ row.original.source === 'completed' ? 'Completed' : 'Planned' }}
+            </UBadge>
+          </template>
+
+          <template #status-cell="{ row }">
+            <UBadge
+              :color="row.original.status === 'completed' ? 'green' : row.original.status === 'missed' ? 'red' : 'gray'"
+              variant="subtle"
+              size="xs"
+            >
+              {{ row.original.status }}
+            </UBadge>
           </template>
         </UTable>
       </div>
     </div>
+    <!-- Planned Workout Modal -->
+    <PlannedWorkoutModal
+      v-model="showPlannedWorkoutModal"
+      :planned-workout="selectedPlannedWorkout"
+      @completed="handlePlannedWorkoutCompleted"
+      @deleted="handlePlannedWorkoutDeleted"
+    />
+
+    <!-- Workout Quick View Modal -->
+    <WorkoutQuickViewModal
+      v-model="showWorkoutModal"
+      :workout="selectedWorkout"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, format, addMonths, subMonths, isSameMonth, getISOWeek } from 'date-fns'
 import type { CalendarActivity } from '~/types/calendar'
+
+// Modal state
+const showPlannedWorkoutModal = ref(false)
+const selectedPlannedWorkout = ref<any>(null)
+const showWorkoutModal = ref(false)
+const selectedWorkout = ref<any>(null)
 
 const currentDate = ref(new Date())
 const viewMode = ref<'calendar' | 'list'>('calendar')
@@ -289,13 +363,46 @@ function formatDistance(meters: number): string {
   return `${Math.round(meters / 1000)}k`
 }
 
-function openActivity(activity: CalendarActivity) {
+async function openActivity(activity: CalendarActivity) {
   if (activity.source === 'completed') {
-    navigateTo(`/workouts/${activity.id}`)
+    // Open quick view modal for completed workouts
+    await openWorkoutModal(activity.id)
   } else {
-    // Navigate to plan editor or modal?
-    console.log('Open plan:', activity.id)
+    // Open planned workout modal
+    await openPlannedWorkoutModal(activity.id)
   }
+}
+
+async function openPlannedWorkoutModal(plannedWorkoutId: string) {
+  try {
+    const plannedWorkout = await $fetch(`/api/planned-workouts/${plannedWorkoutId}`)
+    selectedPlannedWorkout.value = plannedWorkout
+    showPlannedWorkoutModal.value = true
+  } catch (error) {
+    console.error('Error fetching planned workout:', error)
+  }
+}
+
+async function openWorkoutModal(workoutId: string) {
+  try {
+    const workout = await $fetch(`/api/workouts/${workoutId}`)
+    selectedWorkout.value = workout
+    showWorkoutModal.value = true
+  } catch (error) {
+    console.error('Error fetching workout:', error)
+  }
+}
+
+function handlePlannedWorkoutCompleted() {
+  showPlannedWorkoutModal.value = false
+  selectedPlannedWorkout.value = null
+  refresh() // Refresh the activities list
+}
+
+function handlePlannedWorkoutDeleted() {
+  showPlannedWorkoutModal.value = false
+  selectedPlannedWorkout.value = null
+  refresh() // Refresh the activities list
 }
 
 // List View Helpers
@@ -305,13 +412,26 @@ const sortedActivities = computed(() => {
 })
 
 const listColumns = [
-  { key: 'type', label: 'Type' },
-  { key: 'date', label: 'Date' },
-  { key: 'title', label: 'Name' },
-  { key: 'duration', label: 'Time' },
-  { key: 'distance', label: 'Distance' },
-  { key: 'tss', label: 'Load' }
-].map(c => ({ ...c, id: c.key }))
+  { accessorKey: 'type', header: 'Type', id: 'type' },
+  { accessorKey: 'date', header: 'Date', id: 'date' },
+  { accessorKey: 'title', header: 'Name', id: 'title' },
+  { accessorKey: 'duration', header: 'Duration', id: 'duration' },
+  { accessorKey: 'distance', header: 'Distance', id: 'distance' },
+  { accessorKey: 'intensity', header: 'Intensity', id: 'intensity' },
+  { accessorKey: 'tss', header: 'Load', id: 'tss' },
+  { accessorKey: 'rpe', header: 'RPE', id: 'rpe' },
+  { accessorKey: 'source', header: 'Source', id: 'source' },
+  { accessorKey: 'status', header: 'Status', id: 'status' }
+]
+
+function formatDateForList(dateStr: string) {
+  try {
+    const date = new Date(dateStr)
+    return format(date, 'MMM dd, yyyy HH:mm')
+  } catch {
+    return dateStr
+  }
+}
 
 function formatDateSafe(dateStr: string) {
   try {
@@ -319,6 +439,16 @@ function formatDateSafe(dateStr: string) {
   } catch {
     return dateStr
   }
+}
+
+function formatDurationCompact(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  
+  if (h > 0) {
+    return `${h}h ${m}m`
+  }
+  return `${m}m`
 }
 
 function getActivityIcon(type: string) {
