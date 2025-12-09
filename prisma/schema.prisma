@@ -44,6 +44,10 @@ model User {
   country       String?
   timezone      String?
   
+  // Custom Zones
+  hrZones       Json?     // Array of { name, min, max }
+  powerZones    Json?     // Array of { name, min, max }
+
   // Athlete Profile Scores (1-10 scale, updated periodically from profile generation)
   currentFitnessScore       Int?      // Current overall fitness level
   recoveryCapacityScore     Int?      // Ability to recover from training
