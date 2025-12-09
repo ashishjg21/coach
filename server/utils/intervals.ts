@@ -400,6 +400,8 @@ export async function fetchIntervalsAthleteProfile(integration: Integration) {
   let ftp = null
   let lthr = null
   let maxHR = null
+  let hrZones = null
+  let powerZones = null
   
   if (athlete.icu_type_settings && athlete.icu_type_settings.length > 0) {
     // Look for cycling/ride FTP first
@@ -410,6 +412,33 @@ export async function fetchIntervalsAthleteProfile(integration: Integration) {
       ftp = cyclingSettings.ftp
       lthr = cyclingSettings.lthr
       maxHR = cyclingSettings.max_hr
+      
+      // Extract Zones
+      if (cyclingSettings.training_zones) {
+        // HR Zones
+        const hrZ = cyclingSettings.training_zones.find((z: any) => z.type === 'HEART_RATE')
+        if (hrZ && hrZ.zones) {
+          // Intervals zones are usually % of LTHR
+          // We need absolute values for our UI
+          const threshold = lthr || 1
+          hrZones = hrZ.zones.map((z: any) => ({
+            name: z.id || z.name, // e.g. "Z1"
+            min: Math.round((z.min / 100) * threshold),
+            max: z.max ? Math.round((z.max / 100) * threshold) : (maxHR || 200)
+          }))
+        }
+        
+        // Power Zones
+        const powerZ = cyclingSettings.training_zones.find((z: any) => z.type === 'POWER')
+        if (powerZ && powerZ.zones) {
+          const threshold = ftp || 1
+          powerZones = powerZ.zones.map((z: any) => ({
+            name: z.id || z.name, // e.g. "Z1"
+            min: Math.round((z.min / 100) * threshold),
+            max: z.max ? Math.round((z.max / 100) * threshold) : 999
+          }))
+        }
+      }
     } else {
       // Use first type setting with FTP
       const firstWithFtp = athlete.icu_type_settings.find((s: any) => s.ftp)
@@ -463,6 +492,8 @@ export async function fetchIntervalsAthleteProfile(integration: Integration) {
     ftp,
     lthr,
     maxHR,
+    hrZones,
+    powerZones,
     
     // Recent wellness
     recentHRV: wellnessData.length > 0 ? wellnessData[0].hrv : null,
