@@ -94,17 +94,44 @@
                   </div>
                   <div>
                     <p class="text-xs text-muted">Resting HR</p>
-                    <p class="font-semibold">{{ profile.restingHR ? `${profile.restingHR} bpm` : 'N/A' }}</p>
+                    <p class="font-semibold">{{ profile.restingHR ? `${profile.restingHR}` : 'N/A' }}</p>
                   </div>
                   <div>
                     <p class="text-xs text-muted">Recent HRV</p>
-                    <p class="font-semibold">{{ profile.recentHRV ? `${Math.round(profile.recentHRV)} ms` : 'N/A' }}</p>
+                    <p class="font-semibold">{{ profile.recentHRV ? `${Math.round(profile.recentHRV)}` : 'N/A' }}</p>
                   </div>
                   <div>
                     <p class="text-xs text-muted">7d HRV avg</p>
-                    <p class="font-semibold">{{ profile.avgRecentHRV ? `${Math.round(profile.avgRecentHRV)} ms` : 'N/A' }}</p>
+                    <p class="font-semibold">{{ profile.avgRecentHRV ? `${Math.round(profile.avgRecentHRV)}` : 'N/A' }}</p>
                   </div>
                 </div>
+                
+                <!-- Wellness Section - Clickable -->
+                <button
+                  v-if="profile.recentHRV || profile.restingHR || profile.recentSleep || profile.recentRecoveryScore"
+                  @click="openWellnessModal"
+                  class="mt-3 pt-3 border-t w-full text-left hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded-lg transition-colors"
+                >
+                  <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs font-medium text-indigo-600 dark:text-indigo-400">Latest Wellness</p>
+                    <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400" />
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div v-if="profile.recentSleep" class="flex items-center gap-1">
+                      <UIcon name="i-heroicons-moon" class="w-3 h-3 text-indigo-500" />
+                      <span class="text-muted">Sleep:</span>
+                      <span class="font-medium">{{ profile.recentSleep.toFixed(1) }}h</span>
+                    </div>
+                    <div v-if="profile.recentRecoveryScore" class="flex items-center gap-1">
+                      <UIcon name="i-heroicons-bolt" class="w-3 h-3 text-indigo-500" />
+                      <span class="text-muted">Recovery:</span>
+                      <span class="font-medium">{{ profile.recentRecoveryScore }}/100</span>
+                    </div>
+                  </div>
+                  <p v-if="profile.latestWellnessDate" class="text-[10px] text-muted mt-1">
+                    Updated {{ formatWellnessDate(profile.latestWellnessDate) }}
+                  </p>
+                </button>
               </div>
               
               <template #footer>
@@ -464,6 +491,12 @@
 
   </UDashboardPanel>
   
+  <!-- Wellness Modal -->
+  <WellnessModal
+    v-model="showWellnessModal"
+    :date="wellnessModalDate"
+  />
+
   <!-- Recommendation Modal -->
   <UModal v-model:open="showRecommendationModal" title="Today's Training Recommendation">
     <template #body>
@@ -579,6 +612,10 @@ const loadingRecommendation = ref(false)
 const generatingRecommendation = ref(false)
 const generatingProfile = ref(false)
 const currentRecommendationId = ref<string | null>(null) // Track the recommendation being generated
+
+// Wellness modal state
+const showWellnessModal = ref(false)
+const wellnessModalDate = ref<Date | null>(null)
 
 // Score detail modal state
 const showScoreModal = ref(false)
@@ -857,6 +894,27 @@ function formatActivityDate(date: string | Date): string {
   } else {
     return activityDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
+}
+
+// Wellness modal handlers
+function openWellnessModal() {
+  // Use today's date or the latest wellness date
+  wellnessModalDate.value = profile.value?.latestWellnessDate
+    ? new Date(profile.value.latestWellnessDate)
+    : new Date()
+  showWellnessModal.value = true
+}
+
+function formatWellnessDate(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 0) return 'today'
+  if (diffDays === 1) return 'yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 // Helper to get score color
