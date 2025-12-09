@@ -52,7 +52,9 @@ export default defineEventHandler(async (event) => {
         restingHr: true,
         hrv: true,
         weight: true,
-        readiness: true
+        readiness: true,
+        sleepHours: true,
+        recoveryScore: true
       }
     })
     
@@ -81,6 +83,11 @@ export default defineEventHandler(async (event) => {
     const recentRestingHR = mostRecent?.restingHr ?? recentWellness.find(w => w.restingHr != null)?.restingHr ?? null
     const recentHRV = mostRecent?.hrv ?? recentWellness.find(w => w.hrv != null)?.hrv ?? null
     const recentWeight = mostRecent?.weight ?? user.weight
+    
+    // Get additional wellness metrics from most recent entry
+    const latestWellnessDate = mostRecent?.date ?? null
+    const recentSleep = mostRecent?.sleepHours ?? recentWellness.find(w => w.sleepHours != null)?.sleepHours ?? null
+    const recentRecoveryScore = mostRecent?.recoveryScore ?? recentWellness.find(w => w.recoveryScore != null)?.recoveryScore ?? null
     
     // Check if user has any reports
     const reportCount = await prisma.report.count({
@@ -168,7 +175,10 @@ export default defineEventHandler(async (event) => {
         restingHR: recentRestingHR,
         maxHR: user.maxHr,
         recentHRV,
-        avgRecentHRV: avgRecentHRV ? Math.round(avgRecentHRV * 10) / 10 : null
+        avgRecentHRV: avgRecentHRV ? Math.round(avgRecentHRV * 10) / 10 : null,
+        recentSleep,
+        recentRecoveryScore,
+        latestWellnessDate: latestWellnessDate?.toISOString() ?? null
       }
     }
   } catch (error) {
