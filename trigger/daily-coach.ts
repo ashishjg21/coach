@@ -40,7 +40,7 @@ export const dailyCoachTask = task({
     const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     
     // Fetch data
-    const [yesterdayWorkout, todayMetric, user, athleteProfile] = await Promise.all([
+    const [yesterdayWorkout, todayMetric, user, athleteProfile, activeGoals] = await Promise.all([
       prisma.workout.findFirst({
         where: {
           userId,
@@ -71,13 +71,31 @@ export const dailyCoachTask = task({
         },
         orderBy: { createdAt: 'desc' },
         select: { analysisJson: true, createdAt: true }
+      }),
+      
+      // Active goals
+      prisma.goal.findMany({
+        where: {
+          userId,
+          status: 'ACTIVE'
+        },
+        orderBy: { priority: 'desc' },
+        select: {
+          title: true,
+          type: true,
+          description: true,
+          targetDate: true,
+          eventDate: true,
+          priority: true
+        }
       })
     ]);
     
     logger.log("Data fetched", {
       hasYesterdayWorkout: !!yesterdayWorkout,
       hasTodayMetric: !!todayMetric,
-      hasAthleteProfile: !!athleteProfile
+      hasAthleteProfile: !!athleteProfile,
+      activeGoals: activeGoals.length
     });
     
     // Build athlete profile context
@@ -99,6 +117,25 @@ USER INFO:
 - FTP: ${user?.ftp || 'Unknown'} watts
 - Weight: ${user?.weight || 'Unknown'} kg
 - Max HR: ${user?.maxHr || 'Unknown'} bpm
+`;
+    }
+    
+    // Add goals context
+    if (activeGoals.length > 0) {
+      athleteContext += `
+      
+CURRENT GOALS:
+${activeGoals.map(g => {
+  const daysToTarget = g.targetDate ? Math.ceil((new Date(g.targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+  const daysToEvent = g.eventDate ? Math.ceil((new Date(g.eventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+  
+  let goalLine = `- [${g.priority}] ${g.title} (${g.type})`;
+  if (g.description) goalLine += ` - ${g.description}`;
+  if (daysToTarget) goalLine += ` | ${daysToTarget} days to target`;
+  if (daysToEvent) goalLine += ` | Event in ${daysToEvent} days`;
+  
+  return goalLine;
+}).join('\n')}
 `;
     }
     
@@ -133,8 +170,9 @@ CONTEXT:
 - Multiple high-load days increase fatigue risk
 - Low HRV combined with high HR indicates stress
 - Poor sleep (<7h) reduces training capacity
+${activeGoals.length > 0 ? `- Consider how today's recommendation impacts progress toward active goals` : ''}
 
-Provide a structured recommendation for today's training.`;
+Provide a structured recommendation for today's training${activeGoals.length > 0 ? ', considering the athlete\'s current goals' : ''}.`;
 
     logger.log("Generating suggestion with Gemini Flash");
     

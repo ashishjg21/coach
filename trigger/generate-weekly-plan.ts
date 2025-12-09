@@ -77,7 +77,7 @@ export const generateWeeklyPlanTask = task({
     weekEnd.setDate(weekEnd.getDate() + (daysToPlann - 1));
     
     // Fetch user data
-    const [user, availability, recentWorkouts, recentWellness, currentPlan, athleteProfile] = await Promise.all([
+    const [user, availability, recentWorkouts, recentWellness, currentPlan, athleteProfile, activeGoals] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: { ftp: true, weight: true, maxHr: true }
@@ -124,6 +124,29 @@ export const generateWeeklyPlanTask = task({
         },
         orderBy: { createdAt: 'desc' },
         select: { analysisJson: true, createdAt: true }
+      }),
+      
+      // Active goals
+      prisma.goal.findMany({
+        where: {
+          userId,
+          status: 'ACTIVE'
+        },
+        orderBy: { priority: 'desc' },
+        select: {
+          id: true,
+          type: true,
+          title: true,
+          description: true,
+          metric: true,
+          currentValue: true,
+          targetValue: true,
+          targetDate: true,
+          eventDate: true,
+          eventType: true,
+          priority: true,
+          aiContext: true
+        }
       })
     ]);
     
@@ -133,7 +156,8 @@ export const generateWeeklyPlanTask = task({
       recentWorkoutsCount: recentWorkouts.length,
       recentWellnessCount: recentWellness.length,
       hasExistingPlan: !!currentPlan,
-      hasAthleteProfile: !!athleteProfile
+      hasAthleteProfile: !!athleteProfile,
+      activeGoals: activeGoals.length
     });
     
     // Build availability summary
@@ -212,6 +236,36 @@ USER BASIC INFO:
 - Weight: ${user?.weight || 'Unknown'} kg
 - Max HR: ${user?.maxHr || 'Unknown'} bpm
 Note: No structured athlete profile available yet. Consider generating one for better personalized planning.
+`;
+    }
+    
+    // Add goals context
+    if (activeGoals.length > 0) {
+      athleteContext += `
+
+CURRENT GOALS:
+${activeGoals.map(g => {
+  const daysToTarget = g.targetDate ? Math.ceil((new Date(g.targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+  const daysToEvent = g.eventDate ? Math.ceil((new Date(g.eventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+  
+  let goalInfo = `- [${g.priority}] ${g.title} (${g.type})`;
+  if (g.description) goalInfo += `\n  ${g.description}`;
+  if (g.metric && g.targetValue) {
+    goalInfo += `\n  Target: ${g.metric} = ${g.targetValue}`;
+    if (g.currentValue) goalInfo += ` (Current: ${g.currentValue})`;
+  }
+  if (daysToTarget) goalInfo += `\n  Timeline: ${daysToTarget} days remaining`;
+  if (daysToEvent) goalInfo += `\n  Event: ${g.eventType || 'race'} on ${new Date(g.eventDate!).toLocaleDateString()} (${daysToEvent} days)`;
+  if (g.aiContext) goalInfo += `\n  Context: ${g.aiContext}`;
+  
+  return goalInfo;
+}).join('\n\n')}
+`;
+    } else {
+      athleteContext += `
+
+CURRENT GOALS:
+No active goals set. Plan for general fitness maintenance and improvement.
 `;
     }
     

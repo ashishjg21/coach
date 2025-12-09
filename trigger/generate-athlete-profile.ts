@@ -321,7 +321,7 @@ export const generateAthleteProfileTask = task({
       logger.log("Fetching comprehensive athlete data");
       
       // Fetch all relevant data
-      const [user, recentWorkouts, recentWellness, recentNutrition, recentReports, recentRecommendations] = await Promise.all([
+      const [user, recentWorkouts, recentWellness, recentNutrition, recentReports, recentRecommendations, activeGoals] = await Promise.all([
         prisma.user.findUnique({
           where: { id: userId },
           select: { ftp: true, weight: true, maxHr: true, dob: true }
@@ -406,6 +406,29 @@ export const generateAthleteProfileTask = task({
             reasoning: true,
             analysisJson: true
           }
+        }),
+        prisma.goal.findMany({
+          where: {
+            userId,
+            status: 'ACTIVE'
+          },
+          orderBy: { priority: 'desc' },
+          select: {
+            id: true,
+            type: true,
+            title: true,
+            description: true,
+            metric: true,
+            currentValue: true,
+            targetValue: true,
+            startValue: true,
+            targetDate: true,
+            eventDate: true,
+            eventType: true,
+            priority: true,
+            aiContext: true,
+            createdAt: true
+          }
         })
       ]);
       
@@ -413,7 +436,8 @@ export const generateAthleteProfileTask = task({
         workoutsWithAI: recentWorkouts.length,
         wellnessRecords: recentWellness.length,
         reportsCount: recentReports.length,
-        recommendationsCount: recentRecommendations.length
+        recommendationsCount: recentRecommendations.length,
+        activeGoals: activeGoals.length
       });
       
       // Build workout insights from AI analysis
@@ -451,6 +475,26 @@ Recent sleep: ${recentWellness.slice(0, 7).map(w => `${w.sleepHours?.toFixed(1) 
         })
         .join('\n\n');
       
+      // Build goals summary
+      const goalsSummary = activeGoals.length > 0
+        ? activeGoals.map(g => {
+            const daysToTarget = g.targetDate ? Math.ceil((new Date(g.targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+            const daysToEvent = g.eventDate ? Math.ceil((new Date(g.eventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+            
+            let goalInfo = `[${g.priority}] ${g.title} (${g.type})`;
+            if (g.description) goalInfo += `\n  Description: ${g.description}`;
+            if (g.metric && g.targetValue) {
+              goalInfo += `\n  Target: ${g.metric} = ${g.targetValue}`;
+              if (g.currentValue) goalInfo += ` (Current: ${g.currentValue}, Start: ${g.startValue || 'N/A'})`;
+            }
+            if (daysToTarget) goalInfo += `\n  Timeline: ${daysToTarget} days remaining`;
+            if (g.eventDate) goalInfo += `\n  Event: ${g.eventType || 'race'} on ${new Date(g.eventDate).toLocaleDateString()} (${daysToEvent} days)`;
+            if (g.aiContext) goalInfo += `\n  Context: ${g.aiContext}`;
+            
+            return goalInfo;
+          }).join('\n\n')
+        : 'No active goals set';
+      
       // Calculate training stats
       const totalTSS = recentWorkouts.reduce((sum, w) => sum + (w.tss || 0), 0);
       const avgWorkoutDuration = recentWorkouts.length > 0
@@ -484,6 +528,9 @@ ${recommendationsSummary || 'No recent recommendations'}
 RECENT REPORTS & ANALYSIS:
 ${reportsSummary || 'No recent reports'}
 
+CURRENT GOALS:
+${goalsSummary}
+
 INSTRUCTIONS:
 Create a comprehensive athlete profile that synthesizes all this data. This profile will be used for:
 1. Planning future workouts
@@ -497,7 +544,8 @@ Focus on:
 - Recovery patterns and how well they handle training load
 - Recent performance trends from workout analysis
 - Key themes from recent recommendations
-- What should be considered when planning future workouts
+- **Current goals and their feasibility** given the athlete's current state
+- What should be considered when planning future workouts to support goal achievement
 
 Finally, provide **Athlete Profile Scores** (1-10 scale for tracking long-term development):
 - **Current Fitness**: Overall fitness level based on recent training, FTP, and performance

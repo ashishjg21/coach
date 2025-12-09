@@ -199,13 +199,38 @@ export const generateWeeklyReportTask = task({
         })
       ]);
       
-      logger.log("Data fetched", { 
-        workoutsCount: workouts.length, 
-        metricsCount: metrics.length 
+      logger.log("Data fetched", {
+        workoutsCount: workouts.length,
+        metricsCount: metrics.length,
+        activeGoals: activeGoals.length
       });
       
       if (workouts.length === 0) {
         throw new Error('No workout data available for analysis');
+      }
+      
+      // Build goals context
+      let goalsContext = '';
+      if (activeGoals.length > 0) {
+        goalsContext = `
+
+CURRENT GOALS (for context):
+${activeGoals.map(g => {
+  const daysToTarget = g.targetDate ? Math.ceil((new Date(g.targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+  const daysToEvent = g.eventDate ? Math.ceil((new Date(g.eventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+  
+  let goalInfo = `- [${g.priority}] ${g.title} (${g.type})`;
+  if (g.description) goalInfo += ` - ${g.description}`;
+  if (g.metric && g.targetValue) {
+    goalInfo += ` | Target: ${g.metric} = ${g.targetValue}`;
+    if (g.currentValue) goalInfo += ` (Current: ${g.currentValue})`;
+  }
+  if (daysToTarget) goalInfo += ` | ${daysToTarget} days to target`;
+  if (daysToEvent) goalInfo += ` | Event in ${daysToEvent} days`;
+  
+  return goalInfo;
+}).join('\n')}
+`;
       }
       
       // Build prompt for structured analysis
@@ -222,6 +247,7 @@ ${buildWorkoutSummary(workouts)}
 
 DAILY METRICS (Recovery & Sleep):
 ${metrics.length > 0 ? buildMetricsSummary(metrics) : 'No recovery data available'}
+${goalsContext}
 
 ANALYSIS INSTRUCTIONS:
 Create a comprehensive weekly training analysis with these sections:
@@ -235,8 +261,9 @@ For each section:
 - Provide a status assessment (excellent/good/moderate/needs_improvement/poor)
 - List 3-5 specific, data-driven analysis points (each as a separate bullet, 1-2 sentences max)
 - Reference actual numbers and metrics from the data
+${activeGoals.length > 0 ? '- Consider progress toward active goals where relevant' : ''}
 
-Then provide 3-5 prioritized recommendations with specific actions.
+Then provide 3-5 prioritized recommendations with specific actions${activeGoals.length > 0 ? ' (including goal-related recommendations if applicable)' : ''}.
 
 Finally, provide **Performance Scores** (1-10 scale for tracking progress over time):
 - **Overall**: Holistic assessment of the training period quality
