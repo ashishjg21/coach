@@ -6,18 +6,36 @@
       'bg-blue-50 dark:bg-blue-950': isToday
     }"
   >
-    <!-- Date Number -->
+    <!-- Date Number & Wellness Metrics -->
     <div class="flex items-center justify-between mb-2">
-      <span
-        class="text-xs font-semibold"
-        :class="{
-          'text-blue-600 dark:text-blue-400': isToday,
-          'text-gray-400': isOtherMonth,
-          'text-gray-900 dark:text-gray-100': !isOtherMonth && !isToday
-        }"
-      >
-        {{ dayNumber }}
-      </span>
+      <div class="flex items-center gap-2">
+        <span
+          class="text-xs font-semibold"
+          :class="{
+            'text-blue-600 dark:text-blue-400': isToday,
+            'text-gray-400': isOtherMonth,
+            'text-gray-900 dark:text-gray-100': !isOtherMonth && !isToday
+          }"
+        >
+          {{ dayNumber }}
+        </span>
+        
+        <!-- Wellness Metrics -->
+        <div v-if="dayWellness" class="flex items-center gap-1.5 text-[10px]">
+          <span v-if="dayWellness.hrv != null" class="flex items-center gap-0.5 text-purple-500 dark:text-purple-400" :title="`HRV: ${Math.round(dayWellness.hrv)}ms`">
+            <UIcon name="i-heroicons-heart" class="w-2.5 h-2.5" />
+            <span class="font-medium">{{ Math.round(dayWellness.hrv) }}</span>
+          </span>
+          <span v-if="dayWellness.hoursSlept != null" class="flex items-center gap-0.5 text-indigo-500 dark:text-indigo-400" :title="`Sleep: ${dayWellness.hoursSlept.toFixed(1)}h`">
+            <UIcon name="i-heroicons-moon" class="w-2.5 h-2.5" />
+            <span class="font-medium">{{ dayWellness.hoursSlept.toFixed(1) }}</span>
+          </span>
+          <span v-if="dayWellness.restingHr != null" class="flex items-center gap-0.5 text-pink-500 dark:text-pink-400" :title="`Resting HR: ${dayWellness.restingHr} bpm`">
+            <UIcon name="i-heroicons-heart-20-solid" class="w-2.5 h-2.5" />
+            <span class="font-medium">{{ dayWellness.restingHr }}</span>
+          </span>
+        </div>
+      </div>
     </div>
 
     <!-- Activities (flex-1 to push nutrition to bottom) -->
@@ -151,6 +169,12 @@ const isToday = computed(() => isTodayFn(props.date))
 const dayNutrition = computed(() => {
   const activityWithNutrition = props.activities.find(a => a.nutrition)
   return activityWithNutrition?.nutrition || null
+})
+
+// Get wellness data from any activity on this day (they all have same wellness data)
+const dayWellness = computed(() => {
+  const activityWithWellness = props.activities.find(a => a.wellness)
+  return activityWithWellness?.wellness || null
 })
 
 function formatDuration(seconds: number): string {
