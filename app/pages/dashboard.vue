@@ -203,31 +203,43 @@
               
               <!-- Actual scores data -->
               <div v-else-if="profileScores" class="space-y-3 flex-grow">
-                <div class="flex justify-between items-center">
+                <div
+                  class="flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded px-2 py-1 -mx-2 transition-colors"
+                  @click="openScoreModal('currentFitness')"
+                >
                   <span class="text-sm text-muted">Current Fitness</span>
                   <UBadge :color="getScoreColor(profileScores.currentFitness)" size="lg">
                     {{ profileScores.currentFitness || 'N/A' }}
                   </UBadge>
                 </div>
-                <div class="flex justify-between items-center">
+                <div
+                  class="flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded px-2 py-1 -mx-2 transition-colors"
+                  @click="openScoreModal('recoveryCapacity')"
+                >
                   <span class="text-sm text-muted">Recovery Capacity</span>
                   <UBadge :color="getScoreColor(profileScores.recoveryCapacity)" size="lg">
                     {{ profileScores.recoveryCapacity || 'N/A' }}
                   </UBadge>
                 </div>
-                <div class="flex justify-between items-center">
+                <div
+                  class="flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded px-2 py-1 -mx-2 transition-colors"
+                  @click="openScoreModal('nutritionCompliance')"
+                >
                   <span class="text-sm text-muted">Nutrition Compliance</span>
                   <UBadge :color="getScoreColor(profileScores.nutritionCompliance)" size="lg">
                     {{ profileScores.nutritionCompliance || 'N/A' }}
                   </UBadge>
                 </div>
-                <div class="flex justify-between items-center">
+                <div
+                  class="flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded px-2 py-1 -mx-2 transition-colors"
+                  @click="openScoreModal('trainingConsistency')"
+                >
                   <span class="text-sm text-muted">Training Consistency</span>
                   <UBadge :color="getScoreColor(profileScores.trainingConsistency)" size="lg">
                     {{ profileScores.trainingConsistency || 'N/A' }}
                   </UBadge>
                 </div>
-                
+
                 <div v-if="profileScores.lastUpdated" class="pt-2 border-t">
                   <p class="text-xs text-muted text-center">
                     Updated {{ formatScoreDate(profileScores.lastUpdated) }}
@@ -557,6 +569,22 @@ const loadingRecommendation = ref(false)
 const generatingRecommendation = ref(false)
 const generatingProfile = ref(false)
 const currentRecommendationId = ref<string | null>(null) // Track the recommendation being generated
+
+// Score detail modal state
+const showScoreModal = ref(false)
+const scoreModalData = ref<{
+  title: string
+  score: number | null
+  explanation: string | null
+  analysisData?: any
+  color?: 'gray' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'cyan'
+}>({
+  title: '',
+  score: null,
+  explanation: null,
+  analysisData: undefined,
+  color: undefined
+})
 
 const profile = computed(() => profileData.value?.profile as any || null)
 const hasReports = computed(() => profileData.value?.hasReports ?? false)
@@ -904,4 +932,52 @@ watch(intervalsConnected, async (connected) => {
     await fetchRecentActivity()
   }
 }, { immediate: true })
+
+// Function to open score detail modal
+function openScoreModal(scoreType: 'currentFitness' | 'recoveryCapacity' | 'nutritionCompliance' | 'trainingConsistency') {
+  if (!profileScores.value) return
+
+  const scoreConfig = {
+    currentFitness: {
+      title: 'Current Fitness',
+      score: profileScores.value.currentFitness,
+      explanation: profileScores.value.currentFitnessExplanation,
+      analysisData: profileScores.value.currentFitnessExplanationJson,
+      color: 'blue' as const
+    },
+    recoveryCapacity: {
+      title: 'Recovery Capacity',
+      score: profileScores.value.recoveryCapacity,
+      explanation: profileScores.value.recoveryCapacityExplanation,
+      analysisData: profileScores.value.recoveryCapacityExplanationJson,
+      color: 'green' as const
+    },
+    nutritionCompliance: {
+      title: 'Nutrition Compliance',
+      score: profileScores.value.nutritionCompliance,
+      explanation: profileScores.value.nutritionComplianceExplanation,
+      analysisData: profileScores.value.nutritionComplianceExplanationJson,
+      color: 'purple' as const
+    },
+    trainingConsistency: {
+      title: 'Training Consistency',
+      score: profileScores.value.trainingConsistency,
+      explanation: profileScores.value.trainingConsistencyExplanation,
+      analysisData: profileScores.value.trainingConsistencyExplanationJson,
+      color: 'orange' as const
+    }
+  }
+
+  const config = scoreConfig[scoreType]
+
+  scoreModalData.value = {
+    title: config.title,
+    score: config.score ?? null,
+    explanation: config.analysisData ? null : config.explanation ?? null,
+    analysisData: config.analysisData || undefined,
+    color: config.color
+  }
+
+  showScoreModal.value = true
+}
 </script>

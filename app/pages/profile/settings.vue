@@ -40,13 +40,16 @@
               v-if="activeTab === 'basic'"
               :model-value="profile"
               @update:model-value="handleProfileUpdate"
+              @autodetect="handleAutodetect"
               :email="user?.email || ''"
             />
             
-            <ProfileCustomZones 
+            <ProfileCustomZones
               v-if="activeTab === 'zones'"
-              v-model:hrZones="hrZones"
-              v-model:powerZones="powerZones"
+              :hr-zones="hrZones"
+              :power-zones="powerZones"
+              @update:hr-zones="z => updateZones('hr', z)"
+              @update:power-zones="z => updateZones('power', z)"
             />
             
             <ProfileGoalsSettings 
@@ -112,6 +115,13 @@ const { data: profileData, refresh: refreshProfile } = await useFetch('/api/prof
 watchEffect(() => {
   if (profileData.value?.profile) {
     profile.value = { ...profile.value, ...profileData.value.profile }
+    
+    if (profileData.value.profile.hrZones) {
+      hrZones.value = profileData.value.profile.hrZones
+    }
+    if (profileData.value.profile.powerZones) {
+      powerZones.value = profileData.value.profile.powerZones
+    }
   }
 })
 
@@ -128,11 +138,18 @@ async function handleProfileUpdate(newProfile: any) {
     
     console.log('Profile update response:', response)
     
+    // Check if zones were updated via autodetect logic (which might merge into profile)
+    if (response.profile && response.profile.hrZones) {
+      hrZones.value = response.profile.hrZones
+    }
+    if (response.profile && response.profile.powerZones) {
+      powerZones.value = response.profile.powerZones
+    }
+    
     toast.add({
       title: 'Profile Updated',
       description: 'Your settings have been saved.',
-      color: 'success',
-      timeout: 2000
+      color: 'success'
     })
   } catch (error) {
     console.error('Profile update failed:', error)
@@ -144,7 +161,21 @@ async function handleProfileUpdate(newProfile: any) {
   }
 }
 
-const hrZones = ref([
+function handleAutodetect(updatedProfile: any) {
+  if (updatedProfile) {
+    if (updatedProfile.hrZones) {
+      hrZones.value = updatedProfile.hrZones
+    }
+    if (updatedProfile.powerZones) {
+      powerZones.value = updatedProfile.powerZones
+    }
+    // Update other profile fields if needed, though BasicSettings handles its own model update
+    // But we should sync profile.value to ensure consistency
+    Object.assign(profile.value, updatedProfile)
+  }
+}
+
+const hrZones = ref<any[]>([
     { name: 'Z1 Recovery', min: 60, max: 120 },
     { name: 'Z2 Endurance', min: 121, max: 145 },
     { name: 'Z3 Tempo', min: 146, max: 160 },
@@ -152,12 +183,43 @@ const hrZones = ref([
     { name: 'Z5 Anaerobic', min: 176, max: 185 }
 ])
 
-const powerZones = ref([
+const powerZones = ref<any[]>([
     { name: 'Z1 Active Recovery', min: 0, max: 137 },
     { name: 'Z2 Endurance', min: 137, max: 187 },
     { name: 'Z3 Tempo', min: 188, max: 225 },
     { name: 'Z4 Threshold', min: 226, max: 262 },
     { name: 'Z5 VO2 Max', min: 263, max: 999 }
 ])
+
+// Save zones to API when updated
+async function updateZones(type: 'hr' | 'power', zones: any[]) {
+  try {
+    const body: any = {}
+    if (type === 'hr') {
+      hrZones.value = zones
+      body.hrZones = zones
+    } else {
+      powerZones.value = zones
+      body.powerZones = zones
+    }
+    
+    await $fetch('/api/profile', {
+      method: 'PATCH',
+      body
+    })
+    
+    toast.add({
+      title: 'Zones Updated',
+      description: `${type === 'hr' ? 'Heart Rate' : 'Power'} zones saved successfully.`,
+      color: 'success'
+    })
+  } catch (error) {
+    toast.add({
+      title: 'Update Failed',
+      description: 'Failed to save zones.',
+      color: 'error'
+    })
+  }
+}
 
 </script>
