@@ -87,8 +87,8 @@ const links = computed<NavigationMenuItem[][]>(() => [[{
   children: [{
     label: 'Profile',
     icon: 'i-lucide-user',
-    to: '/settings?tab=profile',
-    active: route.path === '/settings' && route.query.tab === 'profile',
+    to: '/profile/settings',
+    active: route.path === '/profile/settings',
     onSelect: () => {
       open.value = false
     }
