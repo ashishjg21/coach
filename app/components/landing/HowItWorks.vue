@@ -30,8 +30,8 @@
               Connect
             </dt>
             <dd class="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-400">
-              <p class="flex-auto">Connect Strava, Whoop, and Intervals. We unify your training data into a single,
-                coherent timeline.</p>
+              <p class="flex-auto">Connect your favorite training and recovery apps. We pull data from Strava, Whoop,
+                Garmin, and more to create a single source of truth.</p>
 
               <!-- Visual Hint -->
               <div
@@ -41,7 +41,10 @@
                 <div class="inline-block h-6 w-6 rounded-full bg-black ring-2 ring-gray-900 border border-white/20">
                 </div> <!-- Whoop color -->
                 <div class="inline-block h-6 w-6 rounded-full bg-blue-500 ring-2 ring-gray-900"></div>
-                <!-- Intervals color -->
+                <!-- Icons for more -->
+                <div
+                  class="inline-block h-6 w-6 rounded-full bg-gray-700 ring-2 ring-gray-900 flex items-center justify-center text-[10px] text-white font-bold">
+                  +</div>
               </div>
             </dd>
 
@@ -62,12 +65,17 @@
               Analyze
             </dt>
             <dd class="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-400">
-              <p class="flex-auto">Our AI analyzes every heartbeat and watt to find what others miss: hidden fatigue,
-                recovery trends, and efficiency factors.</p>
-              <div
-                class="mt-4 font-mono text-xs text-green-500/70 bg-black/50 p-2 rounded border border-green-900/30 group-hover:text-green-400 transition-colors">
-                > detecting_fatigue...<br />
-                > analysis_complete.
+              <p class="flex-auto">Our AI analyzes every session to find hidden fatigue and recovery trends that
+                standard charts miss.</p>
+              <div class="mt-4 flex items-center gap-2">
+                <span class="relative flex h-3 w-3">
+                  <span
+                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+                <span
+                  class="px-2 py-1 rounded bg-red-500/10 text-red-400 text-xs font-mono border border-red-500/20">Status:
+                  Deep Fatigue Detected</span>
               </div>
             </dd>
             <!-- Connector Line -->
@@ -87,16 +95,16 @@
               Profile
             </dt>
             <dd class="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-400">
-              <p class="flex-auto">We construct a "Digital Twin" of your fitness. Scores for Recovery (6/10), Fitness
-                (9/10), and Compliance updated daily.</p>
+              <p class="flex-auto">Your Digital Twin evolves daily. Instead of just numbers, we track your readiness to
+                perform.</p>
               <!-- Score Hint -->
               <div class="mt-4 flex gap-2">
                 <span
-                  class="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-xs font-mono border border-green-500/30">FIT:
-                  9.2</span>
+                  class="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-xs font-bold border border-green-500/30">FITNESS:
+                  PEAKING</span>
                 <span
-                  class="px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 text-xs font-mono border border-yellow-500/30">REC:
-                  6.4</span>
+                  class="px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-400 text-xs font-bold border border-yellow-500/30">RECOVERY:
+                  BALANCED</span>
               </div>
             </dd>
             <!-- Connector Line -->
