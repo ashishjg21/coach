@@ -53,6 +53,55 @@ export default defineEventHandler(async (event) => {
     })
   }
   
+  // Fetch wellness data for the date range
+  const wellness = await prisma.wellness.findMany({
+    where: {
+      userId,
+      date: {
+        gte: startDate,
+        lte: endDate
+      }
+    },
+    orderBy: { date: 'asc' }
+  })
+  
+  // Fetch daily metrics data for the date range
+  const dailyMetrics = await prisma.dailyMetric.findMany({
+    where: {
+      userId,
+      date: {
+        gte: startDate,
+        lte: endDate
+      }
+    },
+    orderBy: { date: 'asc' }
+  })
+  
+  // Create a map of wellness data by date (YYYY-MM-DD)
+  // Prefer Wellness data, fallback to DailyMetric
+  const wellnessByDate = new Map()
+  for (const d of dailyMetrics) {
+    const dateKey = d.date.toISOString().split('T')[0]
+    wellnessByDate.set(dateKey, {
+      hrv: d.hrv,
+      restingHr: d.restingHr,
+      sleepScore: d.sleepScore,
+      hoursSlept: d.hoursSlept,
+      recoveryScore: d.recoveryScore
+    })
+  }
+  for (const w of wellness) {
+    const dateKey = w.date.toISOString().split('T')[0]
+    const existing = wellnessByDate.get(dateKey) || {}
+    wellnessByDate.set(dateKey, {
+      hrv: w.hrv ?? existing.hrv,
+      restingHr: w.restingHr ?? existing.restingHr,
+      sleepScore: w.sleepQuality ?? w.sleepScore ?? existing.sleepScore,
+      hoursSlept: w.sleepHours ?? existing.hoursSlept,
+      recoveryScore: w.recoveryScore ?? existing.recoveryScore
+    })
+  }
+  
   // Fetch completed workouts
   const workouts = await prisma.workout.findMany({
     where: {
@@ -113,7 +162,10 @@ export default defineEventHandler(async (event) => {
       originalId: w.id,
       
       // Nutrition data for this date (will be same for all activities on the same day)
-      nutrition: nutritionByDate.get(dateKey) || null
+      nutrition: nutritionByDate.get(dateKey) || null,
+      
+      // Wellness data for this date
+      wellness: wellnessByDate.get(dateKey) || null
     })
   }
   
@@ -162,18 +214,23 @@ export default defineEventHandler(async (event) => {
       linkedWorkoutId: p.workoutId,
       
       // Nutrition data for this date (will be same for all activities on the same day)
-      nutrition: nutritionByDate.get(dateKey) || null
+      nutrition: nutritionByDate.get(dateKey) || null,
+      
+      // Wellness data for this date
+      wellness: wellnessByDate.get(dateKey) || null
     })
   }
   
-  // Flatten activities array and ensure nutrition is attached to all activities
+  // Flatten activities array and ensure nutrition and wellness are attached to all activities
   const activities = []
   for (const [dateKey, dateActivities] of activitiesByDate.entries()) {
     const nutritionData = nutritionByDate.get(dateKey) || null
+    const wellnessData = wellnessByDate.get(dateKey) || null
     for (const activity of dateActivities) {
       activities.push({
         ...activity,
-        nutrition: nutritionData
+        nutrition: nutritionData,
+        wellness: wellnessData
       })
     }
   }
