@@ -31,39 +31,29 @@
                             Start your evolution today
                         </p>
 
-                        <!-- Unlock List -->
-                        <div class="space-y-4">
-                            <div class="flex gap-3 items-start">
+                        <!-- Chat Simulation -->
+                        <div class="space-y-4 mb-8">
+                            <!-- User Message -->
+                            <div class="flex justify-end">
                                 <div
-                                    class="mt-1 w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
-                                    <UIcon name="i-heroicons-bolt" class="w-3 h-3 text-green-400" />
-                                </div>
-                                <div>
-                                    <p class="text-white font-semibold text-sm">Instant Analysis</p>
-                                    <p class="text-gray-400 text-xs">We scan 6 months of training history in seconds.
-                                    </p>
+                                    class="bg-gray-800 rounded-2xl rounded-tr-sm px-4 py-2 text-sm text-gray-200 max-w-[85%] border border-gray-700">
+                                    My legs feel super heavy today. Should I push through?
                                 </div>
                             </div>
-                            <div class="flex gap-3 items-start">
+
+                            <!-- AI Response -->
+                            <div class="flex justify-start items-end gap-2">
                                 <div
-                                    class="mt-1 w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
-                                    <UIcon name="i-heroicons-finger-print" class="w-3 h-3 text-blue-400" />
+                                    class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30">
+                                    <UIcon name="i-heroicons-sparkles" class="w-4 h-4 text-primary" />
                                 </div>
-                                <div>
-                                    <p class="text-white font-semibold text-sm">Physiological Profile</p>
-                                    <p class="text-gray-400 text-xs">Discover your hidden fatigue and fitness trends.
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="flex gap-3 items-start">
                                 <div
-                                    class="mt-1 w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
-                                    <UIcon name="i-heroicons-calendar" class="w-3 h-3 text-purple-400" />
-                                </div>
-                                <div>
-                                    <p class="text-white font-semibold text-sm">Adaptive Plan</p>
-                                    <p class="text-gray-400 text-xs">Your first AI-prescribed workout available
-                                        immediately.</p>
+                                    class="bg-primary/10 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-white max-w-[90%] border border-primary/20 backdrop-blur-sm shadow-sm">
+                                    <p class="mb-2">I noticed your <span class="text-primary font-bold">HRV dropped to
+                                            28ms</span> overnight. 📉</p>
+                                    <p>Let's swap your intervals for a <span
+                                            class="font-bold text-white bg-white/10 px-1 rounded">Zone 2 Recovery
+                                            Ride</span>. We'll get back to intensity tomorrow when you're primed.</p>
                                 </div>
                             </div>
                         </div>
@@ -81,19 +71,28 @@
                                 <span class="text-primary font-bold">2,412</span> athletes active today
                             </div>
                         </div>
-                        <p class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">
+                        <div class="flex items-center gap-2 text-[10px] text-gray-400 font-mono">
+                            <span class="relative flex h-2 w-2">
+                                <span
+                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            </span>
+                            <span class="typing-text">🔥 12 athletes hit a PB in the last hour</span>
+                        </div>
+                        <p class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mt-3">
                             Works with your favorite fitness trackers
                         </p>
                     </div>
                 </div>
                 <!-- Right: Auth Form -->
-                <div class="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-center bg-white dark:bg-gray-900">
+                <div
+                    class="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-center bg-gray-900 border-l border-gray-800">
                     <div class="max-w-md mx-auto w-full">
                         <div class="mb-10">
-                            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-3">
+                            <h1 class="text-3xl font-bold text-white mb-3">
                                 Get Started
                             </h1>
-                            <p class="text-gray-500 dark:text-gray-400 text-lg">
+                            <p class="text-gray-400 text-lg">
                                 Create your Coach Watts account. No credit card required.
                             </p>
                         </div>
@@ -107,24 +106,24 @@
 
                             <div class="relative">
                                 <div class="absolute inset-0 flex items-center">
-                                    <span class="w-full border-t border-gray-200 dark:border-gray-700" />
+                                    <span class="w-full border-t border-gray-800" />
                                 </div>
                                 <div class="relative flex justify-center text-sm">
-                                    <span class="bg-white dark:bg-gray-900 px-2 text-gray-500">Only Google Login
+                                    <span class="bg-gray-900 px-2 text-gray-500">Only Google Login
                                         supported</span>
                                 </div>
                             </div>
                         </div>
 
                         <div class="mt-10 text-center space-y-4">
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                            <p class="text-sm text-gray-400">
                                 Already have an account?
                                 <NuxtLink to="/login"
                                     class="text-primary hover:underline underline-offset-4 font-semibold">Log in
                                 </NuxtLink>
                             </p>
 
-                            <p class="text-xs text-gray-400 dark:text-gray-500 pt-4">
+                            <p class="text-xs text-gray-500 pt-4">
                                 By continuing, you agree to our
                                 <NuxtLink to="#" class="text-primary hover:underline underline-offset-4">Terms of
                                     Service</NuxtLink>
@@ -166,3 +165,11 @@ async function handleGoogleLogin() {
     }
 }
 </script>
+
+<style scoped>
+.typing-effect {
+    overflow: hidden;
+    white-space: nowrap;
+    animation: typing 3.5s steps(40, end);
+}
+</style>

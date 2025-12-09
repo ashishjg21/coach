@@ -60,6 +60,15 @@
             Timeline
           </UButton>
           <UButton
+            v-if="shouldShowPacing(workout)"
+            variant="ghost"
+            color="neutral"
+            @click="scrollToSection('zones')"
+          >
+            <UIcon name="i-lucide-layers" class="w-4 h-4 mr-2" />
+            Zones
+          </UButton>
+          <UButton
             variant="ghost"
             color="neutral"
             @click="scrollToSection('metrics')"
@@ -87,126 +96,75 @@
         </div>
 
         <div v-else-if="workout" class="space-y-6">
-          <!-- Header Card -->
+          <!-- Header Section: Workout Info (2/3) + Performance Scores (1/3) -->
           <div id="header" class="scroll-mt-20"></div>
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div class="flex items-start justify-between mb-4">
-              <div class="flex-1">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  {{ workout.title }}
-                </h1>
-                <div class="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
-                  <div class="flex items-center gap-1">
-                    <span class="i-heroicons-calendar w-4 h-4"></span>
-                    {{ formatDate(workout.date) }}
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Workout Info Card - 2/3 -->
+            <div class="lg:col-span-2">
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-full">
+                <div class="flex items-start justify-between mb-4">
+                  <div class="flex-1">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                      {{ workout.title }}
+                    </h1>
+                    <div class="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
+                      <div class="flex items-center gap-1">
+                        <span class="i-heroicons-calendar w-4 h-4"></span>
+                        {{ formatDate(workout.date) }}
+                      </div>
+                      <div v-if="workout.type" class="flex items-center gap-1">
+                        <span class="i-heroicons-tag w-4 h-4"></span>
+                        {{ workout.type }}
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <span class="i-heroicons-clock w-4 h-4"></span>
+                        {{ formatDuration(workout.durationSec) }}
+                      </div>
+                    </div>
                   </div>
-                  <div v-if="workout.type" class="flex items-center gap-1">
-                    <span class="i-heroicons-tag w-4 h-4"></span>
-                    {{ workout.type }}
-                  </div>
-                  <div class="flex items-center gap-1">
-                    <span class="i-heroicons-clock w-4 h-4"></span>
-                    {{ formatDuration(workout.durationSec) }}
-                  </div>
-                  <div v-if="workout.distanceMeters" class="flex items-center gap-1">
-                    <span class="i-heroicons-map-pin w-4 h-4"></span>
-                    {{ formatDistance(workout.distanceMeters) }}
+                  <div>
+                    <span :class="getSourceBadgeClass(workout.source)">
+                      {{ workout.source }}
+                    </span>
                   </div>
                 </div>
-              </div>
-              <div>
-                <span :class="getSourceBadgeClass(workout.source)">
-                  {{ workout.source }}
-                </span>
+
+                <!-- Key Stats Grid -->
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                  <div v-if="workout.trainingLoad" class="rounded-lg p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <div class="text-xs text-blue-600 dark:text-blue-400 mb-1">Training Load</div>
+                    <div class="text-xl font-bold text-blue-900 dark:text-blue-100">{{ Math.round(workout.trainingLoad) }}</div>
+                  </div>
+                  <div v-if="workout.averageHr" class="rounded-lg p-3 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800">
+                    <div class="text-xs text-pink-600 dark:text-pink-400 mb-1">Avg HR</div>
+                    <div class="text-xl font-bold text-pink-900 dark:text-pink-100">{{ workout.averageHr }} <span class="text-sm">bpm</span></div>
+                  </div>
+                </div>
+
+                <div v-if="workout.description" class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ workout.description }}</p>
+                </div>
               </div>
             </div>
 
-            <!-- Key Stats Grid -->
-            <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div v-if="workout.trainingLoad" class="rounded-lg p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                <div class="text-xs text-blue-600 dark:text-blue-400 mb-1">Training Load</div>
-                <div class="text-xl font-bold text-blue-900 dark:text-blue-100">{{ Math.round(workout.trainingLoad) }}</div>
-              </div>
-              <div v-if="workout.tss" class="rounded-lg p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-                <div class="text-xs text-purple-600 dark:text-purple-400 mb-1">TSS</div>
-                <div class="text-xl font-bold text-purple-900 dark:text-purple-100">{{ Math.round(workout.tss) }}</div>
-              </div>
-              <div v-if="workout.intensity" class="rounded-lg p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                <div class="text-xs text-red-600 dark:text-red-400 mb-1">Intensity</div>
-                <div class="text-xl font-bold text-red-900 dark:text-red-100">{{ workout.intensity.toFixed(2) }}</div>
-              </div>
-              <div v-if="workout.averageHr" class="rounded-lg p-3 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800">
-                <div class="text-xs text-pink-600 dark:text-pink-400 mb-1">Avg HR</div>
-                <div class="text-xl font-bold text-pink-900 dark:text-pink-100">{{ workout.averageHr }} <span class="text-sm">bpm</span></div>
-              </div>
-              <div v-if="workout.averageWatts" class="rounded-lg p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
-                <div class="text-xs text-yellow-600 dark:text-yellow-400 mb-1">Avg Power</div>
-                <div class="text-xl font-bold text-yellow-900 dark:text-yellow-100">{{ workout.averageWatts }} <span class="text-sm">W</span></div>
-              </div>
-              <div v-if="workout.averageSpeed" class="rounded-lg p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                <div class="text-xs text-green-600 dark:text-green-400 mb-1">Avg Speed</div>
-                <div class="text-xl font-bold text-green-900 dark:text-green-100">{{ workout.averageSpeed.toFixed(1) }} <span class="text-sm">km/h</span></div>
-              </div>
-              <div v-if="workout.elevationGain" class="rounded-lg p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
-                <div class="text-xs text-indigo-600 dark:text-indigo-400 mb-1">Elevation</div>
-                <div class="text-xl font-bold text-indigo-900 dark:text-indigo-100">{{ workout.elevationGain }} <span class="text-sm">m</span></div>
-              </div>
-              <div v-if="workout.kilojoules" class="rounded-lg p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
-                <div class="text-xs text-orange-600 dark:text-orange-400 mb-1">Energy</div>
-                <div class="text-xl font-bold text-orange-900 dark:text-orange-100">{{ Math.round(workout.kilojoules / 1000) }}k <span class="text-sm">kJ</span></div>
-              </div>
-            </div>
-
-            <div v-if="workout.description" class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ workout.description }}</p>
-            </div>
-          </div>
-
-          <!-- Performance Scores Section -->
-          <div id="scores" class="scroll-mt-20"></div>
-          <div v-if="workout.overallScore || workout.technicalScore || workout.effortScore || workout.pacingScore || workout.executionScore" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Performance Scores</h2>
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div v-if="workout.overallScore" class="text-center">
-                <div :class="getScoreCircleClass(workout.overallScore)" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span class="text-2xl font-bold">{{ workout.overallScore }}</span>
+            <!-- Performance Scores Card - 1/3 -->
+            <div id="scores" class="scroll-mt-20 lg:col-span-1">
+              <div v-if="workout.overallScore || workout.technicalScore || workout.effortScore || workout.pacingScore || workout.executionScore" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Performance Scores</h2>
+                <div style="height: 200px;">
+                  <PerformanceScoreChart
+                    :scores="{
+                      overall: workout.overallScore,
+                      technical: workout.technicalScore,
+                      effort: workout.effortScore,
+                      pacing: workout.pacingScore,
+                      execution: workout.executionScore
+                    }"
+                  />
                 </div>
-                <div class="text-xs font-medium text-gray-600 dark:text-gray-400">Overall</div>
-              </div>
-              <div v-if="workout.technicalScore" class="text-center">
-                <div :class="getScoreCircleClass(workout.technicalScore)" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span class="text-2xl font-bold">{{ workout.technicalScore }}</span>
-                </div>
-                <div class="text-xs font-medium text-gray-600 dark:text-gray-400">Technical</div>
-              </div>
-              <div v-if="workout.effortScore" class="text-center">
-                <div :class="getScoreCircleClass(workout.effortScore)" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span class="text-2xl font-bold">{{ workout.effortScore }}</span>
-                </div>
-                <div class="text-xs font-medium text-gray-600 dark:text-gray-400">Effort</div>
-              </div>
-              <div v-if="workout.pacingScore" class="text-center">
-                <div :class="getScoreCircleClass(workout.pacingScore)" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span class="text-2xl font-bold">{{ workout.pacingScore }}</span>
-                </div>
-                <div class="text-xs font-medium text-gray-600 dark:text-gray-400">Pacing</div>
-              </div>
-              <div v-if="workout.executionScore" class="text-center">
-                <div :class="getScoreCircleClass(workout.executionScore)" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <span class="text-2xl font-bold">{{ workout.executionScore }}</span>
-                </div>
-                <div class="text-xs font-medium text-gray-600 dark:text-gray-400">Execution</div>
               </div>
             </div>
           </div>
-
-          <!-- Personal Notes Section -->
-          <NotesEditor
-            v-model="workout.notes"
-            :notes-updated-at="workout.notesUpdatedAt"
-            :api-endpoint="`/api/workouts/${workout.id}/notes`"
-            @update:notesUpdatedAt="workout.notesUpdatedAt = $event"
-          />
 
           <!-- AI Analysis Section -->
           <div id="analysis" class="scroll-mt-20"></div>
@@ -384,68 +342,36 @@
             <WorkoutTimeline :workout-id="workout.id" />
           </div>
 
-          <!-- Tabs for different data sections -->
-          <div id="metrics" class="scroll-mt-20"></div>
-          <UTabs :items="tabs" v-model="selectedTab" />
-          
-          <!-- Tab Content -->
-          <div v-show="selectedTab === 0" class="py-4">
-                <!-- All Metrics in Compact Grid -->
-                <div v-if="availableMetrics.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Detailed Metrics</h3>
-                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
-                    <div
-                      v-for="metric in availableMetrics"
-                      :key="metric.key"
-                      class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
-                    >
-                      <span class="text-sm text-gray-600 dark:text-gray-400">{{ metric.label }}</span>
-                      <span class="text-sm font-medium text-gray-900 dark:text-white">{{ metric.value }}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center text-gray-500 dark:text-gray-400">
-                  <p class="text-sm">No additional metrics available for this workout</p>
-                </div>
+          <!-- Zone Distribution Visualization -->
+          <div id="zones" class="scroll-mt-20"></div>
+          <div v-if="shouldShowPacing(workout)" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Training Zones</h2>
+            <ZoneChart :workout-id="workout.id" />
           </div>
 
-         <!-- JSON Data Tab Content -->
-          <div v-show="selectedTab === 1" class="py-4">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                  <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Complete Workout Data (JSON)</h3>
-                    <UButton
-                      icon="i-heroicons-clipboard-document"
-                      color="neutral"
-                      variant="ghost"
-                      @click="copyJsonToClipboard"
-                    >
-                      Copy JSON
-                    </UButton>
-                  </div>
-                  <div class="p-6">
-                    <pre class="text-sm text-gray-800 dark:text-gray-200 overflow-x-auto bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">{{ formattedJson }}</pre>
-                  </div>
-                </div>
+          <!-- Personal Notes Section -->
+          <NotesEditor
+            v-model="workout.notes"
+            :notes-updated-at="workout.notesUpdatedAt"
+            :api-endpoint="`/api/workouts/${workout.id}/notes`"
+            @update:notesUpdatedAt="workout.notesUpdatedAt = $event"
+          />
 
-                <div v-if="workout.rawJson" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                  <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Original Source Data (Raw JSON)</h3>
-                    <UButton
-                      icon="i-heroicons-clipboard-document"
-                      color="neutral"
-                      variant="ghost"
-                      @click="copyRawJsonToClipboard"
-                    >
-                      Copy Raw JSON
-                    </UButton>
-                  </div>
-                  <div class="p-6">
-                    <pre class="text-sm text-gray-800 dark:text-gray-200 overflow-x-auto bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">{{ formattedRawJson }}</pre>
-                  </div>
-                </div>
-         </div>
+          <!-- Detailed Metrics Section -->
+          <div id="metrics" class="scroll-mt-20"></div>
+          <div v-if="availableMetrics.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Detailed Metrics</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
+              <div
+                v-for="metric in availableMetrics"
+                :key="metric.key"
+                class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
+              >
+                <span class="text-sm text-gray-600 dark:text-gray-400">{{ metric.label }}</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ metric.value }}</span>
+              </div>
+            </div>
+          </div>
        </div>
      </div>
     </template>
@@ -466,12 +392,6 @@ const workout = ref<any>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const analyzingWorkout = ref(false)
-const tabs = [
-  { label: 'Overview', slot: 'overview' },
-  { label: 'JSON Data', slot: 'json' }
-]
-
-const selectedTab = ref(0)
 
 // Rendered markdown analysis
 const renderedAnalysis = computed(() => {
@@ -531,9 +451,6 @@ async function fetchWorkout() {
   try {
     const id = route.params.id
     workout.value = await $fetch(`/api/workouts/${id}`)
-    // Ensure overview tab is selected after data loads
-    await nextTick()
-    selectedTab.value = 0
   } catch (e: any) {
     error.value = e.data?.message || e.message || 'Failed to load workout'
     console.error('Error fetching workout:', e)
@@ -541,17 +458,6 @@ async function fetchWorkout() {
     loading.value = false
   }
 }
-
-// Computed properties for JSON formatting
-const formattedJson = computed(() => {
-  if (!workout.value) return ''
-  return JSON.stringify(workout.value, null, 2)
-})
-
-const formattedRawJson = computed(() => {
-  if (!workout.value?.rawJson) return ''
-  return JSON.stringify(workout.value.rawJson, null, 2)
-})
 
 // Polling interval reference
 let pollingInterval: NodeJS.Timeout | null = null
@@ -662,44 +568,6 @@ function stopPolling() {
   }
 }
 
-// Copy functions
-async function copyJsonToClipboard() {
-  try {
-    await navigator.clipboard.writeText(formattedJson.value)
-    toast.add({
-      title: 'Copied to clipboard',
-      description: 'Workout JSON data copied successfully',
-      color: 'success',
-      icon: 'i-heroicons-check-circle'
-    })
-  } catch (e) {
-    toast.add({
-      title: 'Copy failed',
-      description: 'Failed to copy to clipboard',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
-  }
-}
-
-async function copyRawJsonToClipboard() {
-  try {
-    await navigator.clipboard.writeText(formattedRawJson.value)
-    toast.add({
-      title: 'Copied to clipboard',
-      description: 'Raw JSON data copied successfully',
-      color: 'success',
-      icon: 'i-heroicons-check-circle'
-    })
-  } catch (e) {
-    toast.add({
-      title: 'Copy failed',
-      description: 'Failed to copy to clipboard',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
-    })
-  }
-}
 
 // Utility functions
 function formatDate(date: string | Date) {
