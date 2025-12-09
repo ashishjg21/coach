@@ -100,6 +100,7 @@ export default defineEventHandler(async (event) => {
       distance: w.distanceMeters,
       tss: w.tss,
       intensity: w.intensity,
+      averageHr: w.averageHr,
       
       // Completed specific
       rpe: w.rpe,
