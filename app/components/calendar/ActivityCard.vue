@@ -48,7 +48,7 @@
             {{ formatDistance(activity.distance) }}
           </span>
           
-          <!-- Load/TSS -->
+          <!-- TSS -->
           <span v-if="activity.tss" class="font-semibold">
             {{ Math.round(activity.tss) }} TSS
           </span>

@@ -73,7 +73,7 @@
           </div>
           <div class="flex items-center gap-1.5 border-l border-gray-300 dark:border-gray-700 pl-3">
             <div class="w-4 h-1 bg-green-500 rounded-sm"></div>
-            <span>Load/TSS</span>
+            <span>TSS</span>
           </div>
         </div>
 
@@ -135,7 +135,7 @@
               </UTooltip>
               <UTooltip text="Training Stress Score - Weekly total training load">
                 <div class="flex justify-between">
-                  <span>Load</span>
+                  <span>TSS</span>
                   <span class="font-medium text-gray-700 dark:text-gray-300">
                     {{ Math.round(getWeekSummary(week).tss) }}
                   </span>
@@ -398,7 +398,9 @@ function getWeekSummary(weekDays: any[]) {
     day.activities.forEach((act: CalendarActivity) => {
       acc.duration += (act.duration || act.plannedDuration || 0)
       acc.distance += (act.distance || act.plannedDistance || 0)
-      acc.tss += (act.tss || act.plannedTss || 0)
+      // Use same fallback logic as training stress calculations
+      const stressScore = act.tss ?? act.trimp ?? act.plannedTss ?? 0
+      acc.tss += stressScore
       
       // Track the last (most recent) CTL/ATL values in the week
       if (act.ctl !== null && act.ctl !== undefined) lastCTL = act.ctl
@@ -517,7 +519,7 @@ const listColumns = [
   { accessorKey: 'distance', header: 'Distance', id: 'distance' },
   { accessorKey: 'averageHr', header: 'Avg HR', id: 'averageHr' },
   { accessorKey: 'intensity', header: 'Intensity', id: 'intensity' },
-  { accessorKey: 'tss', header: 'Load', id: 'tss' },
+  { accessorKey: 'tss', header: 'TSS', id: 'tss' },
   { accessorKey: 'rpe', header: 'RPE', id: 'rpe' },
   { accessorKey: 'source', header: 'Source', id: 'source' },
   { accessorKey: 'status', header: 'Status', id: 'status' }

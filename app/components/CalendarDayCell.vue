@@ -98,14 +98,14 @@
                 </template>
               </span>
               <span class="inline-flex items-center gap-0.5">
-                <template v-if="activity.tss || activity.plannedTss">
+                <template v-if="(activity.tss || activity.trimp || activity.plannedTss)">
                   <span class="w-3 h-0.5 rounded-full flex-shrink-0"
                     :class="{
                       'bg-green-500': activity.source === 'completed',
                       'bg-amber-500': activity.source === 'planned'
                     }"
                   ></span>
-                  <span class="font-medium">{{ Math.round(activity.tss || activity.plannedTss || 0) }}</span>
+                  <span class="font-medium">{{ Math.round(activity.tss ?? activity.trimp ?? activity.plannedTss ?? 0) }}</span>
                 </template>
               </span>
             </div>
