@@ -1,0 +1,208 @@
+<template>
+  <div v-if="hasData" class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+    <div class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Training Zones</div>
+    <UTooltip :text="tooltipText" :popper="{ placement: 'right' }">
+      <div class="w-full h-4 flex gap-[1px] rounded overflow-hidden shadow-sm cursor-help">
+        <div
+          v-for="(segment, index) in zoneSegments"
+          :key="index"
+          :style="{
+            width: segment.percentage + '%',
+            backgroundColor: segment.color
+          }"
+          class="transition-all duration-200 hover:opacity-80 first:rounded-l last:rounded-r"
+        ></div>
+      </div>
+    </UTooltip>
+  </div>
+  <div v-else-if="loading" class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+    <div class="text-[10px] text-gray-500 dark:text-gray-400 mb-1">Training Zones</div>
+    <div class="w-full h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse"></div>
+  </div>
+</template>
+
+<script setup lang="ts">
+interface Props {
+  workoutIds: string[]
+  autoLoad?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  autoLoad: true
+})
+
+// Zone colors matching the MiniZoneChart component
+const zoneColors = [
+  'rgb(34, 197, 94)',    // Z1 - Green
+  'rgb(59, 130, 246)',   // Z2 - Blue
+  'rgb(245, 158, 11)',   // Z3 - Yellow
+  'rgb(249, 115, 22)',   // Z4 - Orange
+  'rgb(239, 68, 68)',    // Z5 - Red
+]
+
+const loading = ref(false)
+const aggregatedZones = ref<number[]>([])
+const zoneType = ref<'hr' | 'power'>('hr')
+const userZones = ref<any>(null)
+
+const hasData = computed(() => {
+  return aggregatedZones.value.length > 0 && aggregatedZones.value.some(v => v > 0)
+})
+
+const zoneSegments = computed(() => {
+  if (!hasData.value) return []
+  
+  const total = aggregatedZones.value.reduce((sum, val) => sum + val, 0)
+  if (total === 0) return []
+  
+  return aggregatedZones.value
+    .map((time, index) => ({
+      percentage: (time / total) * 100,
+      color: zoneColors[index],
+      zone: index + 1,
+      time: time
+    }))
+    .filter(seg => seg.percentage > 0)
+})
+
+const tooltipText = computed(() => {
+  if (!hasData.value || !userZones.value) return ''
+  
+  const type = zoneType.value === 'hr' ? 'Heart Rate' : 'Power'
+  const zones = zoneType.value === 'hr' ? userZones.value.hrZones : userZones.value.powerZones
+  
+  if (!zones || zones.length === 0) return ''
+  
+  const zoneDetails = zoneSegments.value
+    .map((seg) => {
+      const zone = zones[seg.zone - 1]
+      if (!zone) return null
+      
+      const hours = Math.floor(seg.time / 3600)
+      const minutes = Math.floor((seg.time % 3600) / 60)
+      const timeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
+      
+      return `${zone.name}: ${timeStr} (${seg.percentage.toFixed(1)}%)`
+    })
+    .filter(Boolean)
+    .join('\n')
+  
+  return `Weekly ${type} Zone Distribution:\n${zoneDetails}`
+})
+
+async function fetchData() {
+  if (!props.autoLoad || props.workoutIds.length === 0) return
+  
+  loading.value = true
+  
+  try {
+    // Fetch user profile for zones
+    const profile = await $fetch('/api/profile').catch(() => null)
+    
+    userZones.value = {
+      hrZones: profile?.profile?.hrZones || getDefaultHrZones(),
+      powerZones: profile?.profile?.powerZones || getDefaultPowerZones()
+    }
+    
+    // Fetch stream data for all workouts in parallel
+    const streams = await Promise.all(
+      props.workoutIds.map(id => 
+        $fetch(`/api/workouts/${id}/streams`).catch(() => null)
+      )
+    )
+    
+    // Aggregate zone data
+    const hrZoneTimes = new Array(5).fill(0)
+    const powerZoneTimes = new Array(5).fill(0)
+    let hasHrData = false
+    let hasPowerData = false
+    
+    streams.forEach(stream => {
+      if (!stream) return
+      
+      // Process HR zones
+      if ('heartrate' in stream && Array.isArray(stream.heartrate)) {
+        hasHrData = true
+        stream.heartrate.forEach((hr: number) => {
+          if (hr === null || hr === undefined) return
+          const zoneIndex = getZoneIndex(hr, userZones.value.hrZones)
+          if (zoneIndex >= 0) hrZoneTimes[zoneIndex]++
+        })
+      }
+      
+      // Process Power zones
+      if ('watts' in stream && Array.isArray(stream.watts)) {
+        hasPowerData = true
+        stream.watts.forEach((watts: number) => {
+          if (watts === null || watts === undefined) return
+          const zoneIndex = getZoneIndex(watts, userZones.value.powerZones)
+          if (zoneIndex >= 0) powerZoneTimes[zoneIndex]++
+        })
+      }
+    })
+    
+    // Prefer power if available, otherwise use HR
+    if (hasPowerData) {
+      zoneType.value = 'power'
+      aggregatedZones.value = powerZoneTimes
+    } else if (hasHrData) {
+      zoneType.value = 'hr'
+      aggregatedZones.value = hrZoneTimes
+    }
+  } catch (e) {
+    console.error('Error fetching weekly zone data:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+function getZoneIndex(value: number, zones: any[]): number {
+  if (!zones) return -1
+  
+  for (let i = 0; i < zones.length; i++) {
+    const zone = zones[i]
+    if (value >= zone.min && value <= zone.max) {
+      return i
+    }
+  }
+  
+  // If value is above all zones, put it in the highest zone
+  if (value > zones[zones.length - 1].max) {
+    return zones.length - 1
+  }
+  
+  return -1
+}
+
+function getDefaultHrZones() {
+  return [
+    { name: 'Z1', min: 60, max: 120 },
+    { name: 'Z2', min: 121, max: 145 },
+    { name: 'Z3', min: 146, max: 160 },
+    { name: 'Z4', min: 161, max: 175 },
+    { name: 'Z5', min: 176, max: 220 }
+  ]
+}
+
+function getDefaultPowerZones() {
+  return [
+    { name: 'Z1', min: 0, max: 137 },
+    { name: 'Z2', min: 138, max: 187 },
+    { name: 'Z3', min: 188, max: 225 },
+    { name: 'Z4', min: 226, max: 262 },
+    { name: 'Z5', min: 263, max: 999 }
+  ]
+}
+
+// Watch for changes in workout IDs
+watch(() => props.workoutIds, () => {
+  if (props.autoLoad) {
+    fetchData()
+  }
+}, { immediate: true })
+
+// Expose fetch method
+defineExpose({
+  fetchData
+})
+</script>
