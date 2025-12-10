@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "nuxt-ui": {
+      "type": "streamable-http",
+      "url": "https://ui.nuxt.com/mcp",
+      "alwaysAllow": [
+        "get-component"
+      ]
+    },
+    "postgres": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "DATABASE_URI",
+        "crystaldba/postgres-mcp",
+        "--access-mode=unrestricted"
+      ],
+      "env": {
+        "DATABASE_URI": "postgresql://watts:password@localhost:5439/watts"
+      }
+    }
+  }
+}
