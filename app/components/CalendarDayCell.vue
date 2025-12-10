@@ -105,9 +105,33 @@
                       'bg-amber-500': activity.source === 'planned'
                     }"
                   ></span>
-                  {{ Math.round(activity.tss || activity.plannedTss || 0) }}
+                  <span class="font-medium">{{ Math.round(activity.tss || activity.plannedTss || 0) }}</span>
                 </template>
               </span>
+            </div>
+            
+            <!-- Training Stress Metrics (CTL/ATL/TSB) for completed workouts -->
+            <div v-if="activity.source === 'completed' && (activity.ctl || activity.atl)" class="flex items-center gap-2 text-[9px] text-gray-400 dark:text-gray-500 mt-0.5">
+              <UTooltip v-if="activity.ctl" text="Chronic Training Load - Your fitness level at this point">
+                <span class="flex items-center gap-0.5">
+                  <span class="text-purple-600 dark:text-purple-400 font-semibold">CTL</span>
+                  <span>{{ activity.ctl.toFixed(0) }}</span>
+                </span>
+              </UTooltip>
+              <UTooltip v-if="activity.atl" text="Acute Training Load - Your fatigue level at this point">
+                <span class="flex items-center gap-0.5">
+                  <span class="text-yellow-600 dark:text-yellow-400 font-semibold">ATL</span>
+                  <span>{{ activity.atl.toFixed(0) }}</span>
+                </span>
+              </UTooltip>
+              <UTooltip v-if="activity.ctl && activity.atl" :text="`Training Stress Balance: ${getTSBTooltip(activity.ctl - activity.atl)}`">
+                <span class="flex items-center gap-0.5">
+                  <span class="font-semibold" :class="getTSBColor(activity.ctl - activity.atl)">TSB</span>
+                  <span :class="getTSBColor(activity.ctl - activity.atl)">
+                    {{ activity.ctl - activity.atl > 0 ? '+' : '' }}{{ (activity.ctl - activity.atl).toFixed(0) }}
+                  </span>
+                </span>
+              </UTooltip>
             </div>
 
             <!-- Planned Indicator Badge -->
@@ -205,6 +229,23 @@ function formatDistance(meters: number): string {
     return `${km.toFixed(1)}km`
   }
   return `${Math.round(meters)}m`
+}
+
+function getTSBColor(tsb: number | null): string {
+  if (tsb === null) return 'text-gray-400'
+  if (tsb >= 5) return 'text-green-600 dark:text-green-400'
+  if (tsb >= -10) return 'text-yellow-600 dark:text-yellow-400'
+  if (tsb >= -25) return 'text-blue-600 dark:text-blue-400'
+  return 'text-red-600 dark:text-red-400'
+}
+
+function getTSBTooltip(tsb: number): string {
+  if (tsb > 25) return 'Resting too long - fitness declining'
+  if (tsb > 5) return 'Fresh and ready to race'
+  if (tsb > -10) return 'Maintaining fitness'
+  if (tsb > -25) return 'Building fitness'
+  if (tsb > -40) return 'High fatigue - caution'
+  return 'Severe fatigue - rest needed'
 }
 
 function getNutritionClass(metric: 'calories' | 'protein' | 'carbs' | 'fat'): string {

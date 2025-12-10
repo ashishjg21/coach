@@ -8,6 +8,14 @@
     ]"
     @click="$emit('click')"
   >
+    <!-- TSB Indicator Dot -->
+    <div
+      v-if="tsbValue !== null && activity.source === 'completed'"
+      class="absolute top-1 right-1 w-2 h-2 rounded-full"
+      :class="getTSBDotColor(tsbValue)"
+      :title="`CTL: ${activity.ctl?.toFixed(1)}, ATL: ${activity.atl?.toFixed(1)}, TSB: ${tsbValue.toFixed(1)}`"
+    ></div>
+
     <!-- Header: Icon & Title -->
     <div class="px-1.5 py-1 flex items-start gap-1.5">
       <UIcon
@@ -68,6 +76,15 @@ const props = defineProps<{
 }>()
 
 const isPlanned = computed(() => props.activity.source === 'planned')
+
+// Calculate TSB (Training Stress Balance) if CTL and ATL are available
+const tsbValue = computed(() => {
+  if (props.activity.ctl !== null && props.activity.ctl !== undefined &&
+      props.activity.atl !== null && props.activity.atl !== undefined) {
+    return props.activity.ctl - props.activity.atl
+  }
+  return null
+})
 
 // Icon mapping based on activity type
 const activityIcon = computed(() => {
@@ -137,5 +154,12 @@ function formatStartTime(dateStr: string): string {
   } catch {
     return ''
   }
+}
+
+// TSB indicator color based on value
+function getTSBDotColor(tsb: number): string {
+  if (tsb >= 5) return 'bg-green-500'
+  if (tsb >= -10) return 'bg-yellow-500'
+  return 'bg-red-500'
 }
 </script>

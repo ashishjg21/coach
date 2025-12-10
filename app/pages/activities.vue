@@ -117,24 +117,53 @@
             </div>
             
             <div class="mt-2 space-y-1 text-gray-500">
-              <div class="flex justify-between">
-                <span>Dur</span>
-                <span class="font-medium text-gray-700 dark:text-gray-300">
-                  {{ formatDuration(getWeekSummary(week).duration) }}
-                </span>
-              </div>
-              <div class="flex justify-between">
-                <span>Dist</span>
-                <span class="font-medium text-gray-700 dark:text-gray-300">
-                  {{ formatDistance(getWeekSummary(week).distance) }}
-                </span>
-              </div>
-              <div class="flex justify-between">
-                <span>Load</span>
-                <span class="font-medium text-gray-700 dark:text-gray-300">
-                  {{ Math.round(getWeekSummary(week).tss) }}
-                </span>
-              </div>
+              <UTooltip text="Total training duration for the week">
+                <div class="flex justify-between">
+                  <span>Dur</span>
+                  <span class="font-medium text-gray-700 dark:text-gray-300">
+                    {{ formatDuration(getWeekSummary(week).duration) }}
+                  </span>
+                </div>
+              </UTooltip>
+              <UTooltip text="Total distance covered this week">
+                <div class="flex justify-between">
+                  <span>Dist</span>
+                  <span class="font-medium text-gray-700 dark:text-gray-300">
+                    {{ formatDistance(getWeekSummary(week).distance) }}
+                  </span>
+                </div>
+              </UTooltip>
+              <UTooltip text="Training Stress Score - Weekly total training load">
+                <div class="flex justify-between">
+                  <span>Load</span>
+                  <span class="font-medium text-gray-700 dark:text-gray-300">
+                    {{ Math.round(getWeekSummary(week).tss) }}
+                  </span>
+                </div>
+              </UTooltip>
+              <UTooltip text="Chronic Training Load - Your 42-day fitness level">
+                <div v-if="getWeekSummary(week).ctl !== null" class="flex justify-between">
+                  <span>CTL</span>
+                  <span class="font-medium text-gray-700 dark:text-gray-300">
+                    {{ getWeekSummary(week).ctl?.toFixed(1) }}
+                  </span>
+                </div>
+              </UTooltip>
+              <UTooltip text="Training Stress Balance - Your current form (CTL - ATL)">
+                <div v-if="getWeekSummary(week).tsb !== null" class="flex justify-between">
+                  <span>TSB</span>
+                  <span class="font-semibold" :class="getTSBColor(getWeekSummary(week).tsb)">
+                    {{ getWeekSummary(week).tsb > 0 ? '+' : '' }}{{ getWeekSummary(week).tsb?.toFixed(0) }}
+                  </span>
+                </div>
+              </UTooltip>
+              <UTooltip :text="getFormStatusTooltip(getWeekSummary(week).tsb)">
+                <div v-if="getWeekSummary(week).tsb !== null" class="mt-1 pt-1 border-t border-gray-200 dark:border-gray-700">
+                  <div class="text-[10px] font-medium" :class="getTSBColor(getWeekSummary(week).tsb)">
+                    {{ getFormStatusText(getWeekSummary(week).tsb) }}
+                  </div>
+                </div>
+              </UTooltip>
             </div>
           </div>
 
@@ -361,14 +390,61 @@ function getWeekNumber(date: Date) {
 }
 
 function getWeekSummary(weekDays: any[]) {
+  let lastCTL: number | null = null
+  let lastATL: number | null = null
+  let lastTSB: number | null = null
+  
   return weekDays.reduce((acc, day) => {
     day.activities.forEach((act: CalendarActivity) => {
       acc.duration += (act.duration || act.plannedDuration || 0)
       acc.distance += (act.distance || act.plannedDistance || 0)
       acc.tss += (act.tss || act.plannedTss || 0)
+      
+      // Track the last (most recent) CTL/ATL values in the week
+      if (act.ctl !== null && act.ctl !== undefined) lastCTL = act.ctl
+      if (act.atl !== null && act.atl !== undefined) lastATL = act.atl
     })
-    return acc
-  }, { duration: 0, distance: 0, tss: 0 })
+    
+    // Calculate TSB from last available CTL/ATL
+    if (lastCTL !== null && lastATL !== null) {
+      lastTSB = lastCTL - lastATL
+    }
+    
+    return {
+      ...acc,
+      ctl: lastCTL,
+      atl: lastATL,
+      tsb: lastTSB
+    }
+  }, { duration: 0, distance: 0, tss: 0, ctl: null as number | null, atl: null as number | null, tsb: null as number | null })
+}
+
+function getTSBColor(tsb: number | null): string {
+  if (tsb === null) return 'text-gray-400'
+  if (tsb >= 5) return 'text-green-600 dark:text-green-400'
+  if (tsb >= -10) return 'text-yellow-600 dark:text-yellow-400'
+  if (tsb >= -25) return 'text-blue-600 dark:text-blue-400'
+  return 'text-red-600 dark:text-red-400'
+}
+
+function getFormStatusText(tsb: number | null): string {
+  if (tsb === null) return ''
+  if (tsb > 25) return 'No Fitness'
+  if (tsb > 5) return 'Peak Form'
+  if (tsb > -10) return 'Maintenance'
+  if (tsb > -25) return 'Building'
+  if (tsb > -40) return 'Caution'
+  return 'Overreaching'
+}
+
+function getFormStatusTooltip(tsb: number | null): string {
+  if (tsb === null) return ''
+  if (tsb > 25) return 'Resting too long - fitness declining'
+  if (tsb > 5) return 'Fresh and ready to race - peak performance zone'
+  if (tsb > -10) return 'Neutral zone - maintaining fitness'
+  if (tsb > -25) return 'Optimal training zone - building fitness'
+  if (tsb > -40) return 'High fatigue - injury risk increasing'
+  return 'Severe fatigue - rest needed immediately'
 }
 
 function formatDuration(seconds: number): string {
