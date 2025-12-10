@@ -1,4 +1,13 @@
 <template>
+  <UModal v-model:open="showConfigModal" title="Configure Custom Report" description="Create a customized analysis report with your specified filters and timeframe">
+    <template #content>
+      <ReportConfigModal
+        @generate="handleCustomReport"
+        @close="showConfigModal = false"
+      />
+    </template>
+  </UModal>
+
   <UDashboardPanel id="reports">
     <template #header>
       <UDashboardNavbar title="Reports">
@@ -8,9 +17,21 @@
         <template #right>
           <div class="flex gap-2 flex-wrap">
             <UButton
+              @click="showConfigModal = true"
+              :loading="generating"
+              size="sm"
+              color="primary"
+              variant="solid"
+            >
+              <UIcon name="i-heroicons-adjustments-horizontal" class="w-4 h-4 mr-2" />
+              Custom Report
+            </UButton>
+            <USeparator orientation="vertical" class="h-6" />
+            <UButton
               @click="generateReport('LAST_3_WORKOUTS')"
               :loading="generating"
               size="sm"
+              variant="outline"
             >
               <UIcon name="i-heroicons-chart-bar" class="w-4 h-4 mr-2" />
               Last 3 Workouts
@@ -29,6 +50,7 @@
               :loading="generating"
               size="sm"
               color="success"
+              variant="outline"
             >
               <UIcon name="i-heroicons-cake" class="w-4 h-4 mr-2" />
               Last 3 Days Nutrition
@@ -53,6 +75,9 @@
         <div>
           <h2 class="text-2xl font-bold">Your Reports</h2>
           <p class="text-muted mt-1">AI-generated training analysis and recommendations</p>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            Use the <strong>Custom Report</strong> button to configure exactly what you want to analyze with filters for timeframe, workout types, and focus areas.
+          </p>
         </div>
         
         <!-- Reports Table -->
@@ -73,8 +98,18 @@
             <p class="mb-4">No reports yet</p>
             <div class="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
               <UButton
+                @click="showConfigModal = true"
+                :loading="generating"
+                size="lg"
+              >
+                <UIcon name="i-heroicons-adjustments-horizontal" class="w-5 h-5 mr-2" />
+                Create Custom Report
+              </UButton>
+              
+              <UButton
                 @click="generateReport('LAST_3_WORKOUTS')"
                 :loading="generating"
+                variant="outline"
               >
                 <UIcon name="i-heroicons-chart-bar" class="w-4 h-4 mr-2" />
                 Last 3 Workouts
@@ -86,23 +121,6 @@
               >
                 <UIcon name="i-heroicons-calendar" class="w-4 h-4 mr-2" />
                 Weekly Analysis
-              </UButton>
-              <UButton
-                @click="generateReport('LAST_3_NUTRITION')"
-                :loading="generating"
-                color="success"
-              >
-                <UIcon name="i-heroicons-cake" class="w-4 h-4 mr-2" />
-                Last 3 Days Nutrition
-              </UButton>
-              <UButton
-                @click="generateReport('LAST_7_NUTRITION')"
-                :loading="generating"
-                color="success"
-                variant="outline"
-              >
-                <UIcon name="i-heroicons-cake" class="w-4 h-4 mr-2" />
-                Weekly Nutrition
               </UButton>
             </div>
           </div>
@@ -194,6 +212,7 @@ interface Report {
 
 // State
 const generating = ref(false)
+const showConfigModal = ref(false)
 const toast = useToast()
 
 definePageMeta({
@@ -237,8 +256,8 @@ const REPORT_TYPE_CONFIG = {
   },
   'CUSTOM': {
     label: 'Custom Report',
-    icon: 'i-heroicons-document-text',
-    description: 'Custom training analysis report.'
+    icon: 'i-heroicons-adjustments-horizontal',
+    description: 'Custom training analysis report with your specified filters.'
   }
 } as const
 
@@ -264,6 +283,41 @@ const generateReport = async (reportType: string) => {
     toast.add({
       title: 'Generation Failed',
       description: error instanceof Error ? error.message : 'Failed to start report generation',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-circle'
+    })
+  } finally {
+    generating.value = false
+  }
+}
+
+const handleCustomReport = async (config: any) => {
+  generating.value = true
+  showConfigModal.value = false
+  
+  try {
+    const result = await $fetch<{ reportId: string }>('/api/reports/generate', {
+      method: 'POST',
+      body: {
+        type: 'CUSTOM',
+        config
+      }
+    })
+    
+    toast.add({
+      title: 'Custom Report Generation Started',
+      description: 'Your custom report is being generated. This may take a minute.',
+      color: 'success',
+      icon: 'i-heroicons-check-circle'
+    })
+    
+    await refresh()
+    navigateTo(`/report/${result.reportId}`)
+  } catch (error) {
+    console.error('Failed to generate custom report:', error)
+    toast.add({
+      title: 'Generation Failed',
+      description: error instanceof Error ? error.message : 'Failed to start custom report generation',
       color: 'error',
       icon: 'i-heroicons-exclamation-circle'
     })
