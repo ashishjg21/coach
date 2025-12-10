@@ -14,9 +14,10 @@ export default defineEventHandler(async (event) => {
   const userId = (session.user as any).id
   const body = await readBody(event)
   const reportType = body.type || 'WEEKLY_ANALYSIS'
+  const customConfig = body.config // Custom configuration from the form
   
   // Validate report type
-  const validTypes = ['WEEKLY_ANALYSIS', 'LAST_3_WORKOUTS', 'LAST_3_NUTRITION', 'LAST_7_NUTRITION']
+  const validTypes = ['WEEKLY_ANALYSIS', 'LAST_3_WORKOUTS', 'LAST_3_NUTRITION', 'LAST_7_NUTRITION', 'CUSTOM']
   if (!validTypes.includes(reportType)) {
     throw createError({
       statusCode: 400,
@@ -24,11 +25,28 @@ export default defineEventHandler(async (event) => {
     })
   }
   
-  // Determine date range based on report type
+  // Determine date range based on report type or custom config
   let dateRangeStart: Date
   let dateRangeEnd = new Date()
+  let reportConfig: any = null
   
-  if (reportType === 'LAST_3_WORKOUTS') {
+  if (reportType === 'CUSTOM' && customConfig) {
+    // Handle custom configuration
+    reportConfig = customConfig
+    
+    if (customConfig.timeframeType === 'days') {
+      const days = customConfig.days || 7
+      dateRangeStart = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    } else if (customConfig.timeframeType === 'count') {
+      // For count-based, we'll use a 90-day lookback to find the items
+      dateRangeStart = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+    } else if (customConfig.timeframeType === 'range') {
+      dateRangeStart = new Date(customConfig.startDate)
+      dateRangeEnd = new Date(customConfig.endDate)
+    } else {
+      dateRangeStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    }
+  } else if (reportType === 'LAST_3_WORKOUTS') {
     // For last 3 workouts, we'll use a 30-day lookback to find them
     dateRangeStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
   } else if (reportType === 'LAST_3_NUTRITION') {
@@ -42,21 +60,38 @@ export default defineEventHandler(async (event) => {
     dateRangeStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   }
   
-  // Create report record
+  // Create report record with custom config stored in analysisJson temporarily
+  // (will be replaced with actual analysis results)
+  const reportData: any = {
+    userId,
+    type: reportType,
+    status: 'PENDING',
+    dateRangeStart,
+    dateRangeEnd
+  }
+  
+  // Only add analysisJson if we have a custom config
+  if (reportConfig) {
+    reportData.analysisJson = { _customConfig: reportConfig }
+  }
+  
   const report = await prisma.report.create({
-    data: {
-      userId,
-      type: reportType,
-      status: 'PENDING',
-      dateRangeStart,
-      dateRangeEnd
-    }
+    data: reportData
   })
   
   try {
     // Trigger appropriate background job based on report type with per-user concurrency
     let handle
-    if (reportType === 'LAST_3_WORKOUTS') {
+    if (reportType === 'CUSTOM') {
+      // For custom reports, use a generic analysis job that respects the config
+      handle = await tasks.trigger('generate-custom-report', {
+        userId,
+        reportId: report.id,
+        config: reportConfig
+      }, {
+        concurrencyKey: userId
+      })
+    } else if (reportType === 'LAST_3_WORKOUTS') {
       handle = await tasks.trigger('analyze-last-3-workouts', {
         userId,
         reportId: report.id

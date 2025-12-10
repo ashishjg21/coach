@@ -327,15 +327,13 @@ export async function generateCoachAnalysis(
 ): Promise<string> {
   const modelName = MODEL_NAMES[modelType]
   
-  return retryWithBackoff(
+  const result = await retryWithBackoff(
     async () => {
       const model = genAI.getGenerativeModel({
         model: modelName
       })
       
-      const result = await model.generateContent(prompt)
-      const response = result.response
-      return response.text()
+      return model.generateContent(prompt)
     },
     `generateCoachAnalysis(${modelType})`,
     trackingContext ? {
@@ -345,6 +343,8 @@ export async function generateCoachAnalysis(
       prompt
     } : undefined
   )
+
+  return result.response.text()
 }
 
 export async function generateStructuredAnalysis<T>(
@@ -355,7 +355,7 @@ export async function generateStructuredAnalysis<T>(
 ): Promise<T> {
   const modelName = MODEL_NAMES[modelType]
   
-  return retryWithBackoff(
+  const result = await retryWithBackoff(
     async () => {
       const model = genAI.getGenerativeModel({
         model: modelName,
@@ -365,9 +365,7 @@ export async function generateStructuredAnalysis<T>(
         }
       })
       
-      const result = await model.generateContent(prompt)
-      const response = result.response
-      return JSON.parse(response.text())
+      return model.generateContent(prompt)
     },
     `generateStructuredAnalysis(${modelType})`,
     trackingContext ? {
@@ -377,6 +375,8 @@ export async function generateStructuredAnalysis<T>(
       prompt
     } : undefined
   )
+
+  return JSON.parse(result.response.text())
 }
 
 export function buildWorkoutSummary(workouts: any[]): string {
