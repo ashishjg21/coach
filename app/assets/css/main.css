@@ -17,6 +17,13 @@
   --color-green-950: #052E16;
 }
 
+/* Ensure buttons and interactive elements have pointer cursor */
+button:not(:disabled):not([aria-disabled="true"]),
+a[href],
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
 /* Chat Typography Improvements */
 .vac-room-container {
   font-family: var(--font-sans);
