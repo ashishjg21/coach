@@ -67,29 +67,40 @@ const colorMode = useColorMode()
 const chartType = computed(() => props.chartData.type)
 
 const chartData = computed(() => {
+  // Vibrant, distinct color palette with good contrast
   const defaultColors = [
     'rgb(59, 130, 246)',   // blue
     'rgb(239, 68, 68)',    // red
     'rgb(34, 197, 94)',    // green
+    'rgb(245, 158, 11)',   // amber
     'rgb(168, 85, 247)',   // purple
-    'rgb(245, 158, 11)',   // orange
     'rgb(236, 72, 153)',   // pink
+    'rgb(14, 165, 233)',   // sky
+    'rgb(251, 146, 60)',   // orange
+    'rgb(20, 184, 166)',   // teal
+    'rgb(217, 70, 239)',   // fuchsia
+    'rgb(132, 204, 22)',   // lime
+    'rgb(244, 63, 94)',    // rose
   ]
 
   return {
     labels: props.chartData.labels,
     datasets: props.chartData.datasets.map((dataset, index) => {
       const color = dataset.color || defaultColors[index % defaultColors.length] || 'rgb(59, 130, 246)'
+      
+      // For doughnut charts, use different colors for each segment
       const bgColor = props.chartData.type === 'doughnut'
-        ? props.chartData.datasets.map((_, i) => defaultColors[i % defaultColors.length])
+        ? dataset.data.map((_, i) => defaultColors[i % defaultColors.length])
         : color.replace('rgb', 'rgba').replace(')', ', 0.2)')
       
       return {
         label: dataset.label,
         data: dataset.data,
-        borderColor: color,
+        borderColor: props.chartData.type === 'doughnut'
+          ? colorMode.value === 'dark' ? 'rgb(17, 24, 39)' : 'rgb(255, 255, 255)'
+          : color,
         backgroundColor: bgColor,
-        borderWidth: 2,
+        borderWidth: props.chartData.type === 'doughnut' ? 3 : 2,
         tension: 0.4,
         fill: props.chartData.type === 'line',
         pointRadius: props.chartData.type === 'line' ? 3 : undefined,
