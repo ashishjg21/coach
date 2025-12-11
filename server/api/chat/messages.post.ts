@@ -44,6 +44,26 @@ export default defineEventHandler(async (event) => {
         maxHr: true,
         weight: true,
         dob: true,
+        restingHr: true,
+        sex: true,
+        city: true,
+        state: true,
+        country: true,
+        timezone: true,
+        language: true,
+        weightUnits: true,
+        height: true,
+        heightUnits: true,
+        distanceUnits: true,
+        temperatureUnits: true,
+        form: true,
+        visibility: true,
+        hrZones: true,
+        powerZones: true,
+        aiPersona: true,
+        aiModelPreference: true,
+        aiAutoAnalyzeWorkouts: true,
+        aiAutoAnalyzeNutrition: true,
         currentFitnessScore: true,
         recoveryCapacityScore: true,
         nutritionComplianceScore: true,
@@ -229,18 +249,78 @@ export default defineEventHandler(async (event) => {
     const metrics: string[] = []
     if (userProfile.ftp) metrics.push(`FTP: ${userProfile.ftp}W`)
     if (userProfile.maxHr) metrics.push(`Max HR: ${userProfile.maxHr} bpm`)
+    if (userProfile.restingHr) metrics.push(`Resting HR: ${userProfile.restingHr} bpm`)
     if (userProfile.weight) {
-      metrics.push(`Weight: ${userProfile.weight}kg`)
-      if (userProfile.ftp) {
+      const weightUnit = userProfile.weightUnits === 'Pounds' ? 'lbs' : 'kg'
+      metrics.push(`Weight: ${userProfile.weight}${weightUnit}`)
+      if (userProfile.ftp && userProfile.weightUnits !== 'Pounds') {
         metrics.push(`W/kg: ${(userProfile.ftp / userProfile.weight).toFixed(2)}`)
       }
+    }
+    if (userProfile.height) {
+      const heightUnit = userProfile.heightUnits === 'ft/in' ? 'ft/in' : 'cm'
+      metrics.push(`Height: ${userProfile.height}${heightUnit}`)
     }
     if (userProfile.dob) {
       const age = Math.floor((Date.now() - new Date(userProfile.dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
       metrics.push(`Age: ${age}`)
     }
+    if (userProfile.sex) metrics.push(`Sex: ${userProfile.sex}`)
     if (metrics.length > 0) {
       athleteContext += `- **Physical Metrics**: ${metrics.join(', ')}\n`
+    }
+    
+    // User Preferences & Settings
+    const settings: string[] = []
+    if (userProfile.language) settings.push(`Language: ${userProfile.language}`)
+    if (userProfile.distanceUnits) settings.push(`Distance: ${userProfile.distanceUnits}`)
+    if (userProfile.temperatureUnits) settings.push(`Temperature: ${userProfile.temperatureUnits}`)
+    if (userProfile.timezone) settings.push(`Timezone: ${userProfile.timezone}`)
+    if (userProfile.city || userProfile.state || userProfile.country) {
+      const location = [userProfile.city, userProfile.state, userProfile.country].filter(Boolean).join(', ')
+      settings.push(`Location: ${location}`)
+    }
+    if (settings.length > 0) {
+      athleteContext += `- **Preferences**: ${settings.join(' | ')}\n`
+    }
+    
+    // Custom Training Zones
+    if (userProfile.powerZones || userProfile.hrZones) {
+      athleteContext += '\n### Custom Training Zones\n'
+      
+      if (userProfile.powerZones) {
+        athleteContext += '**Power Zones** (based on FTP):\n'
+        const zones = userProfile.powerZones as any[]
+        zones.forEach((zone, index) => {
+          athleteContext += `- Zone ${index + 1}: ${zone.name || `Zone ${index + 1}`} - ${zone.min}% to ${zone.max}% FTP`
+          if (userProfile.ftp) {
+            const minWatts = Math.round((zone.min / 100) * userProfile.ftp)
+            const maxWatts = Math.round((zone.max / 100) * userProfile.ftp)
+            athleteContext += ` (${minWatts}-${maxWatts}W)`
+          }
+          athleteContext += '\n'
+        })
+      }
+      
+      if (userProfile.hrZones) {
+        athleteContext += '\n**Heart Rate Zones** (based on Max HR):\n'
+        const zones = userProfile.hrZones as any[]
+        zones.forEach((zone, index) => {
+          athleteContext += `- Zone ${index + 1}: ${zone.name || `Zone ${index + 1}`} - ${zone.min}% to ${zone.max}% Max HR`
+          if (userProfile.maxHr) {
+            const minBpm = Math.round((zone.min / 100) * userProfile.maxHr)
+            const maxBpm = Math.round((zone.max / 100) * userProfile.maxHr)
+            athleteContext += ` (${minBpm}-${maxBpm} bpm)`
+          }
+          athleteContext += '\n'
+        })
+      }
+      athleteContext += '\n*Use these zones when discussing intensity, pacing, and workout structure.*\n'
+    }
+    
+    // AI Preferences
+    if (userProfile.aiPersona) {
+      athleteContext += `\n- **Coaching Style Preference**: ${userProfile.aiPersona}\n`
     }
     
     const scores: string[] = []
@@ -338,8 +418,10 @@ export default defineEventHandler(async (event) => {
   // Recent Workouts Summary
   if (recentWorkouts.length > 0) {
     athleteContext += `\n### Recent Workouts (${recentWorkouts.length} activities)\n`
+    athleteContext += `*Each workout includes its ID for reference in tool calls*\n\n`
     for (const workout of recentWorkouts) {
       athleteContext += `- **${workout.date.toLocaleDateString()}**: ${workout.title || workout.type}\n`
+      athleteContext += `  - **ID**: \`${workout.id}\` (use this ID to get detailed analysis)\n`
       athleteContext += `  - Duration: ${Math.round(workout.durationSec / 60)} min`
       if (workout.distanceMeters) athleteContext += ` | Distance: ${(workout.distanceMeters / 1000).toFixed(1)} km`
       if (workout.averageWatts) athleteContext += ` | Avg Power: ${workout.averageWatts}W`
@@ -608,17 +690,24 @@ You aren't a robot reciting a manual. You are a coach who knows that the best ri
 
 **IMPORTANT: Recent data (last 7 days) is ALREADY PROVIDED in your context above!**
 
-Look at the "Recent Activity (Last 7 Days)" section - it contains:
-- Recent workouts with details
+Look at the "Recent Activity Detail (Last 7 Days)" section - it contains:
+- Recent workouts with details **AND THEIR IDs** - each workout shows its ID
 - Recent nutrition logs
 - Recent wellness metrics
+
+**CRITICAL: Workout IDs are included in the context!**
+- When a user asks about a specific workout (e.g., "tell me about my morning ride"), you can see the workout ID in the context
+- Use the workout ID directly with get_workout_details(workout_id="...") or get_workout_stream(workout_id="...")
+- Don't search by title when you already have the ID!
 
 **You DO NOT need to use tools for data that's already in your context!**
 
 **Only use tools when you need:**
-1. Data older than 7 days (e.g., "Show me my workouts from 2 weeks ago")
-2. Today's specific detailed data if not in context
-3. Specific information the user explicitly requests that's not in the summary
+1. **Detailed workout analysis**: Use get_workout_details(workout_id="...") with the ID from context to get full metrics, scores, and explanations
+2. **Stream data**: Use get_workout_stream(workout_id="...") with the ID from context for second-by-second pacing/power/HR analysis
+3. Data older than 7 days (e.g., "Show me my workouts from 2 weeks ago")
+4. Today's specific detailed data if not in context
+5. Specific information the user explicitly requests that's not in the summary
 
 **For general questions like "How am I doing?" or "What's up?" - just analyze the data already in your context!**
 Don't waste time making redundant tool calls. Be smart and efficient.
@@ -966,7 +1055,7 @@ Title:`
           toolCalls: toolCallsUsed, // Store complete tool call info with args and responses
           toolsUsed: toolCallsUsed.map(t => t.name), // Keep for backward compatibility
           toolCallCount: toolCallsUsed.length
-        }
+        } as any // Cast to any to handle Json type
       }
     })
   }
