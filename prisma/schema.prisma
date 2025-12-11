@@ -824,6 +824,7 @@ model ChatMessage {
   files       Json?    // Array of file objects if needed
   replyToId   String?  // For threading
   seen        Json?    // Map of userId -> timestamp
+  metadata    Json?    // Extended metadata (charts, tool calls, etc.)
   
   room        ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
   
