@@ -150,9 +150,16 @@ export default defineEventHandler(async (event) => {
       duration: w.durationSec,
       distance: w.distanceMeters,
       tss: w.tss,
+      trainingLoad: w.trainingLoad, // icu_training_load
       trimp: w.trimp,
       intensity: w.intensity,
       averageHr: w.averageHr,
+      
+      // Power Metrics
+      averageWatts: w.averageWatts,
+      normalizedPower: w.normalizedPower,
+      weightedAvgWatts: w.weightedAvgWatts,
+      kilojoules: w.kilojoules,
       
       // Training Stress Metrics
       ctl: w.ctl,
@@ -160,6 +167,7 @@ export default defineEventHandler(async (event) => {
       
       // Completed specific
       rpe: w.rpe,
+      sessionRpe: w.sessionRpe,
       feel: w.feel,
       
       // Planned workout link
