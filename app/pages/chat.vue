@@ -51,6 +51,20 @@ interface Room {
   index: number
 }
 
+// Computed navigation items for UNavigationMenu
+const navigationItems = computed(() => {
+  return rooms.value.map(room => ({
+    label: room.roomName,
+    avatar: { src: room.avatar, size: '2xs' as const },
+    value: room.roomId,
+    active: room.roomId === currentRoomId.value,
+    description: room.lastMessage?.content
+      ? (room.lastMessage.content.substring(0, 50) + (room.lastMessage.content.length > 50 ? '...' : ''))
+      : undefined,
+    onClick: () => selectRoom(room.roomId)
+  }))
+})
+
 // State
 const input = ref('')
 const messages = ref<Message[]>([])
@@ -247,44 +261,43 @@ function formatTimestamp(timestamp: string | undefined) {
     <template #body>
       <div class="flex h-full">
         <!-- Room List Sidebar -->
-        <div class="w-64 border-r border-gray-200 dark:border-gray-800 flex flex-col bg-gray-50 dark:bg-gray-900">
+        <div class="w-64 border-r border-gray-200 dark:border-gray-800 flex flex-col">
           <div class="p-4 border-b border-gray-200 dark:border-gray-800">
             <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Chat History</h2>
           </div>
           
-          <div class="flex-1 overflow-y-auto p-2">
+          <div class="flex-1 overflow-y-auto py-2 px-2">
             <div v-if="loadingRooms" class="flex items-center justify-center py-8">
               <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin text-gray-400" />
             </div>
             
-            <div v-else class="space-y-1">
-              <button
-                v-for="room in rooms"
-                :key="room.roomId"
-                :class="[
-                  'w-full text-left px-3 py-2 rounded-lg transition-colors',
-                  room.roomId === currentRoomId
-                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-900 dark:text-primary-100'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
-                ]"
-                @click="selectRoom(room.roomId)"
-              >
-                <div class="flex items-start gap-2">
-                  <UAvatar :src="room.avatar" size="xs" class="mt-0.5" />
-                  <div class="flex-1 min-w-0">
-                    <div class="font-medium truncate text-sm">
-                      {{ room.roomName }}
-                    </div>
-                    <div v-if="room.lastMessage" class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                      {{ room.lastMessage.content.substring(0, 40) }}{{ room.lastMessage.content.length > 40 ? '...' : '' }}
-                    </div>
+            <UNavigationMenu
+              v-else-if="navigationItems.length > 0"
+              orientation="vertical"
+              variant="link"
+              color="primary"
+              :highlight="true"
+              :items="navigationItems"
+              :ui="{
+                link: 'px-2 py-2',
+                linkLabel: 'text-sm',
+                linkLeadingAvatarSize: '2xs'
+              }"
+            >
+              <template #item-label="{ item }">
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium truncate">
+                    {{ item.label }}
+                  </div>
+                  <div v-if="item.description" class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                    {{ item.description }}
                   </div>
                 </div>
-              </button>
-              
-              <div v-if="rooms.length === 0" class="text-center py-8 text-sm text-gray-500">
-                No chat history yet
-              </div>
+              </template>
+            </UNavigationMenu>
+            
+            <div v-else class="text-center py-8 text-sm text-gray-500">
+              No chat history yet
             </div>
           </div>
         </div>
