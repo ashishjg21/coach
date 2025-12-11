@@ -5,6 +5,13 @@ definePageMeta({
   middleware: 'auth'
 })
 
+interface ToolCall {
+  name: string
+  args: Record<string, any>
+  response: any
+  timestamp: string
+}
+
 interface Message {
   id: string
   role: 'user' | 'assistant'
@@ -25,6 +32,9 @@ interface Message {
         color?: string
       }>
     }>
+    toolCalls?: ToolCall[]
+    toolsUsed?: string[]
+    toolCallCount?: number
     createdAt?: Date
     senderId?: string
   }
@@ -191,6 +201,11 @@ function getChartsFromMessage(message: Message) {
   return message.metadata?.charts || []
 }
 
+// Helper to get tool calls from message
+function getToolCallsFromMessage(message: Message): ToolCall[] {
+  return message.metadata?.toolCalls || []
+}
+
 // Get current room name
 const currentRoomName = computed(() => {
   const room = rooms.value.find(r => r.roomId === currentRoomId.value)
@@ -301,6 +316,18 @@ function formatTimestamp(timestamp: string | undefined) {
                 <!-- Custom content rendering for each message -->
                 <template #content="{ message }">
                   <div class="space-y-4">
+                    <!-- Tool calls (shown before text for assistant messages) -->
+                    <div v-if="message.role === 'assistant' && getToolCallsFromMessage(message).length > 0" class="space-y-2">
+                      <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                        🔧 Tool Calls ({{ getToolCallsFromMessage(message).length }})
+                      </div>
+                      <ChatToolCall
+                        v-for="(toolCall, index) in getToolCallsFromMessage(message)"
+                        :key="`${message.id}-tool-${index}`"
+                        :tool-call="toolCall"
+                      />
+                    </div>
+                    
                     <!-- Text content with markdown support -->
                     <div v-if="getTextFromMessage(message)" class="prose prose-sm dark:prose-invert max-w-none">
                       <MDC :value="getTextFromMessage(message)" :cache-key="message.id" />
