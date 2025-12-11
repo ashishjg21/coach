@@ -6,6 +6,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }
 
+  const userId = (session.user as any).id
+  if (!userId) {
+    throw createError({ statusCode: 401, message: 'User ID not found' })
+  }
+
   const { roomId } = getQuery(event) as { roomId: string }
   
   if (!roomId) {
@@ -16,7 +21,7 @@ export default defineEventHandler(async (event) => {
   const participant = await prisma.chatParticipant.findUnique({
     where: {
       userId_roomId: {
-        userId: session.user.id,
+        userId,
         roomId
       }
     }
@@ -31,19 +36,20 @@ export default defineEventHandler(async (event) => {
     orderBy: { createdAt: 'asc' }
   })
 
+  // Return messages in AI SDK v5 format
   return messages.map(msg => ({
-    _id: msg.id,
-    content: msg.content,
-    senderId: msg.senderId,
-    username: msg.senderId === 'ai_agent' ? 'Coach Watts' : 'Me',
-    avatar: msg.senderId === 'ai_agent' ? '/images/logo.svg' : session.user.image,
-    date: new Date(msg.createdAt).toLocaleDateString(),
-    timestamp: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    system: false,
-    saved: true,
-    distributed: true,
-    seen: true,
-    disableActions: false,
-    disableReactions: false
+    id: msg.id,
+    role: msg.senderId === 'ai_agent' ? 'assistant' as const : 'user' as const,
+    parts: [
+      {
+        type: 'text' as const,
+        id: `text-${msg.id}`,
+        text: msg.content
+      }
+    ],
+    metadata: {
+      createdAt: msg.createdAt,
+      senderId: msg.senderId
+    }
   }))
 })

@@ -56,8 +56,7 @@ export default defineEventHandler(async (event) => {
         recoveryCapacityExplanationJson: true,
         nutritionComplianceExplanationJson: true,
         trainingConsistencyExplanationJson: true,
-        profileLastUpdated: true,
-        aiModelPreference: true
+        profileLastUpdated: true
       }
     }),
     prisma.goal.findMany({
@@ -740,9 +739,8 @@ OR
   }
 
   // 7. Initialize Model with Tools (without JSON mode during tool calling)
-  // Use user's preferred model or default to flash
-  const modelPreference = userProfile?.aiModelPreference || 'flash'
-  const modelName = modelPreference === 'pro' ? 'gemini-3-pro-preview' : 'gemini-flash-latest'
+  // Use flash model for chat (fast and cost-effective)
+  const modelName = 'gemini-2.0-flash-exp'
   
   const model = genAI.getGenerativeModel({
     model: modelName,
@@ -858,7 +856,7 @@ OR
         userId,
         provider: 'gemini',
         model: modelName,
-        modelType: modelPreference,
+        modelType: 'flash',
         operation: 'chat',
         entityType: 'ChatMessage',
         entityId: userMessage.id,
@@ -870,9 +868,7 @@ OR
         retryCount: 0,
         success: true,
         promptPreview: fullPrompt.substring(0, 500),
-        responsePreview: aiResponseText.substring(0, 500),
-        promptFull: fullPrompt,
-        responseFull: aiResponseText
+        responsePreview: aiResponseText.substring(0, 500)
       }
     })
   } catch (error) {
@@ -935,24 +931,32 @@ Title:`
     }
   }
 
-  // 12. Return AI Message in vue-advanced-chat format
+  // 12. Extract chart data from tool calls
+  const chartToolCalls = toolCallsUsed.filter(t => t.name === 'create_chart')
+  const charts = chartToolCalls.map((call, index) => ({
+    id: `chart-${aiMessage.id}-${index}`,
+    ...call.args
+  }))
+
+  // 13. Store chart data in message (charts will be passed in metadata to client)
+  // Note: ChatMessage schema doesn't have a metadata field, so we'll pass it in the response
+
+  // 14. Return AI Message in AI SDK v5 format
   return {
-    _id: aiMessage.id,
-    content: aiResponseText,
-    senderId: aiMessage.senderId,
-    username: 'Coach Watts',
-    avatar: '/images/logo.svg',
-    date: new Date(aiMessage.createdAt).toLocaleDateString(),
-    timestamp: new Date(aiMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    system: false,
-    saved: true,
-    distributed: true,
-    seen: false,
-    disableActions: false,
-    disableReactions: false,
-    metadata: toolCallsUsed.length > 0 ? {
+    id: aiMessage.id,
+    role: 'assistant' as const,
+    parts: [
+      {
+        type: 'text' as const,
+        id: `text-${aiMessage.id}`,
+        text: aiResponseText
+      }
+    ],
+    metadata: {
+      charts,
       toolsUsed: toolCallsUsed.map(t => t.name),
-      toolCallCount: toolCallsUsed.length
-    } : undefined
+      toolCallCount: toolCallsUsed.length,
+      createdAt: aiMessage.createdAt
+    }
   }
 })
