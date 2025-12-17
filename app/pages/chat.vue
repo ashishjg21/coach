@@ -79,6 +79,9 @@ const loadingRooms = ref(true)
 const { data: session } = await useFetch('/api/auth/session')
 const currentUserId = computed(() => (session.value?.user as any)?.id)
 
+const route = useRoute()
+const router = useRouter()
+
 // Load initial room and messages
 onMounted(async () => {
   await loadChat()
@@ -117,6 +120,21 @@ async function loadMessages(roomId: string) {
 
 async function loadChat() {
   await loadRooms()
+
+  // Check for workout context
+  if (route.query.workoutId) {
+    const workoutId = route.query.workoutId as string
+    
+    // Create new chat
+    await createNewChat()
+    
+    // Send initial message
+    input.value = `Please analyze my workout with ID ${workoutId}. How did I perform?`
+    await onSubmit()
+    
+    // Clear query param
+    router.replace({ query: {} })
+  }
 }
 
 async function selectRoom(roomId: string) {

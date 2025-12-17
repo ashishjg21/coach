@@ -12,6 +12,18 @@
             Back to Data
           </UButton>
         </template>
+
+        <template #right>
+          <UButton
+            icon="i-heroicons-chat-bubble-left-right"
+            color="primary"
+            variant="solid"
+            size="sm"
+            @click="chatAboutWorkout"
+          >
+            Chat about this workout
+          </UButton>
+        </template>
       </UDashboardNavbar>
 
       <UDashboardToolbar>
@@ -921,6 +933,15 @@ function scrollToSection(sectionId: string) {
   if (element) {
     element.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
+}
+
+// Chat about workout
+function chatAboutWorkout() {
+  if (!workout.value) return
+  navigateTo({
+    path: '/chat',
+    query: { workoutId: workout.value.id }
+  })
 }
 
 // Load data on mount
