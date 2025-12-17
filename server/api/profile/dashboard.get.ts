@@ -44,8 +44,6 @@ export default defineEventHandler(async (event) => {
       const checkDate = new Date(today)
       checkDate.setDate(today.getDate() - daysBack)
       
-      console.log(`[Dashboard API] Checking wellness for date: ${checkDate.toISOString().split('T')[0]}`)
-      
       // Check Wellness table first
       const wellness = await wellnessRepository.findFirst(user.id, {
         date: checkDate,
@@ -62,13 +60,6 @@ export default defineEventHandler(async (event) => {
       
       // Check if wellness has actual data (not all null)
       if (wellness && (wellness.hrv != null || wellness.restingHr != null || wellness.sleepHours != null || wellness.recoveryScore != null)) {
-        console.log(`[Dashboard API] Found wellness data for ${checkDate.toISOString().split('T')[0]}:`, {
-          hrv: wellness.hrv,
-          restingHr: wellness.restingHr,
-          sleepHours: wellness.sleepHours,
-          recoveryScore: wellness.recoveryScore,
-          weight: wellness.weight
-        })
         wellnessData = wellness
         wellnessDate = checkDate
         break
@@ -90,12 +81,6 @@ export default defineEventHandler(async (event) => {
       })
       
       if (dailyMetric && (dailyMetric.hrv != null || dailyMetric.restingHr != null || dailyMetric.hoursSlept != null)) {
-        console.log(`[Dashboard API] Found DailyMetric data for ${checkDate.toISOString().split('T')[0]}:`, {
-          hrv: dailyMetric.hrv,
-          restingHr: dailyMetric.restingHr,
-          hoursSlept: dailyMetric.hoursSlept,
-          sleepScore: dailyMetric.sleepScore
-        })
         wellnessData = {
           date: dailyMetric.date,
           restingHr: dailyMetric.restingHr,
@@ -109,15 +94,6 @@ export default defineEventHandler(async (event) => {
         break
       }
     }
-    
-    console.log('[Dashboard API] Final wellness data found:', wellnessData ? {
-      date: wellnessDate?.toISOString().split('T')[0],
-      hrv: wellnessData.hrv,
-      restingHr: wellnessData.restingHr,
-      sleepHours: wellnessData.sleepHours,
-      recoveryScore: wellnessData.recoveryScore,
-      weight: wellnessData.weight
-    } : 'NONE')
     
     // Calculate age from date of birth
     const calculateAge = (dob: Date): number | null => {
@@ -209,18 +185,6 @@ export default defineEventHandler(async (event) => {
       }
     }
     
-    // Debug logging
-    console.log('[Dashboard API] Extracted wellness values:', {
-      recentRestingHR,
-      recentHRV,
-      avgRecentHRV,
-      recentWeight,
-      recentSleep,
-      recentRecoveryScore,
-      latestWellnessDate: latestWellnessDate?.toISOString(),
-      reportCount
-    })
-    
     const response = {
       connected: true,
       hasReports: reportCount > 0,
@@ -249,12 +213,6 @@ export default defineEventHandler(async (event) => {
         latestWellnessDate: latestWellnessDate?.toISOString() ?? null
       }
     }
-    
-    console.log('[Dashboard API] Final response profile:', {
-      recentSleep: response.profile.recentSleep,
-      recentRecoveryScore: response.profile.recentRecoveryScore,
-      latestWellnessDate: response.profile.latestWellnessDate
-    })
     
     return response
   } catch (error) {

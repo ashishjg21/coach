@@ -1,8 +1,15 @@
 import { getServerSession } from '#auth'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { chatToolDeclarations, executeToolCall } from '../../utils/chat-tools'
+import { generateCoachAnalysis } from '../../utils/gemini'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+
+// Model configuration (centralized in gemini.ts)
+const MODEL_NAMES = {
+  flash: 'gemini-flash-latest',
+  pro: 'gemini-pro-latest'
+} as const
 
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
@@ -819,8 +826,8 @@ OR
   }
 
   // 7. Initialize Model with Tools (without JSON mode during tool calling)
-  // Use flash model for chat (fast and cost-effective)
-  const modelName = 'gemini-2.0-flash-exp'
+  // Use pro model for chat (better quality and reasoning)
+  const modelName = MODEL_NAMES.pro
   
   const model = genAI.getGenerativeModel({
     model: modelName,
@@ -990,8 +997,11 @@ OR
     where: { roomId }
   })
 
+  console.log(`[Chat] Message count for room ${roomId}: ${messageCount}`)
+
   if (messageCount === 2) {
     // This is the first AI response - generate a concise title
+    console.log(`[Chat] Attempting to auto-rename room ${roomId}`)
     try {
       const titlePrompt = `Based on this conversation, generate a very concise, descriptive title (max 6 words). Just return the title, nothing else.
 
@@ -1000,7 +1010,7 @@ AI: ${aiResponseText.substring(0, 500)}
 
 Title:`
 
-      const { generateCoachAnalysis } = await import('../../utils/gemini')
+      console.log(`[Chat] Generating title for room ${roomId}`)
       let roomTitle = await generateCoachAnalysis(
         titlePrompt,
         'flash',
@@ -1016,17 +1026,25 @@ Title:`
       // Clean up the title - remove quotes, limit length
       roomTitle = roomTitle.replace(/^["']|["']$/g, '').substring(0, 60)
       
+      console.log(`[Chat] Generated title: "${roomTitle}"`)
+      
       // Update the room name
       await prisma.chatRoom.update({
         where: { id: roomId },
         data: { name: roomTitle }
       })
       
-      console.log(`[Chat] Auto-renamed room ${roomId} to: "${roomTitle}"`)
-    } catch (error) {
-      console.error('[Chat] Failed to auto-rename room:', error)
+      console.log(`[Chat] Successfully renamed room ${roomId} to: "${roomTitle}"`)
+    } catch (error: any) {
+      console.error(`[Chat] Failed to auto-rename room ${roomId}:`, {
+        message: error.message,
+        stack: error.stack,
+        error
+      })
       // Don't fail the whole request if renaming fails
     }
+  } else {
+    console.log(`[Chat] Skipping auto-rename for room ${roomId} (messageCount: ${messageCount})`)
   }
 
   // 12. Extract chart data from tool calls
