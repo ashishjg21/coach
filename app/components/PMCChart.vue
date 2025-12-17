@@ -17,7 +17,7 @@
             <UIcon name="i-heroicons-arrow-trending-up" class="w-4 h-4 text-purple-600 dark:text-purple-400" />
           </div>
           <div class="text-2xl font-bold text-purple-900 dark:text-purple-100">
-            {{ pmcData.summary.currentCTL.toFixed(1) }}
+            {{ (pmcData.summary?.currentCTL ?? 0).toFixed(1) }}
           </div>
           <div class="text-xs text-purple-700 dark:text-purple-300 mt-1">Chronic Training Load</div>
         </div>
@@ -28,20 +28,20 @@
             <UIcon name="i-heroicons-bolt" class="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
           </div>
           <div class="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
-            {{ pmcData.summary.currentATL.toFixed(1) }}
+            {{ (pmcData.summary?.currentATL ?? 0).toFixed(1) }}
           </div>
           <div class="text-xs text-yellow-700 dark:text-yellow-300 mt-1">Acute Training Load</div>
         </div>
 
-        <div :class="getFormColorClass(pmcData.summary.currentTSB)" class="rounded-lg p-4 shadow">
+        <div :class="getFormColorClass(pmcData.summary?.currentTSB ?? 0)" class="rounded-lg p-4 shadow">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-semibold">TSB (Form)</span>
             <UIcon name="i-heroicons-chart-bar" class="w-4 h-4" />
           </div>
           <div class="text-2xl font-bold">
-            {{ pmcData.summary.currentTSB > 0 ? '+' : '' }}{{ pmcData.summary.currentTSB.toFixed(1) }}
+            {{ (pmcData.summary?.currentTSB ?? 0) > 0 ? '+' : '' }}{{ (pmcData.summary?.currentTSB ?? 0).toFixed(1) }}
           </div>
-          <div class="text-xs mt-1 capitalize">{{ pmcData.summary.form }}</div>
+          <div class="text-xs mt-1 capitalize">{{ pmcData.summary?.form || 'N/A' }}</div>
         </div>
 
         <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/30 rounded-lg p-4 shadow">
@@ -50,7 +50,7 @@
             <UIcon name="i-heroicons-calculator" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
           </div>
           <div class="text-2xl font-bold text-blue-900 dark:text-blue-100">
-            {{ pmcData.summary.avgTSS.toFixed(1) }}
+            {{ (pmcData.summary?.avgTSS ?? 0).toFixed(1) }}
           </div>
           <div class="text-xs text-blue-700 dark:text-blue-300 mt-1">Training Stress Score</div>
         </div>
