@@ -94,14 +94,6 @@ export function calculateTSS(workout: any): number {
 }
 
 /**
- * Calculate TSB (Form) from CTL and ATL
- */
-export function calculateTSB(ctl: number | null, atl: number | null): number | null {
-  if (ctl === null || atl === null) return null
-  return ctl - atl
-}
-
-/**
  * Get zone index for a value given zone definitions
  */
 function getZoneIndex(value: number, zones: Zone[]): number {

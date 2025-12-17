@@ -42,8 +42,10 @@ export function calculateATL(previousATL: number, todayTSS: number): number {
 /**
  * Calculate TSB (Training Stress Balance) - "Form"
  * TSB = CTL - ATL
+ * Returns null if either value is null
  */
-export function calculateTSB(ctl: number, atl: number): number {
+export function calculateTSB(ctl: number | null, atl: number | null): number | null {
+  if (ctl === null || atl === null) return null
   return ctl - atl
 }
 
@@ -142,7 +144,7 @@ export async function calculatePMCForDateRange(
     const tss = getStressScore(workout)
     ctl = calculateCTL(ctl, tss)
     atl = calculateATL(atl, tss)
-    const tsb = calculateTSB(ctl, atl)
+    const tsb = calculateTSB(ctl, atl)!  // Non-null: ctl and atl are always numbers here
 
     results.push({
       date: workout.date,
@@ -245,7 +247,7 @@ export async function getCurrentFitnessSummary(userId: string) {
     }
   }
 
-  const tsb = calculateTSB(latestWorkout.ctl, latestWorkout.atl)
+  const tsb = calculateTSB(latestWorkout.ctl, latestWorkout.atl)!  // Non-null: checked above
 
   return {
     ctl: latestWorkout.ctl,

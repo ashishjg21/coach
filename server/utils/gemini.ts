@@ -7,7 +7,7 @@ export type GeminiModel = 'flash' | 'pro'
 
 const MODEL_NAMES = {
   flash: 'gemini-flash-latest',
-  pro: 'gemini-3-pro-preview'  // Using Gemini 3.0 Pro for advanced reasoning
+  pro: 'gemini-1.5-pro-latest'  // Using Gemini 1.5 Pro for advanced reasoning
 } as const
 
 // Gemini API pricing (as of Dec 2024, per 1M tokens)
@@ -17,7 +17,7 @@ const PRICING = {
     input: 0.075,   // $0.075 per 1M input tokens
     output: 0.30    // $0.30 per 1M output tokens
   },
-  'gemini-3-pro-preview': {
+  'gemini-1.5-pro-latest': {
     input: 1.25,    // $1.25 per 1M input tokens
     output: 5.00    // $5.00 per 1M output tokens
   }
