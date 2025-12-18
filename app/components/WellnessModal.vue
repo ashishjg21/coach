@@ -1,5 +1,5 @@
 <template>
-  <UModal v-model:open="isOpen" title="Wellness Overview" :description="formattedDate">
+  <UModal v-model:open="isOpen" title="Wellness Overview" :description="formattedDate" :ui="{ width: 'sm:max-w-2xl' }">
     <template #body>
       <div v-if="loading" class="flex items-center justify-center py-12">
         <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-indigo-500" />
@@ -216,17 +216,17 @@
 import { format, subDays } from 'date-fns'
 
 const props = defineProps<{
-  modelValue: boolean
+  open: boolean
   date: Date | null
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
+  'update:open': [value: boolean]
 }>()
 
 const isOpen = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  get: () => props.open,
+  set: (value) => emit('update:open', value)
 })
 
 const formattedDate = computed(() => {
@@ -239,12 +239,12 @@ const trendData = ref<any[]>([])
 
 // Watch for date changes to fetch data
 watch(() => props.date, async (newDate) => {
-  if (newDate && props.modelValue) {
+  if (newDate && props.open) {
     await fetchWellnessData(newDate)
   }
 }, { immediate: true })
 
-watch(() => props.modelValue, async (isOpen) => {
+watch(() => props.open, async (isOpen) => {
   if (isOpen && props.date) {
     await fetchWellnessData(props.date)
   }
