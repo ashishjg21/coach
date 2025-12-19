@@ -1,8 +1,19 @@
 {
   "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": "angular",
+      "infile": "CHANGELOG.md"
+    },
     "release-it-pnpm": {}
   },
   "git": {
-    "commitMessage": "chore: release ${version}"
+    "commitMessage": "chore: release ${version}",
+    "tagName": "v${version}"
+  },
+  "npm": {
+    "publish": false
+  },
+  "github": {
+    "release": true
   }
 }

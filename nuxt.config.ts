@@ -1,3 +1,5 @@
+import pkg from './package.json'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -37,7 +39,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     authOrigin: process.env.NUXT_AUTH_ORIGIN || 'http://localhost:3099/api/auth',
     public: {
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3099'
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3099',
+      version: pkg.version
     }
   },
 
