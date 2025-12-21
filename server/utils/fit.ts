@@ -162,5 +162,40 @@ export function extractFitStreams(records: any[]) {
     }
   })
 
+  // Fill in missing streams if possible
+  const numRecords = streams.time.length
+  
+  // Grade: If missing but we have altitude and distance, we can calculate it
+  if (streams.grade.length === 0 && streams.altitude.length === numRecords && streams.distance.length === numRecords) {
+    // Simple grade calculation
+    for (let i = 0; i < numRecords; i++) {
+      if (i === 0) {
+        streams.grade.push(0)
+        continue
+      }
+      
+      const distDiff = streams.distance[i] - streams.distance[i-1]
+      const altDiff = streams.altitude[i] - streams.altitude[i-1]
+      
+      if (distDiff > 0) {
+        streams.grade.push((altDiff / distDiff) * 100)
+      } else {
+        streams.grade.push(0)
+      }
+    }
+  }
+  
+  // Moving: If missing, calculate based on speed/velocity
+  if (streams.moving.length === 0 && streams.velocity.length === numRecords) {
+    const MOVING_THRESHOLD = 0.5 // m/s
+    streams.moving = streams.velocity.map(v => v > MOVING_THRESHOLD)
+  } else if (streams.moving.length === 0 && streams.cadence.length === numRecords) {
+    // Fallback to cadence if velocity is missing (e.g. indoor trainer)
+    streams.moving = streams.cadence.map(c => c > 0)
+  } else if (streams.moving.length === 0 && streams.watts.length === numRecords) {
+    // Fallback to power
+    streams.moving = streams.watts.map(p => p > 0)
+  }
+
   return streams
 }
