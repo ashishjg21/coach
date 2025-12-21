@@ -1,0 +1,399 @@
+<template>
+  <div class="space-y-6">
+    <!-- Loading State -->
+    <div v-if="loading" class="flex items-center justify-center py-8">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+        <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">Calculating advanced metrics...</p>
+      </div>
+    </div>
+
+    <!-- Data Display -->
+    <div v-else-if="data && data.advanced" class="space-y-6">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+        <!-- 1. Aerobic Decoupling (Drift) & EF Decay -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4" :class="getDriftColor(data.advanced.decoupling)">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Aerobic Decoupling</h3>
+            <UPopover mode="hover">
+              <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-gray-400 cursor-help" />
+              <template #panel>
+                <div class="p-3 text-xs max-w-xs">
+                  Measures the drift between Power and Heart Rate. < 5% is good aerobic fitness. > 5% indicates fatigue.
+                </div>
+              </template>
+            </UPopover>
+          </div>
+
+          <div v-if="data.advanced.decoupling !== null">
+            <div class="text-3xl font-bold text-gray-900 dark:text-white">
+              {{ (data.advanced.decoupling * 100).toFixed(1) }}%
+            </div>
+            <div class="text-xs text-gray-500 mt-2">
+              <span v-if="data.advanced.decoupling < 0.05" class="text-green-600 dark:text-green-400 font-medium">Good Endurance</span>
+              <span v-else class="text-amber-600 dark:text-amber-400 font-medium">High Drift</span>
+            </div>
+            
+            <!-- EF Decay Chart -->
+            <div v-if="data.chartData && data.chartData.ef && data.chartData.ef.length > 0" class="mt-4 h-24">
+               <Line :data="getEfChartData()" :options="getSparklineOptions('Efficiency Factor')" />
+            </div>
+          </div>
+          <div v-else class="text-gray-400 text-sm italic">
+            Not enough steady data to calculate.
+          </div>
+        </div>
+
+        <!-- 2. W' Balance (Anaerobic Battery) -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-purple-500">
+           <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Anaerobic Battery (W' Bal)</h3>
+            <UPopover mode="hover">
+              <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-gray-400 cursor-help" />
+              <template #panel>
+                <div class="p-3 text-xs max-w-xs">
+                  Your "matchbook". Shows how much anaerobic energy you have left. Drains above FTP, recharges below.
+                </div>
+              </template>
+            </UPopover>
+          </div>
+
+          <div v-if="data.advanced.wPrime">
+             <div class="text-3xl font-bold text-gray-900 dark:text-white">
+              {{ Math.round(data.advanced.wPrime.minWPrimeBalance / 1000) }} kJ
+            </div>
+            <div class="text-xs text-gray-500 mt-2">
+              Lowest Point (Max Depletion)
+            </div>
+
+            <!-- W' Balance Chart -->
+             <div v-if="data.chartData && data.chartData.wPrime && data.chartData.wPrime.length > 0" class="mt-4 h-24">
+               <Line :data="getWPrimeChartData()" :options="getSparklineOptions('W\' Balance (J)')" />
+            </div>
+          </div>
+           <div v-else class="text-gray-400 text-sm italic">
+            Requires Power and FTP data.
+          </div>
+        </div>
+
+        <!-- 3. Quadrant Analysis (Pedaling Style) -->
+         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-orange-500">
+           <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cadence Profile</h3>
+            <UPopover mode="hover">
+              <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-gray-400 cursor-help" />
+              <template #panel>
+                <div class="p-3 text-xs max-w-xs">
+                  Distribution of pedaling style based on Power and Cadence.
+                </div>
+              </template>
+            </UPopover>
+          </div>
+
+          <div v-if="data.advanced.quadrants" class="space-y-3">
+            <!-- Q1: Sprint -->
+            <div class="space-y-1">
+               <div class="flex justify-between text-xs">
+                 <span>Sprint (Hi Pwr / Hi Cad)</span>
+                 <span class="font-medium">{{ data.advanced.quadrants.distribution.q1.toFixed(1) }}%</span>
+               </div>
+               <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                  <div class="bg-red-500 h-1.5 rounded-full" :style="{ width: `${data.advanced.quadrants.distribution.q1}%` }"></div>
+               </div>
+            </div>
+            
+            <!-- Q2: Grind -->
+            <div class="space-y-1">
+               <div class="flex justify-between text-xs">
+                 <span>Grind (Hi Pwr / Lo Cad)</span>
+                 <span class="font-medium">{{ data.advanced.quadrants.distribution.q2.toFixed(1) }}%</span>
+               </div>
+               <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                  <div class="bg-orange-500 h-1.5 rounded-full" :style="{ width: `${data.advanced.quadrants.distribution.q2}%` }"></div>
+               </div>
+            </div>
+
+            <!-- Q4: Spin -->
+            <div class="space-y-1">
+               <div class="flex justify-between text-xs">
+                 <span>Spin (Lo Pwr / Hi Cad)</span>
+                 <span class="font-medium">{{ data.advanced.quadrants.distribution.q4.toFixed(1) }}%</span>
+               </div>
+               <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                  <div class="bg-yellow-400 h-1.5 rounded-full" :style="{ width: `${data.advanced.quadrants.distribution.q4}%` }"></div>
+               </div>
+            </div>
+             <!-- Q3: Recovery (Optional to show if dominant) -->
+              <div class="text-xs text-gray-400 text-right mt-1">
+                Recovery/Coast: {{ data.advanced.quadrants.distribution.q3.toFixed(1) }}%
+              </div>
+          </div>
+          <div v-else class="text-gray-400 text-sm italic">
+            Requires Power and Cadence data.
+          </div>
+        </div>
+
+        <!-- 4. Coasting Analysis -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-blue-500">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Micro-Rests</h3>
+            <UPopover mode="hover">
+              <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-gray-400 cursor-help" />
+              <template #panel>
+                <div class="p-3 text-xs max-w-xs">
+                  Time spent moving but not pedaling (0 watts or 0 cadence). Helps analyze efficiency and recovery.
+                </div>
+              </template>
+            </UPopover>
+          </div>
+
+          <div v-if="data.advanced.coasting">
+            <div class="flex items-end gap-2">
+              <span class="text-3xl font-bold text-gray-900 dark:text-white">
+                {{ formatDuration(data.advanced.coasting.totalTime) }}
+              </span>
+              <span class="text-sm text-gray-500 mb-1">
+                ({{ data.advanced.coasting.percentTime.toFixed(1) }}%)
+              </span>
+            </div>
+
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mt-3">
+              <div
+                class="bg-blue-600 h-2.5 rounded-full"
+                :style="{ width: `${Math.min(100, data.advanced.coasting.percentTime)}%` }"
+              ></div>
+            </div>
+
+            <div class="text-xs text-gray-500 mt-2">
+              {{ data.advanced.coasting.eventCount }} coasting events detected
+            </div>
+          </div>
+          <div v-else class="text-gray-400 text-sm italic">
+            No power/cadence data available.
+          </div>
+        </div>
+
+        <!-- 5. Matches Burnt -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-red-500 md:col-span-2 xl:col-span-1">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Matches Burnt</h3>
+             <UPopover mode="hover">
+              <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-gray-400 cursor-help" />
+              <template #panel>
+                <div class="p-3 text-xs max-w-xs">
+                  Surges above 120% FTP that require significant recovery. "Burning a match" depletes your anaerobic battery.
+                </div>
+              </template>
+            </UPopover>
+          </div>
+
+          <div v-if="data.advanced.surges">
+            <div class="flex items-baseline gap-2">
+               <div class="text-3xl font-bold text-gray-900 dark:text-white">
+                {{ data.advanced.surges.length }}
+              </div>
+              <div class="text-sm text-gray-500">
+                surges >120% FTP
+              </div>
+            </div>
+            
+             <div v-if="data.advanced.surges.length > 0" class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+              Avg Duration: {{ Math.round(data.advanced.surges.reduce((a:any, b:any) => a + b.duration, 0) / data.advanced.surges.length) }}s
+            </div>
+          </div>
+           <div v-else class="text-gray-400 text-sm italic">
+            No surge data available.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Detailed Match Analysis Table -->
+      <div v-if="data.advanced.surges && data.advanced.surges.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div
+          class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+          @click="showMatches = !showMatches"
+        >
+          <div class="flex items-center gap-2">
+             <UIcon
+              :name="showMatches ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
+              class="w-5 h-5 text-gray-500"
+            />
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Match Analysis Details</h3>
+          </div>
+        </div>
+
+        <div v-if="showMatches" class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Start Time</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Duration</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Avg Power</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Max Power</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recovery Cost (60s)</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tr v-for="(surge, idx) in data.advanced.surges" :key="idx">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatTime(surge.start_time) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ surge.duration }}s</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-amber-600 font-bold">{{ surge.avg_power }}W</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ surge.max_power }}W</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ surge.cost_avg_power }}W avg
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { Line } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+)
+
+const props = defineProps<{
+  workoutId: string
+}>()
+
+const loading = ref(true)
+const data = ref<any>(null)
+const showMatches = ref(false)
+
+async function fetchData() {
+  loading.value = true
+  try {
+    data.value = await $fetch(`/api/workouts/${props.workoutId}/intervals`)
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loading.value = false
+  }
+}
+
+function getDriftColor(val: number | null) {
+  if (val === null) return 'border-gray-200 dark:border-gray-700'
+  if (val < 0.05) return 'border-green-500' // Good
+  if (val < 0.10) return 'border-yellow-500' // Moderate
+  return 'border-red-500' // High
+}
+
+function formatDuration(seconds: number) {
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.round(seconds % 60)
+  return `${mins}m ${secs}s`
+}
+
+function formatTime(seconds: number) {
+  const hours = Math.floor(seconds / 3600)
+  const mins = Math.floor((seconds % 3600) / 60)
+  const secs = Math.round(seconds % 60)
+
+  if (hours > 0) return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+// Chart Helpers
+function getSparklineOptions(label: string) {
+  const isDark = document.documentElement.classList.contains('dark')
+  
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+           label: (ctx: any) => `${label}: ${Math.round(ctx.parsed.y)}`
+        }
+      }
+    },
+    scales: {
+      x: { display: false },
+      y: { 
+        display: false,
+        beginAtZero: false
+      }
+    },
+    elements: {
+      point: { radius: 0, hoverRadius: 4 },
+      line: { borderWidth: 2 }
+    },
+    layout: { padding: 0 }
+  }
+}
+
+function getWPrimeChartData() {
+  if (!data.value?.chartData?.wPrime) return { labels: [], datasets: [] }
+  
+  const values = data.value.chartData.wPrime
+  // Ensure we have labels matching the data length (approx)
+  // We can just use indices for sparklines as X axis is hidden
+  const labels = values.map((_: any, i: number) => i)
+
+  return {
+    labels,
+    datasets: [{
+      label: 'W\' Balance',
+      data: values,
+      borderColor: 'rgb(168, 85, 247)', // Purple
+      backgroundColor: 'rgba(168, 85, 247, 0.1)',
+      fill: true,
+      tension: 0.1
+    }]
+  }
+}
+
+function getEfChartData() {
+  if (!data.value?.chartData?.ef) return { labels: [], datasets: [] }
+  
+  const values = data.value.chartData.ef
+  const labels = values.map((_: any, i: number) => i)
+
+  return {
+    labels,
+    datasets: [{
+      label: 'Efficiency Factor',
+      data: values,
+      borderColor: 'rgb(34, 197, 94)', // Green
+      backgroundColor: 'rgba(34, 197, 94, 0.1)',
+      fill: false,
+      tension: 0.4
+    }]
+  }
+}
+
+onMounted(() => {
+  fetchData()
+})
+</script>
