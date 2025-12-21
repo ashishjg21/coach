@@ -93,6 +93,7 @@ ChartJS.register(
 
 interface Props {
   workoutId: string
+  publicToken?: string
 }
 
 const props = defineProps<Props>()
@@ -143,7 +144,11 @@ async function fetchStreamData() {
   error.value = null
   
   try {
-    const data = await $fetch(`/api/workouts/${props.workoutId}/streams`)
+    const endpoint = props.publicToken
+      ? `/api/share/workouts/${props.publicToken}/streams`
+      : `/api/workouts/${props.workoutId}/streams`
+      
+    const data = await $fetch(endpoint)
     streamData.value = data
     
     // Auto-select appropriate metrics:

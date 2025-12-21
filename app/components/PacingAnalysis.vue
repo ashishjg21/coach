@@ -176,10 +176,16 @@
 <script setup lang="ts">
 const props = defineProps<{
   workoutId: string
+  publicToken?: string
 }>()
 
+const endpoint = computed(() => props.publicToken
+  ? `/api/share/workouts/${props.publicToken}/streams`
+  : `/api/workouts/${props.workoutId}/streams`
+)
+
 const { data: streams, pending: loading, error: fetchError } = await useFetch(
-  `/api/workouts/${props.workoutId}/streams`,
+  endpoint,
   {
     lazy: true
   }

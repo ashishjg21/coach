@@ -95,6 +95,7 @@ ChartJS.register(
 
 const props = defineProps<{
   workoutId: string
+  publicToken?: string
 }>()
 
 const loading = ref(true)
@@ -105,7 +106,11 @@ async function fetchPowerCurve() {
   loading.value = true
   
   try {
-    const data = await $fetch(`/api/workouts/${props.workoutId}/power-curve`)
+    const endpoint = props.publicToken
+      ? `/api/share/workouts/${props.publicToken}/power-curve`
+      : `/api/workouts/${props.workoutId}/power-curve`
+      
+    const data = await $fetch(endpoint)
     powerData.value = data
   } catch (e: any) {
     console.error('Error fetching power curve:', e)

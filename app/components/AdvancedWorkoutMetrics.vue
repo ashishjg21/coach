@@ -387,6 +387,7 @@ ChartJS.register(
 
 const props = defineProps<{
   workoutId: string
+  publicToken?: string
 }>()
 
 const loading = ref(true)
@@ -396,7 +397,11 @@ const showMatches = ref(false)
 async function fetchData() {
   loading.value = true
   try {
-    data.value = await $fetch(`/api/workouts/${props.workoutId}/intervals`)
+    const endpoint = props.publicToken
+      ? `/api/share/workouts/${props.publicToken}/intervals`
+      : `/api/workouts/${props.workoutId}/intervals`
+      
+    data.value = await $fetch(endpoint)
   } catch (e) {
     console.error(e)
   } finally {

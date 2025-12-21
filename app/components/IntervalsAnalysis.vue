@@ -178,6 +178,7 @@ ChartJS.register(
 
 const props = defineProps<{
   workoutId: string
+  publicToken?: string
 }>()
 
 const loading = ref(true)
@@ -190,7 +191,11 @@ async function fetchIntervals() {
   loading.value = true
   error.value = null
   try {
-    data.value = await $fetch(`/api/workouts/${props.workoutId}/intervals`)
+    const endpoint = props.publicToken
+      ? `/api/share/workouts/${props.publicToken}/intervals`
+      : `/api/workouts/${props.workoutId}/intervals`
+      
+    data.value = await $fetch(endpoint)
   } catch (e: any) {
     console.error('Error fetching intervals:', e)
     error.value = e.data?.message || 'Failed to load interval analysis'

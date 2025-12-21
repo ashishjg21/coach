@@ -146,6 +146,7 @@ ChartJS.register(
 
 interface Props {
   workoutId: string
+  publicToken?: string
 }
 
 const props = defineProps<Props>()
@@ -437,16 +438,31 @@ async function fetchData() {
   error.value = null
   
   try {
-    // Fetch stream data and user profile in parallel
-    const [streams, profile] = await Promise.all([
-      $fetch(`/api/workouts/${props.workoutId}/streams`),
-      $fetch('/api/profile')
-    ])
-    
-    streamData.value = streams
-    userZones.value = {
-      hrZones: profile.profile?.hrZones || getDefaultHrZones(),
-      powerZones: profile.profile?.powerZones || getDefaultPowerZones()
+    if (props.publicToken) {
+      // Public mode: Fetch everything from share endpoint
+      const workout = await $fetch(`/api/share/workouts/${props.publicToken}`) as any
+      // We need streams separately as the main endpoint returns summarized workout data
+      // Actually, we need a new endpoint for streams in public mode
+      const streams = await $fetch(`/api/share/workouts/${props.publicToken}/streams`)
+      
+      streamData.value = streams
+      // Extract zones from the user object nested in the workout (needs backend support)
+      userZones.value = {
+        hrZones: workout.user?.hrZones || getDefaultHrZones(),
+        powerZones: workout.user?.powerZones || getDefaultPowerZones()
+      }
+    } else {
+      // Private/Auth mode
+      const [streams, profile] = await Promise.all([
+        $fetch(`/api/workouts/${props.workoutId}/streams`),
+        $fetch('/api/profile')
+      ])
+      
+      streamData.value = streams
+      userZones.value = {
+        hrZones: profile.profile?.hrZones || getDefaultHrZones(),
+        powerZones: profile.profile?.powerZones || getDefaultPowerZones()
+      }
     }
     
     // Auto-select zone type based on available data
