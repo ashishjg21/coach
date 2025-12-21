@@ -102,6 +102,8 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const streamData = ref<any>(null)
 const selectedMetrics = ref<string[]>([])
+const hoverIndex = ref<number | null>(null)
+const chartRefs = ref<any[]>([])
 
 interface Metric {
   key: string
@@ -208,13 +210,13 @@ function getChartData(metricKey: string) {
   if (!streamData.value || !streamData.value[metricKey]) {
     return { labels: [], datasets: [] }
   }
-  
+
   const metric = availableMetrics.value.find(m => m.key === metricKey)
   if (!metric) return { labels: [], datasets: [] }
-  
+
   const time = streamData.value.time || []
   const values = streamData.value[metricKey] || []
-  
+
   return {
     labels: time.map((t: number) => formatTime(t)),
     datasets: [
@@ -230,6 +232,33 @@ function getChartData(metricKey: string) {
         tension: 0.2
       }
     ]
+  }
+}
+
+// Custom Chart.js plugin to draw a vertical cursor line
+const cursorLinePlugin = {
+  id: 'cursorLine',
+  afterDraw: (chart: any) => {
+    if (hoverIndex.value === null) return
+
+    const xAxis = chart.scales.x
+    const yAxis = chart.scales.y
+
+    if (!xAxis || !yAxis) return
+
+    const x = xAxis.getPixelForValue(hoverIndex.value)
+
+    if (x < xAxis.left || x > xAxis.right) return
+
+    const ctx = chart.ctx
+    ctx.save()
+    ctx.beginPath()
+    ctx.moveTo(x, yAxis.top)
+    ctx.lineTo(x, yAxis.bottom)
+    ctx.lineWidth = 1
+    ctx.strokeStyle = 'rgba(156, 163, 175, 0.5)' // gray-400 with opacity
+    ctx.stroke()
+    ctx.restore()
   }
 }
 
