@@ -80,6 +80,9 @@ importers:
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3
+      fit-file-parser:
+        specifier: ^2.1.0
+        version: 2.1.0
       marked:
         specifier: ^17.0.1
         version: 17.0.1
@@ -3504,6 +3507,9 @@ packages:
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
     engines: {node: '>=8'}
+
+  fit-file-parser@2.1.0:
+    resolution: {integrity: sha512-PICERthpGtbEkrBm9lDj/oGJ1gCkFUWmkaGg2wW5idyuVEsAGuz977gbl7J1j6WJj7TiwrohxKQXjrG6Xb1i2Q==}
 
   flat@6.0.1:
     resolution: {integrity: sha512-/3FfIa8mbrg3xE7+wAhWeV+bd7L2Mof+xtZb5dRDKZ+wDvYJK4WDYeIOuOhre5Yv5aQObZrlbRmk3RTSiuQBtw==}
@@ -10153,6 +10159,10 @@ snapshots:
   fill-range@7.1.1:
     dependencies:
       to-regex-range: 5.0.1
+
+  fit-file-parser@2.1.0:
+    dependencies:
+      buffer: 6.0.3
 
   flat@6.0.1: {}
 

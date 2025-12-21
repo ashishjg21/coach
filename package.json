@@ -24,6 +24,7 @@
     "chartjs-plugin-annotation": "^3.1.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
+    "fit-file-parser": "^2.1.0",
     "marked": "^17.0.1",
     "next-auth": "4.21.1",
     "nuxt": "^4.2.1",
