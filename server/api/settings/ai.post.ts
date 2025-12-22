@@ -2,6 +2,55 @@ import { defineEventHandler, createError, readBody } from 'h3'
 import { getServerSession } from '#auth'
 import { prisma } from '../../utils/db'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Settings'],
+    summary: 'Update AI settings',
+    description: 'Updates the AI preferences for the authenticated user.',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              aiPersona: { type: 'string', enum: ['Analytical', 'Supportive', 'Drill Sergeant', 'Motivational'] },
+              aiModelPreference: { type: 'string', enum: ['flash', 'pro'] },
+              aiAutoAnalyzeWorkouts: { type: 'boolean' },
+              aiAutoAnalyzeNutrition: { type: 'boolean' }
+            }
+          }
+        }
+      }
+    },
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                settings: {
+                  type: 'object',
+                  properties: {
+                    aiPersona: { type: 'string' },
+                    aiModelPreference: { type: 'string' },
+                    aiAutoAnalyzeWorkouts: { type: 'boolean' },
+                    aiAutoAnalyzeNutrition: { type: 'boolean' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      400: { description: 'Invalid input' },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   if (!session?.user?.email) {

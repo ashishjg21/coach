@@ -1,3 +1,44 @@
+defineRouteMeta({
+  openAPI: {
+    tags: ['Public'],
+    summary: 'Get public workout',
+    description: 'Returns details of a publicly shared workout via token.',
+    parameters: [
+      {
+        name: 'token',
+        in: 'path',
+        required: true,
+        schema: { type: 'string' }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                title: { type: 'string' },
+                date: { type: 'string', format: 'date-time' },
+                user: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', nullable: true },
+                    image: { type: 'string', nullable: true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      404: { description: 'Workout not found or link invalid' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const token = getRouterParam(event, 'token')
 

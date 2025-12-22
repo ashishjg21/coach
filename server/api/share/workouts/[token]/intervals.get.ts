@@ -17,6 +17,42 @@ import {
   calculateStabilityMetrics
 } from '../../../../utils/performance-metrics'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Public'],
+    summary: 'Get public workout intervals',
+    description: 'Detects and analyzes intervals for a publicly shared workout.',
+    parameters: [
+      {
+        name: 'token',
+        in: 'path',
+        required: true,
+        schema: { type: 'string' }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                hasData: { type: 'boolean' },
+                detectionMetric: { type: 'string', nullable: true },
+                intervals: { type: 'array' },
+                peaks: { type: 'object' },
+                advanced: { type: 'object' }
+              }
+            }
+          }
+        }
+      },
+      404: { description: 'Workout not found or link invalid' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const token = getRouterParam(event, 'token')
   if (!token) {

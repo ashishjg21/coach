@@ -1,6 +1,42 @@
 import { defineEventHandler, createError, getRouterParam } from 'h3'
 import { prisma } from '../../../../utils/db'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Public'],
+    summary: 'Get public workout streams',
+    description: 'Returns stream data for a publicly shared workout.',
+    parameters: [
+      {
+        name: 'token',
+        in: 'path',
+        required: true,
+        schema: { type: 'string' }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                workoutId: { type: 'string' },
+                time: { type: 'array' },
+                watts: { type: 'array' },
+                heartrate: { type: 'array' },
+                cadence: { type: 'array' }
+              }
+            }
+          }
+        }
+      },
+      404: { description: 'Workout not found or link invalid' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const token = getRouterParam(event, 'token')
   if (!token) {

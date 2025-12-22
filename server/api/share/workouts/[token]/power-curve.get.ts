@@ -1,6 +1,59 @@
 import { defineEventHandler, createError, getRouterParam } from 'h3'
 import { prisma } from '../../../../utils/db'
 
+import { defineEventHandler, createError, getRouterParam } from 'h3'
+import { prisma } from '../../../../utils/db'
+
+defineRouteMeta({
+  openAPI: {
+    tags: ['Public'],
+    summary: 'Get public power curve',
+    description: 'Calculates the power curve for a publicly shared workout.',
+    parameters: [
+      {
+        name: 'token',
+        in: 'path',
+        required: true,
+        schema: { type: 'string' }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                hasPowerData: { type: 'boolean' },
+                powerCurve: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      duration: { type: 'integer' },
+                      power: { type: 'number' }
+                    }
+                  }
+                },
+                summary: {
+                  type: 'object',
+                  properties: {
+                    peak5s: { type: 'number' },
+                    peak20min: { type: 'number' },
+                    estimatedFTP: { type: 'number', nullable: true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      404: { description: 'Workout not found or link invalid' }
+    }
+  }
+})
+
 // Standard power curve durations in seconds
 const DURATIONS = [5, 10, 30, 60, 120, 300, 600, 1200, 1800, 3600]
 
