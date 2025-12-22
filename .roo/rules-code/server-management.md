@@ -2,7 +2,7 @@
 
 ## Do Not Run the Development Server
 
-The agent should **NEVER** run the node development server (e.g., `npm run dev`, `yarn dev`, `pnpm dev`, etc.).
+The agent should **NEVER** run the node development server (e.g., `pnpm dev`, etc.).
 
 ### Rationale
 

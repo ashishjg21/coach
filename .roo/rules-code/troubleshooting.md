@@ -37,7 +37,7 @@ main()
 Run the script using `tsx`:
 
 ```bash
-npx tsx scripts/my-troubleshoot-script.ts
+pnpm exec tsx scripts/my-troubleshoot-script.ts
 ```
 
 ## Known Issues
