@@ -1,0 +1,74 @@
+import { defineEventHandler, getQuery, createError } from 'h3'
+import { workoutRepository } from '../../utils/repositories/workoutRepository'
+import { getServerSession } from '#auth'
+import { subDays, format } from 'date-fns'
+
+export default defineEventHandler(async (event) => {
+  const session = await getServerSession(event)
+  const user = session?.user as any
+
+  if (!user?.id) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorized'
+    })
+  }
+
+  const userId = user.id
+  const query = getQuery(event)
+  const days = Number(query.days) || 90
+
+  const now = new Date()
+  const startDate = subDays(now, days)
+
+  // Fetch workouts with power and HR data
+  const workouts = await workoutRepository.getForUser(userId, {
+    startDate,
+    endDate: now,
+    includeDuplicates: false
+  })
+
+  // Filter for workouts that have both Power and HR (needed for Efficiency Factor)
+  // And filter for workouts that have Normalized Power (needed for Decoupling usually, or use Avg Power if NP missing)
+  const relevantWorkouts = workouts.filter(w => 
+    (w.averageWatts || w.normalizedPower) && w.averageHr && w.averageHr > 0
+  ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+  // Calculate EF for each workout
+  // EF = Normalized Power / Average Heart Rate
+  // Decoupling (Pa:Hr) would ideally come from the source (Intervals.icu/Strava Analysis)
+  // If we don't have decoupling pre-calculated, we can't accurately calc it from summary stats alone
+  // So we'll check if 'efficiencyFactor' or 'decoupling' is in rawJson, or estimate EF.
+
+  const data = relevantWorkouts.map(w => {
+    // Try to get advanced metrics from rawJson or dedicated columns if we had them
+    // For now, calculate simple EF
+    const power = w.normalizedPower || w.averageWatts || 0
+    const hr = w.averageHr || 1
+    
+    // Simple EF calculation
+    const ef = power / hr
+    
+    // Decoupling (Pw:Hr) - Placeholder or extract from rawJson if available
+    // We'll return null if not available, frontend handles it
+    let decoupling = null
+    if (w.rawJson && typeof w.rawJson === 'object') {
+        // @ts-ignore
+        if (w.rawJson.decoupling) decoupling = w.rawJson.decoupling
+        // @ts-ignore
+        if (w.rawJson.aerobic_decoupling) decoupling = w.rawJson.aerobic_decoupling
+    }
+
+    return {
+      date: format(new Date(w.date), 'yyyy-MM-dd'),
+      efficiencyFactor: parseFloat(ef.toFixed(2)),
+      decoupling: decoupling,
+      normalizedPower: w.normalizedPower,
+      averageHr: w.averageHr
+    }
+  })
+
+  return {
+    trends: data
+  }
+})
