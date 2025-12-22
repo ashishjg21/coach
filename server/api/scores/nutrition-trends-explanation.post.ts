@@ -2,6 +2,61 @@ import { getServerSession } from '#auth'
 import { prisma } from '../../utils/db'
 import { generateStructuredAnalysis } from '../../utils/gemini'
 
+import { getServerSession } from '#auth'
+import { prisma } from '../../utils/db'
+import { generateStructuredAnalysis } from '../../utils/gemini'
+
+defineRouteMeta({
+  openAPI: {
+    tags: ['Scores'],
+    summary: 'Generate nutrition trend explanation',
+    description: 'Generates an AI explanation for nutrition trends.',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['summary'],
+            properties: {
+              days: { type: 'integer', default: 14 },
+              summary: {
+                type: 'object',
+                required: ['total'],
+                properties: {
+                  total: { type: 'integer' },
+                  avgOverall: { type: 'number' },
+                  avgMacroBalance: { type: 'number' },
+                  avgQuality: { type: 'number' },
+                  avgAdherence: { type: 'number' },
+                  avgHydration: { type: 'number' }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                analysis: { type: 'object' },
+                score: { type: 'number' },
+                period: { type: 'integer' }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 interface TrendAnalysis {
   executive_summary: string
   sections: Array<{

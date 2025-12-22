@@ -4,6 +4,49 @@ import { getServerSession } from '#auth'
 import { subDays, format, isSameDay } from 'date-fns'
 import { prisma } from '../../utils/db'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Scores'],
+    summary: 'Get readiness correlation',
+    description: 'Returns data points correlating recovery scores with workout performance (TSS).',
+    parameters: [
+      {
+        name: 'days',
+        in: 'query',
+        schema: { type: 'integer', default: 30 }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                points: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      x: { type: 'number', description: 'Recovery Score' },
+                      y: { type: 'number', description: 'Performance (TSS)' },
+                      date: { type: 'string', format: 'date-time' },
+                      type: { type: 'string' },
+                      title: { type: 'string' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   const user = session?.user as any

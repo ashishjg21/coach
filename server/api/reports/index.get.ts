@@ -1,5 +1,60 @@
 import { getServerSession } from '#auth'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Reports'],
+    summary: 'List reports',
+    description: 'Returns a list of reports for the authenticated user.',
+    parameters: [
+      {
+        name: 'limit',
+        in: 'query',
+        description: 'Maximum number of reports to return',
+        schema: { type: 'integer', default: 10 }
+      },
+      {
+        name: 'type',
+        in: 'query',
+        description: 'Filter by report type',
+        schema: { type: 'string' }
+      },
+      {
+        name: 'beforeDate',
+        in: 'query',
+        description: 'Filter reports created on or before this date',
+        schema: { type: 'string', format: 'date-time' }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  type: { type: 'string' },
+                  status: { type: 'string' },
+                  createdAt: { type: 'string', format: 'date-time' },
+                  updatedAt: { type: 'string', format: 'date-time' },
+                  dateRangeStart: { type: 'string', format: 'date-time' },
+                  dateRangeEnd: { type: 'string', format: 'date-time' },
+                  modelVersion: { type: 'string', nullable: true },
+                  analysisJson: { type: 'object', nullable: true }
+                }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   

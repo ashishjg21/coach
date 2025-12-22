@@ -2,6 +2,58 @@ import { getServerSession } from '#auth'
 import { prisma } from '../../utils/db'
 import { tasks } from '@trigger.dev/sdk/v3'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Scores'],
+    summary: 'Get score explanation',
+    description: 'Returns an AI-generated explanation for a specific score trend.',
+    parameters: [
+      {
+        name: 'type',
+        in: 'query',
+        required: true,
+        schema: { type: 'string', enum: ['nutrition', 'workout'] }
+      },
+      {
+        name: 'period',
+        in: 'query',
+        required: true,
+        schema: { type: 'integer' }
+      },
+      {
+        name: 'metric',
+        in: 'query',
+        required: true,
+        schema: { type: 'string' }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                analysis: { type: 'object', nullable: true },
+                score: { type: 'number', nullable: true },
+                period: { type: 'integer', nullable: true },
+                cached: { type: 'boolean' },
+                generatedAt: { type: 'string', format: 'date-time', nullable: true },
+                expiresAt: { type: 'string', format: 'date-time', nullable: true },
+                message: { type: 'string', nullable: true },
+                generating: { type: 'boolean', nullable: true }
+              }
+            }
+          }
+        }
+      },
+      400: { description: 'Missing required parameters' },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   

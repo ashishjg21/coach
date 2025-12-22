@@ -2,6 +2,61 @@ import { getServerSession } from '#auth'
 import { prisma } from '../../utils/db'
 import { generateStructuredAnalysis } from '../../utils/gemini'
 
+import { getServerSession } from '#auth'
+import { prisma } from '../../utils/db'
+import { generateStructuredAnalysis } from '../../utils/gemini'
+
+defineRouteMeta({
+  openAPI: {
+    tags: ['Scores'],
+    summary: 'Generate workout trend explanation',
+    description: 'Generates an AI explanation for workout trends.',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['summary'],
+            properties: {
+              days: { type: 'integer', default: 30 },
+              summary: {
+                type: 'object',
+                required: ['total'],
+                properties: {
+                  total: { type: 'integer' },
+                  avgOverall: { type: 'number' },
+                  avgTechnical: { type: 'number' },
+                  avgEffort: { type: 'number' },
+                  avgPacing: { type: 'number' },
+                  avgExecution: { type: 'number' }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                analysis: { type: 'object' },
+                score: { type: 'number' },
+                period: { type: 'integer' }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 interface TrendAnalysis {
   executive_summary: string
   sections: Array<{

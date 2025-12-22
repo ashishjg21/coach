@@ -1,5 +1,44 @@
 import { getServerSession } from '#auth'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Reports'],
+    summary: 'Get report detail',
+    description: 'Returns the full details of a specific analysis report.',
+    parameters: [
+      {
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: { type: 'string' }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                type: { type: 'string' },
+                status: { type: 'string' },
+                markdown: { type: 'string', nullable: true },
+                analysisJson: { type: 'object', nullable: true },
+                workouts: { type: 'array', items: { type: 'object' } },
+                nutrition: { type: 'array', items: { type: 'object' } }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' },
+      404: { description: 'Report not found' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   

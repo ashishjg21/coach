@@ -4,6 +4,62 @@ import { workoutRepository } from '../../utils/repositories/workoutRepository'
 import { defineEventHandler, createError, getQuery } from 'h3'
 import { eachDayOfInterval, format, isSameDay } from 'date-fns'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Scores'],
+    summary: 'Get workout trends',
+    description: 'Returns daily workout scores and trends for a specified period.',
+    parameters: [
+      {
+        name: 'days',
+        in: 'query',
+        schema: { type: 'integer', default: 30 }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                workouts: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      date: { type: 'string', format: 'date-time' },
+                      overallScore: { type: 'integer' },
+                      technicalScore: { type: 'integer' },
+                      effortScore: { type: 'integer' },
+                      pacingScore: { type: 'integer' },
+                      executionScore: { type: 'integer' },
+                      isGhost: { type: 'boolean' }
+                    }
+                  }
+                },
+                summary: {
+                  type: 'object',
+                  properties: {
+                    total: { type: 'integer' },
+                    avgOverall: { type: 'number' },
+                    avgTechnical: { type: 'number' },
+                    avgEffort: { type: 'number' },
+                    avgPacing: { type: 'number' },
+                    avgExecution: { type: 'number' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   

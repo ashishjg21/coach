@@ -1,6 +1,32 @@
 import { getServerSession } from '#auth'
 import { tasks } from '@trigger.dev/sdk/v3'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Scores'],
+    summary: 'Generate score explanations',
+    description: 'Triggers a background job to generate explanations for all score trends.',
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                message: { type: 'string' },
+                jobId: { type: 'string' }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   

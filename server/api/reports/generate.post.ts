@@ -1,6 +1,55 @@
 import { getServerSession } from '#auth'
 import { tasks } from "@trigger.dev/sdk/v3";
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Reports'],
+    summary: 'Generate report',
+    description: 'Triggers a background job to generate a new analysis report.',
+    requestBody: {
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              type: {
+                type: 'string',
+                enum: ['WEEKLY_ANALYSIS', 'LAST_3_WORKOUTS', 'LAST_3_NUTRITION', 'LAST_7_NUTRITION', 'CUSTOM'],
+                default: 'WEEKLY_ANALYSIS'
+              },
+              config: {
+                type: 'object',
+                description: 'Optional custom configuration for CUSTOM report type'
+              }
+            }
+          }
+        }
+      }
+    },
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                reportId: { type: 'string' },
+                reportType: { type: 'string' },
+                jobId: { type: 'string' },
+                message: { type: 'string' }
+              }
+            }
+          }
+        }
+      },
+      400: { description: 'Invalid report type' },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   

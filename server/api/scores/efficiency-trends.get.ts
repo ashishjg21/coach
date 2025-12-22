@@ -3,6 +3,49 @@ import { workoutRepository } from '../../utils/repositories/workoutRepository'
 import { getServerSession } from '#auth'
 import { subDays, format } from 'date-fns'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Scores'],
+    summary: 'Get efficiency trends',
+    description: 'Returns efficiency factor (Power/HR) and decoupling trends.',
+    parameters: [
+      {
+        name: 'days',
+        in: 'query',
+        schema: { type: 'integer', default: 90 }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                trends: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      date: { type: 'string' },
+                      efficiencyFactor: { type: 'number' },
+                      decoupling: { type: 'number', nullable: true },
+                      normalizedPower: { type: 'number', nullable: true },
+                      averageHr: { type: 'number', nullable: true }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   const user = session?.user as any
