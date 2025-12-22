@@ -2,6 +2,36 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { getServerSession } from '#auth'
 import { TASK_DEPENDENCIES, getTasksByLevel, canExecuteTask, type TaskExecutionState } from '../../../types/task-dependencies'
 
+import { defineEventHandler, readBody, createError } from 'h3'
+import { getServerSession } from '#auth'
+import { TASK_DEPENDENCIES, getTasksByLevel, canExecuteTask, type TaskExecutionState } from '../../../types/task-dependencies'
+
+defineRouteMeta({
+  openAPI: {
+    tags: ['Orchestration'],
+    summary: 'Start full sync',
+    description: 'Triggers a full orchestrated sync process, respecting task dependencies.',
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                message: { type: 'string' }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' },
+      409: { description: 'Sync already in progress' }
+    }
+  }
+})
+
 // Store for active sync operations
 const activeSyncs = new Map<string, {
   userId: string

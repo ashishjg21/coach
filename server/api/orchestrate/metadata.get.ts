@@ -2,6 +2,43 @@ import { defineEventHandler, createError } from 'h3'
 import { getServerSession } from '#auth'
 import { prisma } from '../../utils/db'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Orchestration'],
+    summary: 'Get orchestration metadata',
+    description: 'Returns status and timestamps for various background tasks and data syncs.',
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                metadata: {
+                  type: 'object',
+                  additionalProperties: {
+                    type: 'object',
+                    properties: {
+                      lastSync: { type: 'string', format: 'date-time', nullable: true },
+                      isUpToDate: { type: 'boolean', nullable: true },
+                      pendingCount: { type: 'integer', nullable: true },
+                      totalCount: { type: 'integer', nullable: true },
+                      duplicateCount: { type: 'integer', nullable: true }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   

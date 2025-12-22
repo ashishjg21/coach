@@ -3,6 +3,58 @@ import { getServerSession } from '#auth'
 import { prisma } from '../../utils/db'
 import { userRepository } from '../../utils/repositories/userRepository'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Performance'],
+    summary: 'Get FTP evolution',
+    description: 'Returns the history of Functional Threshold Power changes.',
+    parameters: [
+      {
+        name: 'months',
+        in: 'query',
+        schema: { type: 'integer', default: 12 }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                data: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      date: { type: 'string', format: 'date-time' },
+                      month: { type: 'string' },
+                      ftp: { type: 'integer' },
+                      title: { type: 'string' }
+                    }
+                  }
+                },
+                summary: {
+                  type: 'object',
+                  properties: {
+                    currentFTP: { type: 'integer', nullable: true },
+                    startingFTP: { type: 'integer', nullable: true },
+                    peakFTP: { type: 'integer', nullable: true },
+                    improvement: { type: 'number', nullable: true },
+                    dataPoints: { type: 'integer' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   if (!session?.user?.email) {

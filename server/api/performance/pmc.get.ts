@@ -7,6 +7,61 @@ import {
   getFormStatus
 } from '../../utils/training-stress'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Performance'],
+    summary: 'Get Performance Management Chart (PMC)',
+    description: 'Returns fitness (CTL), fatigue (ATL), and form (TSB) metrics over time.',
+    parameters: [
+      {
+        name: 'days',
+        in: 'query',
+        schema: { type: 'integer', default: 90 }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                data: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      date: { type: 'string', format: 'date-time' },
+                      ctl: { type: 'number' },
+                      atl: { type: 'number' },
+                      tsb: { type: 'number' },
+                      tss: { type: 'number' }
+                    }
+                  }
+                },
+                summary: {
+                  type: 'object',
+                  properties: {
+                    currentCTL: { type: 'number' },
+                    currentATL: { type: 'number' },
+                    currentTSB: { type: 'number' },
+                    formStatus: { type: 'string' },
+                    formColor: { type: 'string' },
+                    formDescription: { type: 'string' },
+                    lastUpdated: { type: 'string', format: 'date-time' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   

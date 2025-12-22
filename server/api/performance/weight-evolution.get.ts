@@ -3,6 +3,57 @@ import { getServerSession } from '#auth'
 import { prisma } from '../../utils/db'
 import { userRepository } from '../../utils/repositories/userRepository'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Performance'],
+    summary: 'Get weight evolution',
+    description: 'Returns the history of weight changes from wellness logs.',
+    parameters: [
+      {
+        name: 'months',
+        in: 'query',
+        schema: { type: 'integer', default: 12 }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                data: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      date: { type: 'string', format: 'date-time' },
+                      weight: { type: 'number' }
+                    }
+                  }
+                },
+                summary: {
+                  type: 'object',
+                  properties: {
+                    current: { type: 'number', nullable: true },
+                    starting: { type: 'number', nullable: true },
+                    min: { type: 'number', nullable: true },
+                    max: { type: 'number', nullable: true },
+                    change: { type: 'number' },
+                    unit: { type: 'string' }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   if (!session?.user?.email) {

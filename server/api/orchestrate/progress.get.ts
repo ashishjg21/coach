@@ -2,6 +2,25 @@ import { defineEventHandler, setHeader } from 'h3'
 import { getServerSession } from '#auth'
 import { activeSyncs } from './full-sync.post'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Orchestration'],
+    summary: 'Get orchestration progress',
+    description: 'Streams Server-Sent Events (SSE) for tracking background sync progress.',
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'text/event-stream': {
+            schema: { type: 'string' }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   
