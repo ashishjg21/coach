@@ -1,5 +1,45 @@
 import { getServerSession } from '#auth'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Wellness'],
+    summary: 'Get wellness by ID',
+    description: 'Returns a specific wellness record by ID.',
+    parameters: [
+      {
+        name: 'id',
+        in: 'path',
+        required: true,
+        schema: { type: 'string' }
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                date: { type: 'string', format: 'date-time' },
+                hrv: { type: 'number', nullable: true },
+                restingHr: { type: 'integer', nullable: true },
+                sleepScore: { type: 'integer', nullable: true },
+                readiness: { type: 'integer', nullable: true },
+                recoveryScore: { type: 'integer', nullable: true }
+              }
+            }
+          }
+        }
+      },
+      401: { description: 'Unauthorized' },
+      403: { description: 'Access denied' },
+      404: { description: 'Wellness data not found' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   

@@ -1,6 +1,45 @@
 import { getServerSession } from '#auth'
 import { prisma } from '../../utils/db'
 
+defineRouteMeta({
+  openAPI: {
+    tags: ['Wellness'],
+    summary: 'Get wellness by date',
+    description: 'Returns wellness metrics for a specific date.',
+    parameters: [
+      {
+        name: 'date',
+        in: 'path',
+        required: true,
+        schema: { type: 'string', format: 'date' },
+        description: 'Date in YYYY-MM-DD format'
+      }
+    ],
+    responses: {
+      200: {
+        description: 'Success',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                hrv: { type: 'number', nullable: true },
+                restingHr: { type: 'integer', nullable: true },
+                sleepScore: { type: 'integer', nullable: true },
+                hoursSlept: { type: 'number', nullable: true },
+                recoveryScore: { type: 'integer', nullable: true }
+              }
+            }
+          }
+        }
+      },
+      400: { description: 'Invalid date format' },
+      401: { description: 'Unauthorized' }
+    }
+  }
+})
+
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
   
