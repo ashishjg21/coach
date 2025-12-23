@@ -7,136 +7,162 @@ const route = useRoute()
 
 const open = ref(false)
 
-const links = computed<NavigationMenuItem[][]>(() => [[{
-  label: 'Dashboard',
-  icon: 'i-lucide-layout-dashboard',
-  to: '/dashboard',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Activities',
-  icon: 'i-lucide-calendar-days',
-  to: '/activities',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Performance',
-  icon: 'i-lucide-trending-up',
-  to: '/performance',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Training Plan',
-  icon: 'i-lucide-calendar',
-  to: '/plan',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Workouts',
-  icon: 'i-lucide-activity',
-  to: '/workouts',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Nutrition',
-  icon: 'i-lucide-utensils',
-  to: '/nutrition',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Fitness',
-  icon: 'i-lucide-heart-pulse',
-  to: '/fitness',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Goals',
-  icon: 'i-lucide-trophy',
-  to: '/profile/goals',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Reports',
-  icon: 'i-lucide-file-text',
-  to: '/reports',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Coaching',
-  icon: 'i-lucide-users',
-  to: '/coaching',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'AI Chat',
-  icon: 'i-lucide-message-circle',
-  to: '/chat',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Data',
-  icon: 'i-lucide-database',
-  to: '/data',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Settings',
-  icon: 'i-lucide-settings',
-  defaultOpen: route.path.includes('settings'),
-  children: [{
-    label: 'Profile',
-    icon: 'i-lucide-user',
-    to: '/profile/settings',
-    active: route.path === '/profile/settings',
+const links = computed<NavigationMenuItem[][]>(() => {
+  const primaryLinks: any[] = [{
+    label: 'Dashboard',
+    icon: 'i-lucide-layout-dashboard',
+    to: '/dashboard',
     onSelect: () => {
       open.value = false
     }
   }, {
-    label: 'Connected Apps',
-    icon: 'i-lucide-plug',
-    to: '/settings/apps',
-    active: route.path === '/settings/apps',
+    label: 'Activities',
+    icon: 'i-lucide-calendar-days',
+    to: '/activities',
     onSelect: () => {
       open.value = false
     }
   }, {
-    label: 'AI Coach',
-    icon: 'i-lucide-sparkles',
-    to: '/settings/ai',
-    active: route.path === '/settings/ai',
+    label: 'Performance',
+    icon: 'i-lucide-trending-up',
+    to: '/performance',
     onSelect: () => {
       open.value = false
     }
   }, {
-    label: 'Developer',
-    icon: 'i-lucide-code-2',
-    to: '/settings/developer',
-    active: route.path === '/settings/developer',
+    label: 'Training Plan',
+    icon: 'i-lucide-calendar',
+    to: '/plan',
     onSelect: () => {
       open.value = false
     }
   }, {
-    label: 'Danger Zone',
-    icon: 'i-lucide-alert-triangle',
-    to: '/settings/danger',
-    active: route.path === '/settings/danger',
+    label: 'Workouts',
+    icon: 'i-lucide-activity',
+    to: '/workouts',
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Nutrition',
+    icon: 'i-lucide-utensils',
+    to: '/nutrition',
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Fitness',
+    icon: 'i-lucide-heart-pulse',
+    to: '/fitness',
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Goals',
+    icon: 'i-lucide-trophy',
+    to: '/profile/goals',
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Reports',
+    icon: 'i-lucide-file-text',
+    to: '/reports',
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Coaching',
+    icon: 'i-lucide-users',
+    to: '/coaching',
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'AI Chat',
+    icon: 'i-lucide-message-circle',
+    to: '/chat',
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Data',
+    icon: 'i-lucide-database',
+    to: '/data',
     onSelect: () => {
       open.value = false
     }
   }]
-}]])
+
+  if ((user.value as any)?.isAdmin) {
+    primaryLinks.push({
+      label: 'Admin',
+      icon: 'i-lucide-shield-check',
+      to: '/admin',
+      onSelect: () => {
+        open.value = false
+      }
+    })
+  }
+
+  primaryLinks.push({
+    label: 'Settings',
+    icon: 'i-lucide-settings',
+    defaultOpen: route.path.includes('settings'),
+    children: [{
+      label: 'Profile',
+      icon: 'i-lucide-user',
+      to: '/profile/settings',
+      onSelect: () => {
+        open.value = false
+      }
+    }, {
+      label: 'Apps',
+      icon: 'i-lucide-layout-grid',
+      to: '/settings/apps',
+      onSelect: () => {
+        open.value = false
+      }
+    }, {
+      label: 'AI Coach',
+      icon: 'i-lucide-sparkles',
+      to: '/settings/ai',
+      onSelect: () => {
+        open.value = false
+      }
+    }, {
+      label: 'Coaching',
+      icon: 'i-lucide-users',
+      to: '/settings/coaching',
+      onSelect: () => {
+        open.value = false
+      }
+    }, {
+      label: 'Developer',
+      icon: 'i-lucide-code-2',
+      to: '/settings/developer',
+      onSelect: () => {
+        open.value = false
+      }
+    }, {
+      label: 'Changelog',
+      icon: 'i-lucide-list',
+      to: '/settings/changelog',
+      onSelect: () => {
+        open.value = false
+      }
+    }, {
+      label: 'Danger Zone',
+      icon: 'i-lucide-trash-2',
+      to: '/settings/danger',
+      onSelect: () => {
+        open.value = false
+      }
+    }]
+  })
+
+  return [primaryLinks]
+})
 
 const groups = computed(() => [{
   id: 'links',

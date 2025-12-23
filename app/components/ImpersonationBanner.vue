@@ -1,0 +1,55 @@
+<template>
+  <div v-if="isImpersonating" class="bg-yellow-500 text-black py-2 px-4 flex items-center justify-between sticky top-0 z-[60]">
+    <div class="flex items-center gap-2 text-sm font-medium">
+      <UIcon name="i-heroicons-eye" class="w-5 h-5" />
+      <span>
+        Impersonating <strong>{{ impersonatedUserEmail }}</strong> 
+        (Admin: {{ originalUserEmail }})
+      </span>
+    </div>
+    <div class="flex items-center gap-4">
+      <UButton 
+        color="black" 
+        variant="solid" 
+        size="xs" 
+        label="Exit Impersonation" 
+        :loading="stopping"
+        @click="stopImpersonation" 
+      />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+const { data, refresh } = useAuth()
+const toast = useToast()
+const stopping = ref(false)
+
+const isImpersonating = computed(() => (data.value?.user as any)?.isImpersonating)
+const impersonatedUserEmail = computed(() => data.value?.user?.email)
+const originalUserEmail = computed(() => (data.value?.user as any)?.originalUserEmail)
+
+async function stopImpersonation() {
+  stopping.value = true
+  try {
+    await $fetch('/api/admin/stop-impersonation', { method: 'POST' })
+    toast.add({
+      title: 'Impersonation stopped',
+      description: 'Returning to admin account',
+      color: 'success'
+    })
+    // Refresh session and redirect
+    await refresh()
+    await navigateTo('/admin/users')
+  } catch (error) {
+    console.error('Failed to stop impersonation:', error)
+    toast.add({
+      title: 'Error',
+      description: 'Failed to stop impersonation',
+      color: 'error'
+    })
+  } finally {
+    stopping.value = false
+  }
+}
+</script>
