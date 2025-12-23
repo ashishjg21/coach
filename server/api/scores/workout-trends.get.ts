@@ -1,4 +1,4 @@
-import { getServerSession } from '#auth'
+import { getServerSession } from '../../utils/session'
 import { prisma } from '../../utils/db'
 import { workoutRepository } from '../../utils/repositories/workoutRepository'
 import { defineEventHandler, createError, getQuery } from 'h3'

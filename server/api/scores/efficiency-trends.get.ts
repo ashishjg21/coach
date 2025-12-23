@@ -1,6 +1,6 @@
 import { defineEventHandler, getQuery, createError } from 'h3'
 import { workoutRepository } from '../../utils/repositories/workoutRepository'
-import { getServerSession } from '#auth'
+import { getServerSession } from '../../utils/session'
 import { subDays, format } from 'date-fns'
 
 defineRouteMeta({

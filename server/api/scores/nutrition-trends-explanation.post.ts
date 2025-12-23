@@ -1,8 +1,8 @@
-import { getServerSession } from '#auth'
+import { getServerSession } from '../../utils/session'
 import { prisma } from '../../utils/db'
 import { generateStructuredAnalysis } from '../../utils/gemini'
 
-import { getServerSession } from '#auth'
+import { getServerSession } from '../../utils/session'
 import { prisma } from '../../utils/db'
 import { generateStructuredAnalysis } from '../../utils/gemini'
 
