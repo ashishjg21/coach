@@ -3,7 +3,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   
   // Check if auth bypass is enabled
   if (config.public.authBypassEnabled) {
-    console.log('[Admin Middleware] Auth bypass enabled, allowing admin access')
     return
   }
   

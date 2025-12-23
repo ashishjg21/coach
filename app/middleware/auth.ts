@@ -1,12 +1,4 @@
-export default defineNuxtRouteMiddleware((to, from) => {
-  const config = useRuntimeConfig()
-  
-  // Check if auth bypass is enabled
-  if (config.public.authBypassEnabled) {
-    console.log('[Middleware] Auth bypass enabled, allowing access')
-    return
-  }
-  
+export default defineNuxtRouteMiddleware(async (to, from) => {
   const { status } = useAuth()
   
   if (status.value !== 'authenticated') {
