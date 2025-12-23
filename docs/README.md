@@ -4,7 +4,9 @@ Welcome to the Coach Watts documentation. This comprehensive guide covers the sy
 
 ## 📚 Documentation Overview
 
-### [Architecture](./architecture.md)
+The documentation is now organized into the following sections. Please refer to the [Index](./INDEX.md) for a complete list of documents.
+
+### [Architecture](./01-architecture/system-overview.md)
 **System design and technical decisions**
 
 Learn about the high-level system architecture, including:
@@ -17,7 +19,7 @@ Learn about the high-level system architecture, including:
 
 **Read this first** to understand the overall system design and how different components work together.
 
-### [Database Schema](./database-schema.md)
+### [Database Schema](./01-architecture/database-schema.md)
 **Complete database structure and design**
 
 Detailed documentation of the PostgreSQL database schema:
@@ -31,7 +33,7 @@ Detailed documentation of the PostgreSQL database schema:
 
 **Essential reading** for understanding data models and database interactions.
 
-### [Chat Feature](./chat-feature.md)
+### [Chat Feature](./02-features/chat/overview.md)
 **AI Chat System Architecture**
 
 Guide to the chat implementation:
@@ -41,7 +43,7 @@ Guide to the chat implementation:
 - Frontend integration with vue-advanced-chat
 - AI integration details
 
-### [Project Structure](./project-structure.md)
+### [Project Structure](./01-architecture/project-structure.md)
 **File organization and code conventions**
 
 Complete guide to the project's file system organization:
@@ -55,7 +57,7 @@ Complete guide to the project's file system organization:
 
 **Reference this** when creating new files or organizing code.
 
-### [Implementation Guide](./implementation-guide.md)
+### [Implementation Guide](./04-guides/implementation-guide.md)
 **Step-by-step build instructions**
 
 Sequential implementation guide with detailed prompts:
@@ -79,17 +81,17 @@ Each phase includes:
 
 ### For Developers New to the Project
 
-1. **Read** [Architecture](./architecture.md) to understand the system
-2. **Review** [Database Schema](./database-schema.md) to understand data models
-3. **Reference** [Project Structure](./project-structure.md) for file organization
-4. **Follow** [Implementation Guide](./implementation-guide.md) to build features
+1. **Read** [Architecture](./01-architecture/system-overview.md) to understand the system
+2. **Review** [Database Schema](./01-architecture/database-schema.md) to understand data models
+3. **Reference** [Project Structure](./01-architecture/project-structure.md) for file organization
+4. **Follow** [Implementation Guide](./04-guides/implementation-guide.md) to build features
 
 ### For Experienced Developers
 
-1. **Skim** [Architecture](./architecture.md) for key decisions
-2. **Bookmark** [Database Schema](./database-schema.md) for quick reference
-3. **Use** [Project Structure](./project-structure.md) as needed
-4. **Jump to** relevant sections in [Implementation Guide](./implementation-guide.md)
+1. **Skim** [Architecture](./01-architecture/system-overview.md) for key decisions
+2. **Bookmark** [Database Schema](./01-architecture/database-schema.md) for quick reference
+3. **Use** [Project Structure](./01-architecture/project-structure.md) as needed
+4. **Jump to** relevant sections in [Implementation Guide](./04-guides/implementation-guide.md)
 
 ## 🏗️ System Architecture at a Glance
 
@@ -201,7 +203,7 @@ GEMINI_API_KEY="your-gemini-api-key"
 TRIGGER_API_KEY="your-trigger-api-key"
 ```
 
-See [Implementation Guide](./implementation-guide.md) for detailed setup instructions.
+See [Implementation Guide](./04-guides/implementation-guide.md) for detailed setup instructions.
 
 ## 📖 Development Workflow
 
