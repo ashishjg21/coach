@@ -12,32 +12,46 @@
             Back to Dashboard
           </UButton>
         </template>
-        <template #trailing>
-          <UPopover>
-            <UButton color="neutral" variant="subtle" icon="i-heroicons-calendar">
-              {{ selectedDateLabel }}
+        <template #right>
+          <div class="flex items-center gap-2">
+            <UButton
+              v-if="profile && profile.status === 'COMPLETED'"
+              color="neutral"
+              variant="outline"
+              icon="i-heroicons-share"
+              size="sm"
+              class="font-bold"
+              @click="isShareModalOpen = true"
+            >
+              Share
             </UButton>
 
-            <template #content>
-              <div class="p-2">
-                <UCalendar
-                  v-model="selectedDate"
-                  :max-value="today"
-                  @update:model-value="handleDateChange"
-                />
-                <div class="mt-2 pt-2 border-t flex justify-end">
-                  <UButton
-                    size="xs"
-                    color="neutral"
-                    variant="ghost"
-                    @click="resetToLatest"
-                  >
-                    View Latest
-                  </UButton>
+            <UPopover>
+              <UButton color="neutral" variant="subtle" icon="i-heroicons-calendar" size="sm" class="font-bold">
+                {{ selectedDateLabel }}
+              </UButton>
+
+              <template #content>
+                <div class="p-2">
+                  <UCalendar
+                    v-model="selectedDate"
+                    :max-value="today"
+                    @update:model-value="handleDateChange"
+                  />
+                  <div class="mt-2 pt-2 border-t flex justify-end">
+                    <UButton
+                      size="xs"
+                      color="neutral"
+                      variant="ghost"
+                      @click="resetToLatest"
+                    >
+                      View Latest
+                    </UButton>
+                  </div>
                 </div>
-              </div>
-            </template>
-          </UPopover>
+              </template>
+            </UPopover>
+          </div>
         </template>
       </UDashboardNavbar>
     </template>
@@ -423,7 +437,65 @@
         </div>
       </div>
     </template>
+    
+    <template #footer>
+    </template>
   </UDashboardPanel>
+  
+  <UModal
+    v-model:open="isShareModalOpen"
+    title="Share Athlete Profile"
+    description="Anyone with this link can view your athlete profile. The link will expire in 30 days."
+  >
+    <template #body>
+      <div class="space-y-4">
+        <div v-if="generatingShareLink" class="flex items-center justify-center py-8">
+          <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <div v-else-if="shareLink" class="space-y-4">
+          <UFormField label="Share Link">
+            <div class="flex gap-2">
+              <UInput
+                v-model="shareLink"
+                readonly
+                class="flex-1"
+              />
+              <UButton
+                icon="i-heroicons-clipboard"
+                color="neutral"
+                variant="outline"
+                @click="copyToClipboard"
+              >
+                Copy
+              </UButton>
+            </div>
+          </UFormField>
+          <p class="text-xs text-gray-500">
+            This link provides read-only access to this specific version of your profile.
+          </p>
+        </div>
+        <div v-else class="flex flex-col items-center justify-center py-8 text-center">
+          <UIcon name="i-heroicons-link" class="w-8 h-8 text-gray-400 mb-2" />
+          <p class="text-gray-600 mb-4">Click below to generate a shareable link.</p>
+          <UButton
+            color="primary"
+            @click="generateShareLink"
+            :loading="generatingShareLink"
+          >
+            Generate Link
+          </UButton>
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <UButton
+        label="Close"
+        color="neutral"
+        variant="ghost"
+        @click="isShareModalOpen = false"
+      />
+    </template>
+  </UModal>
 </template>
 
 <script setup lang="ts">
@@ -435,10 +507,6 @@ const { getTrendLabel } = useScoreColor()
 const { poll } = usePolling()
 
 const userStore = useUserStore()
-
-definePageMeta({
-  middleware: 'auth'
-})
 
 // Date selection state
 const today = getTodayDate(getLocalTimeZone())
@@ -476,6 +544,59 @@ const { data: profile, pending, refresh } = await useFetch('/api/reports', {
   watch: [queryParams]
 })
 
+// Share state
+const isShareModalOpen = ref(false)
+const shareLink = ref('')
+const generatingShareLink = ref(false)
+
+const generateShareLink = async () => {
+  if (!profile.value?.id) return
+  
+  generatingShareLink.value = true
+  try {
+    const response = await $fetch('/api/share/generate', {
+      method: 'POST',
+      body: {
+        resourceType: 'REPORT',
+        resourceId: profile.value.id
+      }
+    })
+    shareLink.value = response.url
+  } catch (error) {
+    console.error('Failed to generate share link:', error)
+    toast.add({
+      title: 'Error',
+      description: 'Failed to generate share link. Please try again.',
+      color: 'error'
+    })
+  } finally {
+    generatingShareLink.value = false
+  }
+}
+
+const copyToClipboard = () => {
+  if (!shareLink.value) return
+  
+  navigator.clipboard.writeText(shareLink.value)
+  toast.add({
+    title: 'Copied',
+    description: 'Share link copied to clipboard.',
+    color: 'success'
+  })
+}
+
+// Watch for share modal opening to generate link if it doesn't exist
+watch(isShareModalOpen, (newValue) => {
+  if (newValue && !shareLink.value) {
+    generateShareLink()
+  }
+})
+
+// Watch for profile changes to reset share link
+watch(() => profile.value?.id, () => {
+  shareLink.value = ''
+})
+
 // Check if viewing a historical profile (not the latest)
 const isViewingHistorical = computed(() => {
   return selectedDate.value !== null
@@ -494,18 +615,27 @@ const resetToLatest = () => {
 }
 
 // Poll for updates if profile is processing
-if (profile.value?.status === 'PROCESSING') {
-  poll(
-    async () => {
-        await refresh()
-        return profile.value
-    },
-    (data: any) => data?.status !== 'PROCESSING',
-    {
-        interval: 5000
-    }
-  )
+const startPolling = () => {
+  if (profile.value?.status === 'PROCESSING') {
+    poll(
+      async () => {
+          await refresh()
+          return profile.value
+      },
+      (data: any) => data?.status !== 'PROCESSING',
+      {
+          interval: 5000
+      }
+    )
+  }
 }
+
+// Watch for profile status changes to trigger polling
+watch(() => profile.value?.status, (newStatus) => {
+  if (newStatus === 'PROCESSING') {
+    startPolling()
+  }
+}, { immediate: true })
 
 const statusColor = computed(() => {
   if (!profile.value) return 'neutral'

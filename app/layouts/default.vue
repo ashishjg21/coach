@@ -193,7 +193,6 @@ const groups = computed(() => [{
     >
       <template #header="{ collapsed }">
         <div class="flex flex-col w-full">
-          <ImpersonationBanner />
           <div class="flex items-center gap-2 p-4">
             <div v-if="!collapsed" class="flex items-center gap-2">
               <UIcon name="i-lucide-zap" class="size-6" />
