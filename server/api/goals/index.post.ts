@@ -1,7 +1,7 @@
-import { getServerSession } from '#auth'
+import { getServerSession } from '../../utils/session'
 import { z } from 'zod'
 
-import { getServerSession } from '#auth'
+import { getServerSession } from '../../utils/session'
 import { z } from 'zod'
 
 defineRouteMeta({

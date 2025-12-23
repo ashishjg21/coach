@@ -1,4 +1,4 @@
-import { getServerSession } from '#auth'
+import { getServerSession } from '../../utils/session'
 import { runs } from '@trigger.dev/sdk/v3'
 
 defineRouteMeta({
