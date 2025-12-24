@@ -1,3 +1,59 @@
+# Coach Watts v0.3.1 Release: Unleash Your Performance Potential! 🚀
+
+We are thrilled to announce a massive update to Coach Watts! This release significantly deepens your workout analysis, introduces powerful new integrations, and makes sharing your achievements easier than ever.
+
+Here’s what’s new and improved in the app:
+
+---
+
+## 🔬 Next-Level Workout Analysis
+
+Your activity data is now more insightful than ever, thanks to new algorithms that dissect your performance beyond standard metrics.
+
+*   **Automatic Interval Detection:** We now automatically detect and analyze the specific intervals (laps, efforts) within your workouts. See detailed stats, pacing, and physiological response for every single hard effort!
+*   **Advanced Performance Metrics:** Unlock new insights with state-of-the-art metrics, including:
+    *   **Fatigue Sensitivity & Recovery Rate:** Understand how quickly you fatigue during efforts and how efficiently you recover afterward.
+    *   **Endurance Fade & Stability:** Get clear data on how well you maintain power output and form throughout long sessions.
+    *   **Coasting, Decoupling, and Surge Detection:** Pinpoint those moments of inefficiency or powerful bursts within your ride.
+*   **Enhanced Workout Timeline:** Our interactive workout chart is much smoother, visually displaying your effort gradient (grade/slope) alongside your power and heart rate data.
+*   **Accurate Heart Rate Zones:** We've corrected calculations to ensure your Heart Rate Zone distribution is perfectly accurate.
+
+## 🔗 Seamless Data Integration
+
+Getting your training and wellness data into Coach Watts is now simpler and more comprehensive.
+
+*   **Upload FIT Files Directly!** 📤 Have a raw file from your head unit? You can now manually upload `.fit` files directly to the app for immediate processing and analysis.
+*   **Withings Integration (Wellness Data):** Connect your Withings scale and devices to automatically track your weight and wellness metrics, giving the AI coach a complete picture of your health.
+*   **Improved Intervals.icu Sync:** Planned workouts from Intervals.icu now sync reliably, and we have implemented better initial syncing logic to ensure all your historical data is imported correctly.
+
+## 📣 Public Workout Sharing
+
+Show off your epic rides or help a friend analyze their efforts without logging in!
+
+*   **Shareable Read-Only Links:** Every completed workout can now generate a unique, public share link. Anyone with the link can view the workout details, timeline, and advanced metrics (read-only view).
+*   **Easy Sharing Button:** Find the new "Share" button on your workout detail page to generate the link instantly.
+
+## 📈 Planning & Progress Tracking
+
+We've added key tools for long-term tracking and planning.
+
+*   **Performance Management Curve (PMC):** Track your Fitness (CTL), Fatigue (ATL), and Form (TSB) directly on the Performance page to manage your training load effectively.
+*   **FTP and Weight Evolution:** See how your Functional Threshold Power (FTP) and body weight have changed over time with new evolution charts.
+*   **Goal Days on Calendar:** Your activity calendar now clearly highlights the dates you’ve set as "Goal Days," helping you keep the big picture in focus.
+
+## 🛠️ Quality of Life & Developer Tools
+
+*   **Free Early Access!** Coach Watts is now available in Free Early Access.
+*   **New User Onboarding:** New athletes and coaches will now enjoy a guided introduction to the app's powerful features.
+*   **Developer Settings & API Access:** For advanced users or coaches managing external tools, we have introduced API Key management and OpenAPI documentation, allowing you to build custom integrations.
+
+---
+
+We believe these updates will transform how you interact with your training data. Log in now and dive into your new advanced metrics!
+
+Happy cycling! 🚴
+**— The Coach Watts Team**
+
 ## Massive Release: v0.3.1 is Here! 🚀 New Data, Deeper Analytics, and Public Sharing!
 
 We've been busy under the hood, and we are thrilled to announce our largest feature release yet! This update fundamentally transforms how Coach Watts analyzes your training, handles your data, and connects with your favorite devices.

@@ -1,5 +1,40 @@
 # Changelog
 
+# [0.4.0](https://github.com/newpush/coach/compare/v0.3.1...v0.4.0) (2025-12-24)
+
+
+### Bug Fixes
+
+* handle undefined indicator in Hevy ingestion ([1d0403d](https://github.com/newpush/coach/commit/1d0403d2bfb564cf41e217907f8b7994f233aaf9))
+* **trigger:** change ingestion tasks from parallel to sequential execution ([a83a411](https://github.com/newpush/coach/commit/a83a411c70a4966ca521a2064d246a290cf8fefd))
+
+
+### Features
+
+* add changelog command to CLI ([2d7f1f0](https://github.com/newpush/coach/commit/2d7f1f0001b22b140432a7f33a3d122ccbce094e))
+* add Hevy connection page and API endpoint ([4a85fe6](https://github.com/newpush/coach/commit/4a85fe6b82ffe99d95ebeeefd68859ab8cba9f0f))
+* add Hevy integration for strength training data ([6bf5711](https://github.com/newpush/coach/commit/6bf57110c820e08bb873404f1bf63f2406f291b6))
+* add Hevy integration settings UI ([632bc9a](https://github.com/newpush/coach/commit/632bc9ab0844f2dae5e6b43ce985a8135bc52cf9))
+* **cli:** add gps data format checking commands ([802165f](https://github.com/newpush/coach/commit/802165f9fc1e9b4e4c751488652f0873b3b37ec1))
+* **components:** add workout map component for gps route visualization ([0938ffc](https://github.com/newpush/coach/commit/0938ffc9db54a1f0b8c691559e7678b28be977a4))
+* **components:** support cached zone times in zone chart display ([bf44239](https://github.com/newpush/coach/commit/bf44239452bfa7d819eb6c95513ec36cdce6f542))
+* **config:** add global seo meta tags and social media config ([fbe6914](https://github.com/newpush/coach/commit/fbe6914578d75008e7fd870701db1eb86f0a1f13))
+* **config:** add vue-leaflet transpilation to nuxt build config ([dce84b3](https://github.com/newpush/coach/commit/dce84b3863fe0c6e156e44cbb77d25a645fae07c))
+* **db:** add cached zone times and workout ingestion toggle ([8b5bf58](https://github.com/newpush/coach/commit/8b5bf58259578e6d3b3e2b1d282d8ee7b7b6037c))
+* **deps:** add leaflet and vue-leaflet for map visualization ([d0f6476](https://github.com/newpush/coach/commit/d0f6476c17c530c70eb44b9404df5e81e0b74a1d))
+* **integrations:** add hevy integration to data sync page ([b1c1a71](https://github.com/newpush/coach/commit/b1c1a710eb8a066ad013bfe086bbf3c5b4dd0847))
+* **landing:** update pricing page for early access program ([0c2e02c](https://github.com/newpush/coach/commit/0c2e02c9aa6dbfec897356f04305bdd70ba48c15))
+* **layouts:** add discord and github links to navigation and footer ([20e6478](https://github.com/newpush/coach/commit/20e64786e53d661e0012befa8533e939dcfc7766))
+* **pages:** add map section to workout detail page ([6f3842e](https://github.com/newpush/coach/commit/6f3842e988b8d6606a57e8ae9b1db0882ef07c99))
+* **pages:** add seo meta tags and open graph data to main pages ([46ba41a](https://github.com/newpush/coach/commit/46ba41a1892b015dcc4fbdc70eb4b21fbbe8a192))
+* **pages:** add structured data and enhanced seo to share pages ([ffc8802](https://github.com/newpush/coach/commit/ffc8802814c1f6ab7626c77b42bde937c4fda1ba))
+* **plugins:** add leaflet client plugin with marker assets ([72f9a0f](https://github.com/newpush/coach/commit/72f9a0f4f65b556358c21b0bbd36824acbf6f636))
+* save versioned release notes to public/content/releases/ ([08a4316](https://github.com/newpush/coach/commit/08a43167a0b3d1c0d92e7f111337d79fd3093f1d))
+* **server:** add zone time caching and whoop hr zone extraction ([9abe96e](https://github.com/newpush/coach/commit/9abe96e912a9601d39d33212991b7561d2a62bb3))
+* **skills:** add report-bug skill for automated GitHub issue creation ([72bd58e](https://github.com/newpush/coach/commit/72bd58e4dae16afd18c5b05174aa039160329c51))
+* **trigger:** enable whoop workout ingestion with hr zone caching ([3b9b82c](https://github.com/newpush/coach/commit/3b9b82c292044f4645cb0316cb0c5bd0d8708609))
+* **ui:** add sync buttons and workout ingestion toggle for integrations ([293d48e](https://github.com/newpush/coach/commit/293d48eee5ec4aec2833162f14408e729ee7acda))
+
 ## [0.3.1](https://github.com/newpush/coach/compare/v0.3.0...v0.3.1) (2025-12-24)
 
 # [0.2.0](https://github.com/newpush/coach/compare/v0.1.0...v0.2.0) (2025-12-22)
