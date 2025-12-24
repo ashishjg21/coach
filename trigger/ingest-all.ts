@@ -95,39 +95,61 @@ export const ingestAllTask = task({
       };
     }
     
-    logger.log(`🚀 Triggering ${tasksTrigger.length} ingestion task(s) in parallel...`);
+    logger.log(`🚀 Triggering ${tasksTrigger.length} ingestion task(s) sequentially...`);
     logger.log("");
     
-    // Trigger all tasks in parallel and wait for completion
-    const { runs } = await batch.triggerByTaskAndWait(tasksTrigger);
+    // Trigger all tasks sequentially to avoid BatchTriggerError in production
+    const results = [];
+    
+    for (const item of tasksTrigger) {
+      const integration = integrations.find(i => {
+        if (item.task.id === 'ingest-strava' && i.provider === 'strava') return true;
+        if (item.task.id === 'ingest-whoop' && i.provider === 'whoop') return true;
+        if (item.task.id === 'ingest-withings' && i.provider === 'withings') return true;
+        if (item.task.id === 'ingest-intervals' && i.provider === 'intervals') return true;
+        if (item.task.id === 'ingest-yazio' && i.provider === 'yazio') return true;
+        return false;
+      });
+
+      logger.log(`Starting ingestion for ${integration?.provider || item.task.id}...`);
+      
+      try {
+        const run = await item.task.triggerAndWait(item.payload);
+        
+        if (run.ok) {
+          logger.log(`✅ ${integration?.provider || item.task.id}: SUCCESS`);
+          logger.log(`   ${JSON.stringify(run.output, null, 2)}`);
+          
+          results.push({
+            provider: integration?.provider || item.task.id,
+            status: 'success',
+            data: run.output
+          });
+        } else {
+          logger.error(`❌ ${integration?.provider || item.task.id}: FAILED`);
+          logger.error(`   Error: ${run.error}`);
+          
+          results.push({
+            provider: integration?.provider || item.task.id,
+            status: 'failed',
+            error: run.error
+          });
+        }
+      } catch (error) {
+        logger.error(`❌ ${integration?.provider || item.task.id}: CRITICAL ERROR`);
+        logger.error(`   Error: ${error}`);
+        
+        results.push({
+          provider: integration?.provider || item.task.id,
+          status: 'failed',
+          error
+        });
+      }
+    }
     
     logger.log("=" .repeat(60));
     logger.log("📊 BATCH INGESTION RESULTS");
     logger.log("=" .repeat(60));
-    
-    const results = runs.map((run, index) => {
-      const integration = integrations[index];
-      
-      if (run.ok) {
-        logger.log(`✅ ${integration.provider}: SUCCESS`);
-        logger.log(`   ${JSON.stringify(run.output, null, 2)}`);
-        
-        return {
-          provider: integration.provider,
-          status: 'success',
-          data: run.output
-        };
-      } else {
-        logger.error(`❌ ${integration.provider}: FAILED`);
-        logger.error(`   Error: ${run.error}`);
-        
-        return {
-          provider: integration.provider,
-          status: 'failed',
-          error: run.error
-        };
-      }
-    });
     
     const successCount = results.filter(r => r.status === 'success').length;
     const failedCount = results.filter(r => r.status === 'failed').length;
