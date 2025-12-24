@@ -36,13 +36,16 @@ changelogCommand
     const lines = content.split('\n');
     let latestVersionBlock = '';
     let foundFirstHeader = false;
+    let version = '';
 
     for (const line of lines) {
-      if (line.match(/^##\s+\[\d+\.\d+\.\d+\]/)) {
+      const match = line.match(/^##\s+\[(\d+\.\d+\.\d+)\]/);
+      if (match) {
         if (foundFirstHeader) {
           break; // Stop when we hit the second header
         }
         foundFirstHeader = true;
+        version = match[1];
       }
       
       if (foundFirstHeader) {
@@ -54,12 +57,13 @@ changelogCommand
       console.error(chalk.red('Error: Could not find latest version in changelog.'));
       process.exit(1);
     }
-
-    console.log(chalk.gray('Found latest version block. Generating summary...'));
+    
+    console.log(chalk.gray(`Found latest version: ${version}`));
+    console.log(chalk.gray('Generating summary...'));
 
     const prompt = `
 You are a helpful assistant for Coach Watts, a cycling coaching app.
-Here is the technical changelog for the latest release:
+Here is the technical changelog for the latest release (v${version}):
 
 ${latestVersionBlock}
 
@@ -75,18 +79,34 @@ Format as Markdown.
       const userChangelog = await generateCoachAnalysis(prompt, 'flash');
 
       if (options.write) {
+        // 1. Update master USER_CHANGELOG.md
         let existingContent = '';
         if (fs.existsSync(outputFile)) {
           existingContent = fs.readFileSync(outputFile, 'utf-8');
         }
-        
         const newContent = userChangelog + '\n\n' + existingContent;
         fs.writeFileSync(outputFile, newContent);
-        console.log(chalk.green(`✓ Successfully wrote to ${options.output}`));
+        console.log(chalk.green(`✓ Updated ${options.output}`));
+
+        // 2. Create version-specific release file
+        const releasesDir = path.resolve(projectRoot, 'public/content/releases');
+        if (!fs.existsSync(releasesDir)) {
+          fs.mkdirSync(releasesDir, { recursive: true });
+        }
+        
+        const releaseFile = path.join(releasesDir, `v${version}.md`);
+        
+        // Add frontmatter for Nuxt Content if needed, or just the content
+        // For now, simple markdown content with the version title
+        const releaseContent = `# Release v${version}\n\n${userChangelog}`;
+        
+        fs.writeFileSync(releaseFile, releaseContent);
+        console.log(chalk.green(`✓ Created ${path.relative(projectRoot, releaseFile)}`));
+
       } else {
-        console.log(chalk.green('\n--- User Friendly Changelog ---\n'));
+        console.log(chalk.green(`\n--- User Friendly Changelog (v${version}) ---\n`));
         console.log(userChangelog);
-        console.log(chalk.green('\n-------------------------------\n'));
+        console.log(chalk.green('\n---------------------------------------------\n'));
       }
 
     } catch (error) {
