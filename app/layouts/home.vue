@@ -10,7 +10,10 @@
 
         <nav class="hidden lg:flex items-center gap-6 text-sm font-medium text-gray-600 dark:text-gray-300">
           <NuxtLink to="/#how-it-works" class="hover:text-primary transition-colors">How it Works</NuxtLink>
-          <NuxtLink to="/#pricing" class="hover:text-primary transition-colors">Pricing</NuxtLink>
+          <NuxtLink to="/#pricing" class="hover:text-primary transition-colors flex items-center gap-1">
+            Pricing
+            <UBadge size="xs" color="primary" variant="soft" class="font-bold">Free</UBadge>
+          </NuxtLink>
           <NuxtLink to="/stories" class="hover:text-primary transition-colors">Stories</NuxtLink>
         </nav>
 
@@ -26,7 +29,10 @@
             <template #content>
               <div class="p-4 w-48 flex flex-col gap-4">
                 <NuxtLink to="/#how-it-works" class="text-sm font-medium hover:text-primary transition-colors">How it Works</NuxtLink>
-                <NuxtLink to="/#pricing" class="text-sm font-medium hover:text-primary transition-colors">Pricing</NuxtLink>
+                <NuxtLink to="/#pricing" class="text-sm font-medium hover:text-primary transition-colors flex items-center justify-between">
+                  Pricing
+                  <UBadge size="xs" color="primary" variant="soft" class="font-bold">Free</UBadge>
+                </NuxtLink>
                 <NuxtLink to="/stories" class="text-sm font-medium hover:text-primary transition-colors">Stories</NuxtLink>
                 <hr class="border-gray-200 dark:border-gray-800" />
                 <UButton to="/login" variant="ghost" color="gray" block>Sign In</UButton>
@@ -64,7 +70,10 @@
                 <NuxtLink to="/#architecture" class="hover:text-primary">Architecture</NuxtLink>
               </li>
               <li>
-                <NuxtLink to="/#pricing" class="hover:text-primary">Pricing</NuxtLink>
+                <NuxtLink to="/#pricing" class="hover:text-primary flex items-center gap-1">
+                  Pricing
+                  <UBadge size="xs" color="primary" variant="soft" class="font-bold">Free</UBadge>
+                </NuxtLink>
               </li>
               <li>
                 <NuxtLink to="/login" class="hover:text-primary">Login</NuxtLink>

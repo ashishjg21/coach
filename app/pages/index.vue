@@ -31,8 +31,32 @@
             &copy; 2025 Coach Watts. All rights reserved.
           </p>
           <div class="flex gap-6">
-            <a href="#" class="text-sm text-gray-400 hover:text-white">Discord</a>
-            <a href="#" class="text-sm text-gray-400 hover:text-white">Docs</a>
+            <UButton
+              to="https://discord.gg/dPYkzg49T9"
+              target="_blank"
+              variant="ghost"
+              color="gray"
+              icon="i-simple-icons-discord"
+            >
+              Discord
+            </UButton>
+            <UButton
+              to="https://github.com/newpush/coach"
+              target="_blank"
+              variant="ghost"
+              color="gray"
+              icon="i-simple-icons-github"
+            >
+              GitHub
+            </UButton>
+            <UButton
+              to="#"
+              variant="ghost"
+              color="gray"
+              icon="i-lucide-book"
+            >
+              Docs
+            </UButton>
           </div>
         </div>
       </div>

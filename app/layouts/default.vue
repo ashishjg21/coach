@@ -215,23 +215,54 @@ const groups = computed(() => [{
       </template>
 
       <template #footer="{ collapsed }">
-        <div class="p-4 flex items-center gap-3">
-          <UAvatar
-            v-if="user"
-            :alt="user.email || ''"
-            size="md"
-          />
-          <div v-if="!collapsed" class="flex-1 min-w-0">
-            <p class="text-sm font-medium truncate">{{ impersonatedEmail || user?.email }}</p>
-            <UButton
-              variant="ghost"
-              color="neutral"
-              size="xs"
-              class="mt-1"
-              @click="signOut({ callbackUrl: '/login' })"
-            >
-              Sign Out
-            </UButton>
+        <div>
+          <div v-if="!collapsed" class="px-4 pb-2">
+            <div class="flex items-center gap-2">
+              <UButton
+                to="https://discord.gg/dPYkzg49T9"
+                target="_blank"
+                color="gray"
+                variant="ghost"
+                icon="i-simple-icons-discord"
+                size="xs"
+                class="flex-1 justify-center"
+              >
+                Discord
+              </UButton>
+              <USeparator orientation="vertical" class="h-4" />
+              <UButton
+                to="https://github.com/newpush/coach"
+                target="_blank"
+                color="gray"
+                variant="ghost"
+                icon="i-simple-icons-github"
+                size="xs"
+                class="flex-1 justify-center"
+              >
+                GitHub
+              </UButton>
+            </div>
+            <USeparator class="my-2" />
+          </div>
+
+          <div class="p-4 flex items-center gap-3">
+            <UAvatar
+              v-if="user"
+              :alt="user.email || ''"
+              size="md"
+            />
+            <div v-if="!collapsed" class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate">{{ impersonatedEmail || user?.email }}</p>
+              <UButton
+                variant="ghost"
+                color="neutral"
+                size="xs"
+                class="mt-1"
+                @click="signOut({ callbackUrl: '/login' })"
+              >
+                Sign Out
+              </UButton>
+            </div>
           </div>
         </div>
       </template>
