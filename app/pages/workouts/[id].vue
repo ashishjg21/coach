@@ -51,6 +51,15 @@
             Overview
           </UButton>
           <UButton
+            v-if="shouldShowExercises(workout)"
+            variant="ghost"
+            color="neutral"
+            @click="scrollToSection('exercises')"
+          >
+            <UIcon name="i-lucide-dumbbell" class="w-4 h-4 mr-2" />
+            Exercises
+          </UButton>
+          <UButton
             v-if="workout?.overallScore || workout?.technicalScore"
             variant="ghost"
             color="neutral"
@@ -364,6 +373,13 @@
                 </template>
               </UAccordion>
             </div>
+          </div>
+
+          <!-- Exercises Section -->
+          <div id="exercises" class="scroll-mt-20"></div>
+          <div v-if="shouldShowExercises(workout)" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Exercises</h2>
+            <WorkoutsExerciseList :exercises="workout.exercises" />
           </div>
 
           <!-- AI Analysis Section -->
@@ -994,6 +1010,11 @@ function getScoreCircleClass(score: number) {
   if (score >= 6) return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
   if (score >= 4) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
   return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+}
+
+function shouldShowExercises(workout: any) {
+  if (!workout) return false
+  return workout.exercises && workout.exercises.length > 0
 }
 
 function shouldShowPowerCurve(workout: any) {

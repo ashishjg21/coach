@@ -222,7 +222,22 @@ export const analyzeWorkoutTask = task({
       // existing code uses prisma.workout.findUnique({ where: { id: workoutId } })
       
       const workout = await prisma.workout.findUnique({
-        where: { id: workoutId }
+        where: { id: workoutId },
+        include: {
+          exercises: {
+            include: {
+              exercise: true,
+              sets: {
+                orderBy: {
+                  order: 'asc'
+                }
+              }
+            },
+            orderBy: {
+              order: 'asc'
+            }
+          }
+        }
       });
       
       if (!workout) {
@@ -368,6 +383,26 @@ function buildWorkoutAnalysisData(workout: any) {
   
   // L/R Balance
   if (workout.lrBalance) data.lr_balance = workout.lrBalance
+
+  // Exercises (for Strength/Hevy workouts)
+  // @ts-ignore - exercises included in fetch above
+  if (workout.exercises && workout.exercises.length > 0) {
+    // @ts-ignore
+    data.exercises = workout.exercises.map((we: any) => ({
+      name: we.exercise.title,
+      type: we.exercise.type,
+      muscle_group: we.exercise.primaryMuscle,
+      notes: we.notes,
+      sets: we.sets.map((s: any) => ({
+        type: s.type,
+        weight: s.weight,
+        reps: s.reps,
+        rpe: s.rpe,
+        distance: s.distanceMeters,
+        duration: s.durationSec
+      }))
+    }))
+  }
   
   // Extract intervals and pacing splits from rawJson if available
   if (workout.rawJson && typeof workout.rawJson === 'object') {
@@ -698,6 +733,43 @@ function buildWorkoutAnalysisPrompt(workoutData: any): string {
     prompt += '\n## Environment\n'
     if (workoutData.trainer !== undefined) prompt += `- Indoor Trainer: ${workoutData.trainer ? 'Yes' : 'No'}\n`
     if (workoutData.avg_temp !== undefined) prompt += `- Avg Temperature: ${formatMetric(workoutData.avg_temp, 1)}°C\n`
+  }
+
+  // Add Strength Exercises if available
+  if (workoutData.exercises && workoutData.exercises.length > 0) {
+    prompt += '\n## Strength Exercises\n'
+    workoutData.exercises.forEach((ex: any, i: number) => {
+      prompt += `### ${i + 1}. ${ex.name} (${ex.muscle_group || 'General'})\n`
+      if (ex.notes) prompt += `Notes: ${ex.notes}\n`
+      ex.sets.forEach((s: any, j: number) => {
+        prompt += `- Set ${j + 1}: `
+        if (s.type !== 'NORMAL') prompt += `[${s.type}] `
+        
+        let metricAdded = false
+        if (s.weight) {
+          prompt += `${s.weight}kg x ${s.reps}`
+          metricAdded = true
+        } else if (s.reps) {
+          prompt += `${s.reps} reps`
+          metricAdded = true
+        } 
+        
+        if (s.distance) {
+          if (metricAdded) prompt += `, `
+          prompt += `${s.distance}m`
+          metricAdded = true
+        }
+        
+        if (s.duration) {
+          if (metricAdded) prompt += `, `
+          prompt += `${s.duration}s`
+        }
+        
+        if (s.rpe) prompt += ` @ RPE ${s.rpe}`
+        prompt += '\n'
+      })
+      prompt += '\n'
+    })
   }
 
   // Add lap splits pacing analysis if available

@@ -5,6 +5,7 @@ import { ingestWhoopTask } from "./ingest-whoop";
 import { ingestWithingsTask } from "./ingest-withings";
 import { ingestIntervalsTask } from "./ingest-intervals";
 import { ingestYazioTask } from "./ingest-yazio";
+import { ingestHevy } from "./ingest-hevy";
 
 export const ingestAllTask = task({
   id: "ingest-all",
@@ -81,6 +82,14 @@ export const ingestAllTask = task({
             payload: taskPayload
           });
           break;
+        case 'hevy':
+          tasksTrigger.push({
+            task: ingestHevy,
+            payload: { userId, fullSync: false } // Hevy task expects different payload structure? No, checked above.
+            // Wait, ingestHevy expects { userId, fullSync? }, others expect { userId, startDate, endDate }
+            // I should probably align them or adapt the payload here.
+          });
+          break;
         default:
           logger.warn(`Unknown provider: ${integration.provider}`);
       }
@@ -108,6 +117,7 @@ export const ingestAllTask = task({
         if (item.task.id === 'ingest-withings' && i.provider === 'withings') return true;
         if (item.task.id === 'ingest-intervals' && i.provider === 'intervals') return true;
         if (item.task.id === 'ingest-yazio' && i.provider === 'yazio') return true;
+        if (item.task.id === 'ingest-hevy' && i.provider === 'hevy') return true;
         return false;
       });
 

@@ -15,7 +15,7 @@ defineRouteMeta({
             properties: {
               provider: {
                 type: 'string',
-                enum: ['intervals', 'whoop', 'withings', 'yazio', 'strava', 'all']
+                enum: ['intervals', 'whoop', 'withings', 'yazio', 'strava', 'hevy', 'all']
               }
             }
           }
@@ -66,10 +66,10 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { provider } = body
   
-  if (!provider || !['intervals', 'whoop', 'withings', 'yazio', 'strava', 'all'].includes(provider)) {
+  if (!provider || !['intervals', 'whoop', 'withings', 'yazio', 'strava', 'hevy', 'all'].includes(provider)) {
     throw createError({
       statusCode: 400,
-      message: 'Invalid provider. Must be "intervals", "whoop", "withings", "yazio", "strava", or "all"'
+      message: 'Invalid provider. Must be "intervals", "whoop", "withings", "yazio", "strava", "hevy", or "all"'
     })
   }
   
@@ -155,7 +155,9 @@ export default defineEventHandler(async (event) => {
     ? 'ingest-withings'
     : provider === 'yazio'
     ? 'ingest-yazio'
-    : 'ingest-strava'
+    : provider === 'strava'
+    ? 'ingest-strava'
+    : 'ingest-hevy'
   
   try {
     console.log(`[Sync] Triggering task: ${taskId} for user: ${(session.user as any).id}`)

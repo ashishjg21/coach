@@ -409,6 +409,9 @@ model Workout {
   duplicateOf     String?  // ID of the canonical workout this is a duplicate of
   completenessScore Int?   // Score used to determine which workout is the "best" version
   
+  // Structured Strength Training Data
+  exercises       WorkoutExercise[]
+
   // Planned Workout Link (reverse relationship)
   plannedWorkoutId String? // ID of the planned workout this workout completed
   
@@ -428,6 +431,79 @@ model Workout {
   @@index([userId, date])
   @@index([userId, isDuplicate]) // Optimize queries filtering duplicates
   @@unique([userId, source, externalId]) // Prevent duplicates
+}
+
+// --------------------------------------
+// Strength Training Specifics
+// --------------------------------------
+
+model Exercise {
+  id              String   @id @default(uuid())
+  externalId      String?  @unique // Hevy template ID (optional as custom exercises might not have one initially)
+  title           String
+  type            String?  // "dumbbell", "barbell", "machine", "bodyweight", "cardio", "duration"
+  primaryMuscle   String?
+  secondaryMuscles String[] // Array of muscle groups
+  
+  // Metadata
+  instructions    String?  @db.Text
+  imageUrl        String?
+  
+  workoutExercises WorkoutExercise[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model WorkoutExercise {
+  id              String   @id @default(uuid())
+  workoutId       String
+  exerciseId      String
+  
+  notes           String?
+  
+  sets            WorkoutSet[]
+  
+  workout         Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise        Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  
+  order           Int      @default(0) // Order in the workout
+  
+  // Supersets
+  supersetId      String?  // ID to group exercises in a superset
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([workoutId])
+  @@index([exerciseId])
+}
+
+model WorkoutSet {
+  id                String   @id @default(uuid())
+  workoutExerciseId String
+  
+  // Performance
+  reps              Int?
+  weight            Float?   // Weight in kg (normalized)
+  weightUnit        String?  // "kg", "lbs" - original unit
+  rpe               Float?   // Rate of Perceived Exertion (1-10)
+  
+  // Cardio/Duration based
+  durationSec       Int?     // For time-based exercises
+  distanceMeters    Float?   // For distance-based exercises
+  
+  // Set Type
+  type              String   @default("NORMAL") // NORMAL, WARMUP, DROPSET, FAILURE
+  
+  order             Int      @default(0)
+
+  workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([workoutExerciseId])
 }
 
 // Time-series data streams for detailed pacing analysis

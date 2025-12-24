@@ -51,7 +51,20 @@ export default defineEventHandler(async (event) => {
     include: {
       streams: true,
       duplicates: true,
-      canonicalWorkout: true
+      canonicalWorkout: true,
+      exercises: {
+        include: {
+          exercise: true,
+          sets: {
+            orderBy: {
+              order: 'asc'
+            }
+          }
+        },
+        orderBy: {
+          order: 'asc'
+        }
+      }
     }
   })
   
