@@ -1,4 +1,7 @@
 {
+  "hooks": {
+    "after:bump": "pnpm run cli changelog --write && git add USER_CHANGELOG.md"
+  },
   "plugins": {
     "@release-it/conventional-changelog": {
       "preset": "angular",
