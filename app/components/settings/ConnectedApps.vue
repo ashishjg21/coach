@@ -198,6 +198,52 @@
           </UButton>
         </div>
       </div>
+
+      <!-- Hevy -->
+      <div class="flex items-center justify-between p-4 border rounded-lg">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+            <UIcon name="i-heroicons-trophy" class="w-6 h-6 text-indigo-600" />
+          </div>
+          <div>
+            <h3 class="font-semibold">Hevy</h3>
+            <p class="text-sm text-muted">Strength training and workout logging</p>
+          </div>
+        </div>
+        <div v-if="!hevyConnected">
+          <UButton
+            color="neutral"
+            variant="outline"
+            @click="navigateTo('/connect-hevy')"
+          >
+            Connect
+          </UButton>
+        </div>
+        <div v-else class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <UBadge color="success">Connected</UBadge>
+            <UButton
+              color="neutral"
+              variant="outline"
+              size="xs"
+              class="font-bold"
+              icon="i-heroicons-arrow-path"
+              :loading="syncingProviders.has('hevy')"
+              @click="$emit('sync', 'hevy')"
+            >
+              Sync Now
+            </UButton>
+          </div>
+          <UButton
+            color="error"
+            variant="ghost"
+            size="xs"
+            @click="$emit('disconnect', 'hevy')"
+          >
+            Disconnect
+          </UButton>
+        </div>
+      </div>
       
       <!-- Strava -->
       <div class="flex items-center justify-between p-4 border rounded-lg">
@@ -256,6 +302,7 @@ defineProps<{
   withingsConnected: boolean
   yazioConnected: boolean
   stravaConnected: boolean
+  hevyConnected: boolean
   syncingProviders: Set<string>
 }>()
 

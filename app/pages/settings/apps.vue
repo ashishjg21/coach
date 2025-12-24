@@ -6,6 +6,7 @@
     :withings-connected="withingsConnected"
     :yazio-connected="yazioConnected"
     :strava-connected="stravaConnected"
+    :hevy-connected="hevyConnected"
     :syncing-providers="syncingProviders"
     @disconnect="disconnectIntegration"
     @sync="syncIntegration"
@@ -59,6 +60,10 @@ const stravaConnected = computed(() =>
   integrationStatus.value?.integrations?.some((i: any) => i.provider === 'strava') ?? false
 )
 
+const hevyConnected = computed(() =>
+  integrationStatus.value?.integrations?.some((i: any) => i.provider === 'hevy') ?? false
+)
+
 const syncingProviders = ref(new Set<string>())
 
 const syncIntegration = async (provider: string) => {
@@ -73,7 +78,8 @@ const syncIntegration = async (provider: string) => {
     const providerName = provider === 'intervals' ? 'Intervals.icu' : 
                         provider === 'whoop' ? 'WHOOP' : 
                         provider === 'withings' ? 'Withings' : 
-                        provider === 'yazio' ? 'Yazio' : 'Strava'
+                        provider === 'yazio' ? 'Yazio' : 
+                        provider === 'hevy' ? 'Hevy' : 'Strava'
     
     toast.add({
       title: 'Sync Started',
