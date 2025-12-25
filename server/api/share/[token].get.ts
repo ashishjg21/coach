@@ -97,6 +97,25 @@ export default defineEventHandler(async (event) => {
     data = await prisma.report.findUnique({
       where: { id: shareToken.resourceId }
     })
+  } else if (shareToken.resourceType === 'PLANNED_WORKOUT') {
+    data = await prisma.plannedWorkout.findUnique({
+      where: { id: shareToken.resourceId },
+      include: {
+        trainingWeek: {
+          include: {
+            block: {
+              include: {
+                plan: {
+                  include: {
+                    goal: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
   }
 
   if (!data) {
