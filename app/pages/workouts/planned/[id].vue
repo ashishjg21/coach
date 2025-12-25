@@ -249,30 +249,32 @@
       description="Modify parameters and give feedback to AI to redesign this session."
     >
       <template #body>
-        <div class="p-6 space-y-4">
-          <div class="space-y-1">
-            <label class="text-sm font-medium">Duration (minutes)</label>
-            <UInput v-model.number="adjustForm.durationMinutes" type="number" step="5" />
+        <div class="p-6 flex flex-col gap-5">
+          <div class="w-full">
+            <label class="block text-sm font-medium mb-1.5 text-gray-700 dark:text-gray-200">Duration (minutes)</label>
+            <UInput v-model.number="adjustForm.durationMinutes" type="number" step="5" class="w-full" />
           </div>
           
-          <div class="space-y-1">
-            <label class="text-sm font-medium">Intensity</label>
+          <div class="w-full">
+            <label class="block text-sm font-medium mb-1.5 text-gray-700 dark:text-gray-200">Intensity</label>
             <USelect 
               v-model="adjustForm.intensity" 
               :items="['recovery', 'easy', 'moderate', 'hard', 'very_hard']" 
+              class="w-full"
             />
           </div>
           
-          <div class="space-y-1">
-            <label class="text-sm font-medium">Feedback / Instructions</label>
+          <div class="w-full">
+            <label class="block text-sm font-medium mb-1.5 text-gray-700 dark:text-gray-200">Feedback / Instructions</label>
             <UTextarea 
               v-model="adjustForm.feedback" 
               placeholder="e.g. 'Make the intervals longer', 'I want more rest', 'Focus on cadence'" 
               :rows="3"
+              class="w-full"
             />
           </div>
           
-          <div class="flex justify-end pt-4 gap-2">
+          <div class="flex justify-end pt-2 gap-2">
             <UButton variant="ghost" @click="showAdjustModal = false">Cancel</UButton>
             <UButton color="primary" :loading="adjusting" @click="submitAdjustment">Apply Changes</UButton>
           </div>
@@ -353,7 +355,11 @@ async function submitAdjustment() {
     })
     
     showAdjustModal.value = false
-    startPolling()
+    
+    // Capture current timestamp to ensure we wait for a newer version
+    const currentUpdated = workout.value?.updatedAt ? new Date(workout.value.updatedAt) : new Date()
+    startPolling(currentUpdated)
+    
   } catch (error: any) {
     toast.add({
       title: 'Adjustment Failed',
@@ -379,7 +385,8 @@ async function generateStructure() {
     })
 
     // Start polling for the generated structure
-    startPolling()
+    const currentUpdated = workout.value?.updatedAt ? new Date(workout.value.updatedAt) : new Date()
+    startPolling(currentUpdated)
   } catch (error: any) {
     toast.add({
       title: 'Generation Failed',
@@ -390,7 +397,7 @@ async function generateStructure() {
   }
 }
 
-function startPolling() {
+function startPolling(minUpdatedAt?: Date) {
   polling.value = true
   let attempts = 0
   const maxAttempts = 15 // Poll for up to 45 seconds (15 attempts * 3 seconds)
@@ -401,8 +408,11 @@ function startPolling() {
     try {
       const data: any = await $fetch(`/api/workouts/planned/${route.params.id}`)
 
-      // Check if structured workout data is now available
-      if (data.workout?.structuredWorkout) {
+      const remoteUpdatedAt = new Date(data.workout.updatedAt)
+      const isNewer = minUpdatedAt ? remoteUpdatedAt > minUpdatedAt : true
+
+      // Check if structured workout data is available AND it is fresh
+      if (data.workout?.structuredWorkout && isNewer) {
         workout.value = data.workout
         userFtp.value = data.userFtp
 
@@ -410,8 +420,8 @@ function startPolling() {
         generating.value = false
 
         toast.add({
-          title: 'Structure Generated',
-          description: 'Your workout structure is ready!',
+          title: 'Structure Ready',
+          description: 'Your workout has been updated!',
           color: 'success'
         })
       } else if (attempts >= maxAttempts) {
