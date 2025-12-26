@@ -691,6 +691,15 @@ const getActionText = (action: string) => {
 const handlePrint = () => {
   window.print()
 }
+
+useHead(() => {
+  return {
+    title: reportTitle.value || 'Report',
+    meta: [
+      { name: 'description', content: `Detailed training analysis and coaching insights for ${reportTitle.value}.` }
+    ]
+  }
+})
 </script>
 
 <style scoped>

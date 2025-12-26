@@ -5,6 +5,13 @@ definePageMeta({
 })
 
 const { data: stats } = await useFetch('/api/admin/stats')
+
+useHead({
+  title: 'Admin Dashboard',
+  meta: [
+    { name: 'description', content: 'Coach Watts system administration and overview.' }
+  ]
+})
 </script>
 
 <template>

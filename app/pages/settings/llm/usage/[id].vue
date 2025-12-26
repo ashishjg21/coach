@@ -208,4 +208,13 @@ function formatDate(date: string): string {
     second: '2-digit'
   })
 }
+
+useHead(() => {
+  return {
+    title: data.value ? `AI Usage: ${formatOperation(data.value.operation)}` : 'AI Usage Details',
+    meta: [
+      { name: 'description', content: 'Detailed breakdown of AI operation, token usage, and costs.' }
+    ]
+  }
+})
 </script>

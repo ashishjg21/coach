@@ -269,6 +269,13 @@ async function acceptSuggestion(suggestion: any) {
     })
   }
 }
+
+useHead({
+  title: 'Goals',
+  meta: [
+    { name: 'description', content: 'Set and track your fitness goals to stay motivated and measure progress.' }
+  ]
+})
 </script>
 
 <template>
@@ -557,7 +564,6 @@ async function acceptSuggestion(suggestion: any) {
               </template>
               <EventGoalWizard
                 :goal="editingGoal"
-                hide-approach
                 @close="closeWizard"
                 @created="onGoalCreated"
                 @updated="onGoalUpdated"

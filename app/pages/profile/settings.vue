@@ -216,4 +216,10 @@ async function updateZones(type: 'hr' | 'power', zones: any[]) {
   }
 }
 
+useHead({
+  title: 'Profile Settings',
+  meta: [
+    { name: 'description', content: 'Manage your personal details, physical metrics, and custom training zones.' }
+  ]
+})
 </script>

@@ -182,4 +182,11 @@ async function uploadFile() {
     uploading.value = false
   }
 }
+
+useHead({
+  title: 'Upload Workout',
+  meta: [
+    { name: 'description', content: 'Manually upload FIT files to your training history.' }
+  ]
+})
 </script>

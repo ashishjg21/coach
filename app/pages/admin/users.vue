@@ -36,6 +36,13 @@ async function impersonateUser(userId: string) {
     impersonating.value = null
   }
 }
+
+useHead({
+  title: 'User Management',
+  meta: [
+    { name: 'description', content: 'Coach Watts user administration and management.' }
+  ]
+})
 </script>
 
 <template>

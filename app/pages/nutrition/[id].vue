@@ -713,6 +713,16 @@ function stopPolling() {
   }
 }
 
+useHead(() => {
+  const dateStr = nutrition.value ? formatDate(nutrition.value.date) : ''
+  return {
+    title: nutrition.value ? `Nutrition: ${dateStr}` : 'Nutrition Details',
+    meta: [
+      { name: 'description', content: nutrition.value ? `Detailed nutritional breakdown and AI analysis for ${dateStr}.` : 'View detailed nutritional breakdown and AI analysis.' }
+    ]
+  }
+})
+
 function getStatusBadgeClass(status: string) {
   const baseClass = 'px-3 py-1 rounded-full text-xs font-semibold'
   if (status === 'excellent') return `${baseClass} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`

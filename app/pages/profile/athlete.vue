@@ -702,6 +702,13 @@ async function generateNewProfile() {
   // Refresh local data after store action completes/updates
   await refresh()
 }
+
+useHead({
+  title: 'Athlete Profile',
+  meta: [
+    { name: 'description', content: 'Comprehensive analysis of your fitness, training style, recovery, and nutrition.' }
+  ]
+})
 </script>
 
 <style scoped>

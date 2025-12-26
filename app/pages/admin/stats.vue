@@ -45,6 +45,13 @@ const aiCostChartData = computed(() => {
     }]
   }
 })
+
+useHead({
+  title: 'System Statistics',
+  meta: [
+    { name: 'description', content: 'Coach Watts system-wide statistics and AI cost analysis.' }
+  ]
+})
 </script>
 
 <template>

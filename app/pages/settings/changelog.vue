@@ -36,4 +36,11 @@
 <script setup lang="ts">
 const config = useRuntimeConfig()
 const { data, pending, error } = await useFetch('/api/changelog')
+
+useHead({
+  title: 'Changelog',
+  meta: [
+    { name: 'description', content: 'Coach Watts version history and new features.' }
+  ]
+})
 </script>

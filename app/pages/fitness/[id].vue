@@ -285,6 +285,16 @@ async function copyJsonToClipboard() {
   }
 }
 
+useHead(() => {
+  const dateStr = wellness.value ? formatDate(wellness.value.date) : ''
+  return {
+    title: wellness.value ? `Wellness: ${dateStr}` : 'Wellness Details',
+    meta: [
+      { name: 'description', content: wellness.value ? `Daily wellness metrics including recovery, sleep, and HRV for ${dateStr}.` : 'View daily wellness metrics including recovery, sleep, and HRV.' }
+    ]
+  }
+})
+
 // Load data on mount
 onMounted(() => {
   fetchWellness()
