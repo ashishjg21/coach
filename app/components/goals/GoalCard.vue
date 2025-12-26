@@ -16,8 +16,8 @@
             <UBadge v-if="goal.targetDate" color="neutral" variant="subtle" size="xs">
               Due {{ formatDate(goal.targetDate) }}
             </UBadge>
-            <UBadge v-if="goal.eventDate" color="neutral" variant="subtle" size="xs">
-              Event: {{ formatDate(goal.eventDate) }}
+            <UBadge v-if="effectiveEventDate" color="neutral" variant="subtle" size="xs">
+              Event: {{ formatDate(effectiveEventDate) }}
             </UBadge>
           </div>
         </div>
@@ -37,14 +37,31 @@
         <UProgress :model-value="calculateProgress(goal.startValue, goal.currentValue, goal.targetValue)" size="sm" color="primary" />
       </div>
       
-      <div v-else-if="goal.type === 'EVENT'" class="text-xs font-medium">
-        <p v-if="daysUntil(goal.eventDate) > 0" class="text-gray-600 dark:text-gray-400">
-          {{ daysUntil(goal.eventDate) }} days until event
-        </p>
-        <p v-else class="text-green-600 dark:text-green-400 flex items-center gap-1">
-          <UIcon name="i-heroicons-check-circle" class="w-4 h-4" />
-          Event Completed!
-        </p>
+      <div v-else-if="goal.type === 'EVENT'" class="text-xs font-medium space-y-3">
+        <template v-if="goal.events && goal.events.length > 0">
+          <div v-for="event in sortedEvents" :key="event.id" class="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-800 last:border-0">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-calendar" class="w-3.5 h-3.5 text-gray-400" />
+              <span class="text-gray-700 dark:text-gray-300">{{ event.title }}</span>
+            </div>
+            <div v-if="daysUntil(event.date) > 0" class="text-gray-500">
+              {{ daysUntil(event.date) }}d left
+            </div>
+            <div v-else class="text-green-600 dark:text-green-400 flex items-center gap-1">
+              <UIcon name="i-heroicons-check" class="w-3 h-3" />
+              Done
+            </div>
+          </div>
+        </template>
+        <div v-else-if="effectiveEventDate">
+           <p v-if="daysUntil(effectiveEventDate) > 0" class="text-gray-600 dark:text-gray-400">
+            {{ daysUntil(effectiveEventDate) }} days until event
+          </p>
+          <p v-else class="text-green-600 dark:text-green-400 flex items-center gap-1">
+            <UIcon name="i-heroicons-check-circle" class="w-4 h-4" />
+            Event Completed!
+          </p>
+        </div>
       </div>
       
       <div v-else class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
@@ -98,6 +115,21 @@ const priorityColor = computed(() => {
     case 'LOW': return 'success'
     default: return 'neutral'
   }
+})
+
+const effectiveEventDate = computed(() => {
+  if (props.goal.eventDate) return props.goal.eventDate
+  if (props.goal.events && props.goal.events.length > 0) {
+    // Find the latest event date (assuming main event is last)
+    const dates = props.goal.events.map((e: any) => new Date(e.date).getTime())
+    return new Date(Math.max(...dates)).toISOString()
+  }
+  return null
+})
+
+const sortedEvents = computed(() => {
+  if (!props.goal.events) return []
+  return [...props.goal.events].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
 })
 
 const actions = [[{

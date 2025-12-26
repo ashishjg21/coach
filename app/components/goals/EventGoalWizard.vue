@@ -20,55 +20,68 @@
       </div>
     </div>
 
-    <!-- Step 2: Event Source (Only for EVENT type) -->
+    <!-- Step 2: Select Event (Only for EVENT type) -->
     <div v-else-if="step === 2 && selectedType === 'EVENT'" class="space-y-6">
       <div class="flex items-center gap-3 mb-4">
         <UButton icon="i-heroicons-arrow-left" variant="ghost" size="sm" @click="step = 1" />
-        <h3 class="text-xl font-semibold">Tell us about your race</h3>
+        <h3 class="text-xl font-semibold">Select your target event</h3>
       </div>
 
       <div class="space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button 
-            @click="eventSource = 'manual'; step = 3"
-            class="p-4 rounded-lg border-2 text-left transition-all border-gray-200 dark:border-gray-800 hover:border-primary hover:bg-primary/5 dark:hover:bg-primary/10"
-          >
-            <div class="p-2 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 w-fit mb-3">
-              <UIcon name="i-heroicons-pencil-square" class="w-6 h-6" />
-            </div>
-            <div class="font-semibold">Create New</div>
-            <div class="text-sm text-muted mt-1">Manually enter event details</div>
-          </button>
-
-          <button 
-            @click="fetchUserEvents"
-            class="p-4 rounded-lg border-2 text-left transition-all border-gray-200 dark:border-gray-800 hover:border-primary hover:bg-primary/5 dark:hover:bg-primary/10"
-          >
-            <div class="p-2 rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-900/30 w-fit mb-3">
-              <UIcon name="i-heroicons-calendar-days" class="w-6 h-6" />
-            </div>
-            <div class="font-semibold">Select from Events</div>
-            <div class="text-sm text-muted mt-1">Pick an event from your racing calendar</div>
-          </button>
+        <div v-if="loadingEvents" class="flex justify-center py-12">
+          <div class="text-center">
+            <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary mx-auto mb-2" />
+            <p class="text-sm text-muted">Loading your events...</p>
+          </div>
         </div>
 
-        <div v-if="loadingEvents" class="flex justify-center py-8">
-          <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary" />
+        <div v-else-if="userEvents.length === 0" class="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg">
+          <UIcon name="i-heroicons-calendar" class="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+          <h4 class="font-semibold text-lg mb-1">No events found</h4>
+          <p class="text-muted text-sm mb-4">You need to add an event to your calendar first.</p>
+          <UButton to="/events" color="primary" variant="soft" icon="i-heroicons-plus">
+            Go to Events
+          </UButton>
         </div>
 
-        <div v-if="userEvents.length > 0" class="space-y-3 mt-6">
-          <h4 class="text-sm font-medium text-muted uppercase tracking-wider">Your Events</h4>
+        <div v-else class="space-y-3">
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="text-sm font-medium text-muted uppercase tracking-wider">Your Upcoming Events</h4>
+            <span v-if="form.eventIds.length > 0" class="text-xs text-primary font-bold">{{ form.eventIds.length }} selected</span>
+          </div>
           <div 
             v-for="event in userEvents" 
             :key="event.id"
-            @click="selectUserEvent(event)"
-            class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary cursor-pointer transition-colors flex justify-between items-center"
+            @click="toggleUserEvent(event)"
+            class="p-4 rounded-lg border cursor-pointer transition-all flex justify-between items-center group"
+            :class="form.eventIds.includes(event.id) ? 'border-primary bg-primary/5 dark:bg-primary/10 ring-1 ring-primary' : 'border-gray-200 dark:border-gray-700 hover:border-primary/50'"
           >
             <div>
-              <div class="font-medium">{{ event.name }}</div>
-              <div class="text-xs text-muted">{{ formatDate(event.date) }} • {{ event.type }}</div>
+              <div class="font-medium text-lg" :class="form.eventIds.includes(event.id) ? 'text-primary' : ''">{{ event.title }}</div>
+              <div class="text-sm text-muted mt-1 flex items-center gap-2">
+                <UIcon name="i-heroicons-calendar" class="w-4 h-4" />
+                {{ formatDate(event.date) }}
+                <span class="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+                {{ event.type }}
+              </div>
             </div>
-            <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-muted" />
+            <div class="w-6 h-6 rounded-full border flex items-center justify-center transition-colors"
+              :class="form.eventIds.includes(event.id) ? 'bg-primary border-primary text-white' : 'border-gray-300 dark:border-gray-600 group-hover:border-primary'"
+            >
+               <UIcon v-if="form.eventIds.includes(event.id)" name="i-heroicons-check" class="w-4 h-4" />
+            </div>
+          </div>
+          
+          <div class="pt-6 flex justify-end">
+            <UButton 
+              size="lg" 
+              color="primary" 
+              @click="step = 3" 
+              icon="i-heroicons-arrow-right"
+              :disabled="form.eventIds.length === 0"
+            >
+              Continue with {{ form.eventIds.length }} Event{{ form.eventIds.length !== 1 ? 's' : '' }}
+            </UButton>
           </div>
         </div>
       </div>
@@ -93,51 +106,41 @@
         </div>
 
         <template v-if="selectedType === 'EVENT'">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="flex items-center gap-2 text-sm font-medium mb-2">
-                <UIcon name="i-heroicons-calendar" class="w-4 h-4 text-muted" />
-                Event Date
-              </label>
-              <UInput v-model="form.eventDate" type="date" size="lg" />
+          <div class="space-y-4">
+            <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Target Events ({{ selectedEvents.length }})</h4>
+            <div 
+              v-for="event in selectedEvents" 
+              :key="event.id"
+              class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 relative overflow-hidden"
+            >
+              <div class="absolute top-0 right-0 p-2 opacity-10">
+                 <UIcon name="i-heroicons-calendar" class="w-12 h-12" />
+              </div>
+              
+              <div class="font-bold text-gray-900 dark:text-white mb-3">{{ event.title }}</div>
+              
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div>
+                  <span class="text-[10px] text-muted block uppercase font-bold">Date</span>
+                  <span class="text-sm font-medium">{{ formatDate(event.date) }}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-muted block uppercase font-bold">Type</span>
+                  <span class="text-sm font-medium">{{ event.type || 'N/A' }}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-muted block uppercase font-bold">Distance</span>
+                  <span class="text-sm font-medium">{{ event.distance ? `${event.distance} km` : 'N/A' }}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-muted block uppercase font-bold">Elevation</span>
+                  <span class="text-sm font-medium">{{ event.elevation ? `${event.elevation} m` : 'N/A' }}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <label class="flex items-center gap-2 text-sm font-medium mb-2">
-                <UIcon name="i-heroicons-trophy" class="w-4 h-4 text-muted" />
-                Event Sub-Type
-              </label>
-              <USelect
-                v-model="form.eventType"
-                :items="eventSubTypes"
-                size="lg"
-              />
-            </div>
-          </div>
-
-          <USeparator label="Course Profile" />
-
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="text-sm font-medium mb-2 block">Distance (km)</label>
-              <UInputNumber v-model="form.distance" placeholder="138" size="lg" :min="0" />
-            </div>
-            <div>
-              <label class="text-sm font-medium mb-2 block">Elevation Gain (m)</label>
-              <UInputNumber v-model="form.elevation" placeholder="4230" size="lg" :min="0" />
-            </div>
-            <div>
-              <label class="text-sm font-medium mb-2 block">Expected Duration (h)</label>
-              <UInputNumber v-model="form.expectedDuration" placeholder="6.5" size="lg" :min="0" :step="0.1" />
-            </div>
-          </div>
-
-          <div>
-            <label class="text-sm font-medium mb-2 block">Terrain Type</label>
-            <USelect
-              v-model="form.terrain"
-              :items="['Flat', 'Rolling', 'Hilly', 'Mountainous', 'Technical']"
-              size="lg"
-            />
+            <p class="text-xs text-muted italic px-1">
+              Note: The goal encompasses all events listed above. To add or remove events, go back to the previous step.
+            </p>
           </div>
         </template>
 
@@ -171,62 +174,43 @@
       </div>
     </div>
 
-    <!-- Step 4: Training Phase & Approach -->
+    <!-- Step 4: Goal Priority -->
     <div v-else-if="step === 4" class="space-y-6">
       <div class="flex items-center gap-3 mb-6">
         <UButton icon="i-heroicons-arrow-left" variant="ghost" size="sm" @click="step = 3" />
-        <h3 class="text-xl font-semibold">Training Approach</h3>
-      </div>
-
-      <div class="bg-primary/5 dark:bg-primary/10 rounded-lg p-4 border border-primary/20 flex gap-4 items-start mb-6">
-        <UIcon name="i-heroicons-sparkles" class="w-6 h-6 text-primary shrink-0" />
-        <div>
-          <div class="font-semibold text-primary">AI Recommendation</div>
-          <div class="text-sm mt-1">{{ phaseRecommendation }}</div>
-        </div>
+        <h3 class="text-xl font-semibold">Goal Priority</h3>
       </div>
 
       <div class="space-y-4">
-        <label class="text-sm font-medium block">Select Training Phase</label>
-        <div class="grid grid-cols-1 gap-3">
-          <button 
-            v-for="phase in trainingPhases" 
-            :key="phase.id"
-            @click="form.phase = phase.id"
-            class="p-4 rounded-lg border-2 text-left transition-all flex items-center gap-4"
-            :class="form.phase === phase.id ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-gray-200 dark:border-gray-800 hover:border-primary/50'"
-          >
-            <div class="p-2 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-              <UIcon :name="phase.icon" class="w-5 h-5" />
-            </div>
-            <div class="flex-1">
-              <div class="font-semibold">{{ phase.label }}</div>
-              <div class="text-sm text-muted">{{ phase.description }}</div>
-            </div>
-            <UIcon v-if="form.phase === phase.id" name="i-heroicons-check-circle" class="w-6 h-6 text-primary" />
-          </button>
+        <div class="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg text-sm text-gray-600 dark:text-gray-400">
+          Set the priority of this goal to help the AI balance your training load if you have multiple overlapping goals.
         </div>
 
         <div>
-          <label class="text-sm font-medium mb-3 block">Priority</label>
-          <div class="flex gap-2">
-            <UButton 
-              v-for="p in ['LOW', 'MEDIUM', 'HIGH']" 
-              :key="p"
-              @click="form.priority = p"
-              :color="form.priority === p ? (p === 'HIGH' ? 'error' : p === 'MEDIUM' ? 'warning' : 'success') : 'neutral'"
-              :variant="form.priority === p ? 'solid' : 'outline'"
-              class="flex-1 font-bold"
-              size="sm"
+          <label class="text-sm font-medium mb-3 block">Priority Level</label>
+          <div class="grid grid-cols-1 gap-3">
+            <button 
+              v-for="p in priorityOptions" 
+              :key="p.value"
+              @click="form.priority = p.value"
+              class="p-4 rounded-lg border-2 text-left transition-all flex items-center gap-4"
+              :class="form.priority === p.value ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-gray-200 dark:border-gray-800 hover:border-primary/50'"
             >
-              {{ p }}
-            </UButton>
+              <div class="p-2 rounded bg-gray-100 dark:bg-gray-800" :class="p.color">
+                <UIcon :name="p.icon" class="w-5 h-5" />
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold">{{ p.label }}</div>
+                <div class="text-sm text-muted">{{ p.description }}</div>
+              </div>
+              <UIcon v-if="form.priority === p.value" name="i-heroicons-check-circle" class="w-6 h-6 text-primary" />
+            </button>
           </div>
         </div>
 
         <div class="pt-6 flex justify-end">
           <UButton size="xl" color="primary" @click="saveGoal" :loading="saving" icon="i-heroicons-check" class="px-8">
-            {{ isEditMode ? 'Update Plan' : 'Create Plan' }}
+            {{ isEditMode ? 'Update Goal' : 'Create Goal' }}
           </UButton>
         </div>
       </div>
@@ -284,6 +268,12 @@ const eventSubTypes = [
   'Triathlon (Sprint)', 'Triathlon (Olympic)', 'Triathlon (70.3)', 'Triathlon (Full)'
 ]
 
+const priorityOptions = [
+  { value: 'HIGH', label: 'High Priority', description: 'This goal takes precedence over others in your training plan.', icon: 'i-heroicons-arrow-up', color: 'text-red-500' },
+  { value: 'MEDIUM', label: 'Medium Priority', description: 'Important, but balanced with other objectives.', icon: 'i-heroicons-minus', color: 'text-amber-500' },
+  { value: 'LOW', label: 'Low Priority', description: 'Nice to have, but flexible if conflicts arise.', icon: 'i-heroicons-arrow-down', color: 'text-green-500' }
+]
+
 const trainingPhases = [
   { id: 'BASE', label: 'Base', description: 'Build aerobic foundation and muscular endurance.', icon: 'i-heroicons-square-3-stack-3d' },
   { id: 'BUILD', label: 'Build', description: 'Raise FTP and improve specific race intensities.', icon: 'i-heroicons-chart-bar' },
@@ -292,6 +282,10 @@ const trainingPhases = [
 ]
 
 const selectedTypeLabel = computed(() => goalTypes.find(t => t.id === selectedType.value)?.label || '')
+
+const selectedEvents = computed(() => {
+  return userEvents.value.filter(e => form.eventIds.includes(e.id))
+})
 
 const phaseRecommendation = computed(() => {
   if (!form.eventDate) return "We'll suggest a phase once you set an event date."
@@ -319,27 +313,49 @@ async function fetchUserEvents() {
   }
 }
 
-function selectUserEvent(event: any) {
-  form.title = event.name
-  form.eventDate = new Date(event.date).toISOString().split('T')[0]
-  form.description = event.description || ''
-  form.eventId = event.id
-  form.eventIds = [event.id]
+function toggleUserEvent(event: any) {
+  const index = form.eventIds.indexOf(event.id)
+  if (index === -1) {
+    form.eventIds.push(event.id)
+  } else {
+    form.eventIds.splice(index, 1)
+  }
   
-  // Try to parse more details
-  if (event.distance) form.distance = event.distance
-  if (event.elevation) form.elevation = event.elevation
-  if (event.expectedDuration) form.expectedDuration = event.expectedDuration
-  if (event.type) form.eventType = event.type
-  if (event.terrain) form.terrain = event.terrain
-  
-  step.value = 3
+  // Update form details based on the LAST selected event (as primary)
+  if (form.eventIds.length > 0) {
+    const lastId = form.eventIds[form.eventIds.length - 1]
+    const primaryEvent = userEvents.value.find(e => e.id === lastId)
+    
+    if (primaryEvent) {
+      // If multiple, maybe generic title?
+      if (form.eventIds.length > 1) {
+        form.title = `${primaryEvent.title} and others`
+      } else {
+        form.title = primaryEvent.title
+      }
+      
+      form.eventDate = new Date(primaryEvent.date).toISOString().split('T')[0]
+      form.description = primaryEvent.description || ''
+      form.eventId = primaryEvent.id // Keep for compat
+      
+      if (primaryEvent.distance) form.distance = primaryEvent.distance
+      if (primaryEvent.elevation) form.elevation = primaryEvent.elevation
+      if (primaryEvent.expectedDuration) form.expectedDuration = primaryEvent.expectedDuration
+      if (primaryEvent.type) form.eventType = primaryEvent.type
+      if (primaryEvent.terrain) form.terrain = primaryEvent.terrain
+    }
+  } else {
+    // Reset if empty
+    form.eventId = undefined
+    form.title = ''
+  }
 }
 
 function selectType(id: string) {
   selectedType.value = id
   if (id === 'EVENT') {
     step.value = 2
+    fetchUserEvents()
   } else {
     step.value = 3
   }
@@ -435,7 +451,11 @@ watchEffect(() => {
     form.terrain = props.goal.terrain || 'Rolling'
     form.phase = props.goal.phase || 'BASE'
     form.eventId = props.goal.eventId
-    form.eventIds = props.goal.events?.map((e: any) => e.eventId) || (props.goal.eventId ? [props.goal.eventId] : [])
+    form.eventIds = props.goal.events?.map((e: any) => e.id) || (props.goal.eventId ? [props.goal.eventId] : []) // Note: events relation usually returns Event objects with id, not join table with eventId
+    
+    if (selectedType.value === 'EVENT') {
+        fetchUserEvents()
+    }
     step.value = 3
   }
 })

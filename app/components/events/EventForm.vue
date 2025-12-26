@@ -180,7 +180,7 @@ watch(() => props.initialData, (newData) => {
     state.isVirtual = newData.isVirtual || false
     state.isPublic = newData.isPublic || false
     // Handle goals if they come as objects
-    state.goalIds = newData.goals ? newData.goals.map((g: any) => g.goalId || g) : []
+    state.goalIds = newData.goals ? newData.goals.map((g: any) => g.id || g) : []
   } else {
     // Reset to defaults
     state.title = ''

@@ -13,11 +13,39 @@
       <div class="text-right">
         <div class="text-sm text-muted">Current Phase</div>
         <div class="font-bold text-lg text-primary">{{ currentBlock?.name || 'Prep' }}</div>
-        <UButton size="xs" color="gray" variant="ghost" icon="i-heroicons-adjustments-horizontal" @click="showAdaptModal = true">
-          Adapt Plan
-        </UButton>
+        <div class="flex gap-2 justify-end mt-1">
+          <UButton size="xs" color="gray" variant="ghost" icon="i-heroicons-adjustments-horizontal" @click="showAdaptModal = true">
+            Adapt Plan
+          </UButton>
+          <UButton size="xs" color="gray" variant="ghost" icon="i-heroicons-bookmark" @click="showSaveTemplateModal = true">
+            Save Template
+          </UButton>
+          <UButton size="xs" color="red" variant="ghost" icon="i-heroicons-trash" @click="abandonPlan">
+            Abandon
+          </UButton>
+        </div>
       </div>
     </div>
+
+    <!-- Save Template Modal -->
+    <UModal v-model:open="showSaveTemplateModal" title="Save as Template">
+      <template #body>
+        <div class="p-6 space-y-4">
+          <p class="text-sm text-muted">Save this plan structure to reuse later.</p>
+          <UFormField label="Template Name" required>
+            <UInput v-model="templateName" placeholder="e.g. My Base Builder" class="w-full" />
+          </UFormField>
+          <UFormField label="Description">
+            <UTextarea v-model="templateDescription" placeholder="Notes about this plan..." class="w-full" />
+          </UFormField>
+          
+          <div class="flex justify-end gap-2 mt-4">
+            <UButton color="gray" variant="ghost" @click="showSaveTemplateModal = false">Cancel</UButton>
+            <UButton color="primary" :loading="savingTemplate" @click="saveTemplate">Save</UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
 
     <UModal 
       v-model:open="showAdaptModal" 
@@ -120,10 +148,16 @@
             </div>
           </div>
 
+          <div class="flex items-center gap-2 text-xs text-muted mb-2 px-1">
+            <UIcon name="i-heroicons-information-circle" class="w-4 h-4" />
+            <span>Tip: Drag and drop rows to reorder workouts within the week.</span>
+          </div>
+
           <!-- Workouts Table -->
           <table class="w-full text-sm">
             <thead class="bg-gray-50 dark:bg-gray-900 text-muted">
               <tr>
+                <th class="w-8"></th>
                 <th class="px-4 py-2 text-left">Day</th>
                 <th class="px-4 py-2 text-left">Workout</th>
                 <th class="px-4 py-2 text-left">Duration</th>
@@ -151,9 +185,17 @@
               <tr
                 v-for="workout in selectedWeek.workouts"
                 :key="workout.id"
-                class="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                class="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors group"
+                draggable="true"
+                @dragstart="onDragStart($event, workout)"
+                @dragover.prevent
+                @drop="onDrop($event, workout)"
                 @click="navigateToWorkout(workout.id)"
+                :class="{ 'opacity-50': draggingId === workout.id }"
               >
+                <td class="pl-2 text-center cursor-move text-gray-300 group-hover:text-gray-500">
+                  <UIcon name="i-heroicons-bars-2" class="w-4 h-4" />
+                </td>
                 <td class="px-4 py-3 font-medium">{{ formatDay(workout.date) }}</td>
                 <td class="px-4 py-3">
                   <div class="font-semibold">{{ workout.title }}</div>
@@ -216,6 +258,8 @@
       <WeeklyZoneSummary 
         v-if="selectedWeek" 
         :workouts="selectedWeek.workouts" 
+        :loading="generatingAllStructures"
+        @generate="generateAllStructureForWeek"
       />
     </div>
   </div>
@@ -235,10 +279,15 @@ const emit = defineEmits(['refresh'])
 const selectedBlockId = ref<string | null>(null)
 const selectedWeekId = ref<string | null>(null)
 const showAdaptModal = ref(false)
+const showSaveTemplateModal = ref(false)
+const templateName = ref('')
+const templateDescription = ref('')
+const savingTemplate = ref(false)
 const generatingWorkouts = ref(false)
 const generatingStructureForWorkoutId = ref<string | null>(null)
 const generatingAllStructures = ref(false)
 const adapting = ref<string | null>(null)
+const draggingId = ref<string | null>(null)
 const toast = useToast()
 
 // Computed
@@ -268,6 +317,52 @@ function getBlockStatusColor(block: any) {
 
 function navigateToWorkout(workoutId: string) {
   navigateTo(`/workouts/planned/${workoutId}`)
+}
+
+function onDragStart(event: DragEvent, workout: any) {
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', workout.id)
+  }
+  draggingId.value = workout.id
+}
+
+async function onDrop(event: DragEvent, targetWorkout: any) {
+  const sourceId = draggingId.value
+  draggingId.value = null
+  
+  if (!sourceId || sourceId === targetWorkout.id) return
+  
+  // Find source in list
+  const sourceWorkout = selectedWeek.value.workouts.find((w: any) => w.id === sourceId)
+  if (!sourceWorkout) return
+
+  // Optimistic Swap Dates
+  const sourceDate = sourceWorkout.date
+  const targetDate = targetWorkout.date
+  
+  // Swap in UI (mutating prop/local state temporarily)
+  sourceWorkout.date = targetDate
+  targetWorkout.date = sourceDate
+  
+  // Re-sort list by date to reflect visual change
+  selectedWeek.value.workouts.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  
+  // Call API
+  try {
+    await $fetch(`/api/workouts/planned/${sourceId}/move`, {
+      method: 'POST',
+      body: { targetDate: targetDate }
+    })
+    toast.add({ title: 'Workout moved', color: 'success' })
+    emit('refresh')
+  } catch (error) {
+    // Revert on fail
+    sourceWorkout.date = sourceDate
+    targetWorkout.date = targetDate
+    selectedWeek.value.workouts.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    toast.add({ title: 'Failed to move', color: 'error' })
+  }
 }
 
 async function generateWorkoutsForBlock() {
@@ -366,15 +461,19 @@ async function generateWorkoutsForBlock() {
         attempts++
         emit('refresh')
         
-        // We can't easily check completion from here without prop update propogation logic or specialized check
-        // But emit('refresh') triggers parent fetch, which updates 'plan' prop.
-        // We can check inside a watcher or just poll for a fixed duration.
-        // Better: Check if pendingWorkouts still lack structure in the updated prop.
+        // Check if all workouts in the current week have structure now
+        // We need to access the LATEST prop data, which might have updated via emit('refresh') -> parent refresh -> prop update
+        // Since props are reactive, selectedWeek should reflect the new state
+        const updatedPending = selectedWeek.value?.workouts.filter((w: any) => !w.structuredWorkout)
         
-        if (attempts >= maxAttempts) {
+        if (updatedPending?.length === 0) {
           clearInterval(pollInterval)
           generatingAllStructures.value = false
           toast.add({ title: 'Generation Complete', color: 'success' })
+        } else if (attempts >= maxAttempts) {
+          clearInterval(pollInterval)
+          generatingAllStructures.value = false
+          toast.add({ title: 'Generation Complete (Timeout)', description: 'Some workouts might still be processing. Refresh manually if needed.', color: 'warning' })
         }
       }, 3000)
       
@@ -418,6 +517,42 @@ async function generateWorkoutsForBlock() {
       })
     } finally {
       adapting.value = null
+    }
+  }
+
+  async function abandonPlan() {
+    if (!confirm('Are you sure you want to abandon this plan? Future workouts will be removed.')) return
+
+    try {
+      await $fetch(`/api/plans/${props.plan.id}/abandon`, { method: 'POST' })
+      toast.add({ title: 'Plan Abandoned', color: 'success' })
+      emit('refresh')
+    } catch (error: any) {
+      toast.add({ title: 'Failed to abandon plan', description: error.message, color: 'error' })
+    }
+  }
+
+  async function saveTemplate() {
+    if (!templateName.value) {
+      toast.add({ title: 'Name required', color: 'error' })
+      return
+    }
+
+    savingTemplate.value = true
+    try {
+      await $fetch(`/api/plans/${props.plan.id}/save-template`, {
+        method: 'POST',
+        body: {
+          name: templateName.value,
+          description: templateDescription.value
+        }
+      })
+      toast.add({ title: 'Template Saved', color: 'success' })
+      showSaveTemplateModal.value = false
+    } catch (error: any) {
+      toast.add({ title: 'Failed to save template', description: error.message, color: 'error' })
+    } finally {
+      savingTemplate.value = false
     }
   }
   

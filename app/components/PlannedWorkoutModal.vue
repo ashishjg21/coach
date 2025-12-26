@@ -94,15 +94,26 @@
         </div>
 
         <!-- Mark Complete Section -->
-        <div v-if="!plannedWorkout.completed && !showWorkoutSelector">
+        <div v-if="!plannedWorkout.completed && !showWorkoutSelector" class="flex flex-col gap-2">
           <UButton
             color="success"
+            block
+            @click="markCompleteWithoutActivity"
+            :loading="loading"
+          >
+            <UIcon name="i-heroicons-check" class="w-4 h-4" />
+            Mark as Done (No Activity)
+          </UButton>
+          
+          <UButton
+            color="primary"
+            variant="outline"
             block
             @click="showWorkoutSelector = true"
             :loading="loading"
           >
-            <UIcon name="i-heroicons-check-circle" class="w-4 h-4" />
-            Mark Complete
+            <UIcon name="i-heroicons-link" class="w-4 h-4" />
+            Link to Activity
           </UButton>
         </div>
 
@@ -472,6 +483,30 @@ async function markComplete() {
       body: {
         workoutId: selectedWorkoutId.value
       }
+    })
+    
+    emit('completed')
+    closeModal()
+  } catch (error: any) {
+    console.error('Error marking complete:', error)
+    alert(error?.data?.message || 'Failed to mark workout complete')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function markCompleteWithoutActivity() {
+  if (!props.plannedWorkout) return
+  
+  if (!confirm('Are you sure you want to mark this as done without linking an activity?')) {
+    return
+  }
+
+  loading.value = true
+  try {
+    await $fetch(`/api/planned-workouts/${props.plannedWorkout.id}/complete`, {
+      method: 'POST',
+      body: {} // No workoutId
     })
     
     emit('completed')

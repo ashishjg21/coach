@@ -119,13 +119,16 @@
               
               <div class="flex-1">
                 <div class="flex justify-between items-center mb-1">
-                  <h4 class="font-bold">{{ block.name }}</h4>
+                  <h4 class="font-bold">{{ block.name.split('[')[0].trim() }}</h4>
                   <span class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800">{{ formatDate(block.startDate) }}</span>
                 </div>
                 <div class="text-sm text-muted mb-2">{{ getBlockDescription(block.type) }}</div>
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                   <UBadge size="xs" color="primary" variant="subtle">Focus: {{ formatFocus(block.primaryFocus) }}</UBadge>
                   <UBadge size="xs" color="gray" variant="subtle">{{ block.type }}</UBadge>
+                  <UBadge v-if="block.name.includes('[Race:')" size="xs" color="purple" variant="soft" icon="i-heroicons-flag">
+                    {{ block.name.match(/\[Race: (.*?)\]/)?.[1] || 'Race' }}
+                  </UBadge>
                 </div>
               </div>
             </div>
@@ -301,11 +304,20 @@ async function initializePlan() {
   }
 }
 
-function confirmPlan() {
-  // Logic to activate the plan (it's already created as ACTIVE in backend for now, but we could have a "confirm" step API if we used DRAFT)
-  // Since the API currently creates it as ACTIVE, we just close and emit.
-  emit('plan-created', generatedPlan.value)
-  emit('close')
+async function confirmPlan() {
+  try {
+    // Activate the plan (archives others, triggers generation)
+    await $fetch(`/api/plans/${generatedPlan.value.id}/activate`, { method: 'POST' })
+    
+    emit('plan-created', generatedPlan.value)
+    emit('close')
+  } catch (error) {
+    toast.add({
+      title: 'Activation Failed',
+      description: 'Could not activate the plan.',
+      color: 'error'
+    })
+  }
 }
 
 onMounted(() => {

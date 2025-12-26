@@ -33,8 +33,18 @@
       </div>
     </div>
     
-    <div v-else class="text-center py-8 text-sm text-muted">
-      Generate structured workouts to see zone distribution.
+    <div v-else class="text-center py-10 space-y-4">
+      <p class="text-sm text-muted">Generate structured workouts to see zone distribution.</p>
+      <UButton 
+        size="sm" 
+        color="primary" 
+        variant="soft" 
+        icon="i-heroicons-sparkles"
+        :loading="loading"
+        @click="$emit('generate')"
+      >
+        Generate All Workouts for this Week
+      </UButton>
     </div>
   </div>
 </template>
@@ -42,7 +52,10 @@
 <script setup lang="ts">
 const props = defineProps<{
   workouts: any[]
+  loading?: boolean
 }>()
+
+const emit = defineEmits(['generate'])
 
 const hasData = computed(() => props.workouts?.some(w => w.structuredWorkout))
 
