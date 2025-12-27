@@ -113,7 +113,17 @@
               </div>
             </div>
 
+            <UButton
+              v-if="!intervalsStatus"
+              to="/settings/apps"
+              color="neutral"
+              variant="solid"
+              class="mt-4 w-full font-bold justify-center rounded-lg"
+            >
+              Configure
+            </UButton>
             <button
+              v-else
               @click="syncIntegration('intervals')"
               :disabled="syncing === 'intervals'"
               class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
@@ -147,7 +157,17 @@
               </div>
             </div>
 
+            <UButton
+              v-if="!whoopStatus"
+              to="/settings/apps"
+              color="neutral"
+              variant="solid"
+              class="mt-4 w-full font-bold justify-center rounded-lg"
+            >
+              Configure
+            </UButton>
             <button
+              v-else
               @click="syncIntegration('whoop')"
               :disabled="syncing === 'whoop'"
               class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
@@ -181,7 +201,17 @@
               </div>
             </div>
 
+            <UButton
+              v-if="!yazioStatus"
+              to="/settings/apps"
+              color="neutral"
+              variant="solid"
+              class="mt-4 w-full font-bold justify-center rounded-lg"
+            >
+              Configure
+            </UButton>
             <button
+              v-else
               @click="syncIntegration('yazio')"
               :disabled="syncing === 'yazio'"
               class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
@@ -215,7 +245,17 @@
               </div>
             </div>
 
+            <UButton
+              v-if="!stravaStatus"
+              to="/settings/apps"
+              color="neutral"
+              variant="solid"
+              class="mt-4 w-full font-bold justify-center rounded-lg"
+            >
+              Configure
+            </UButton>
             <button
+              v-else
               @click="syncIntegration('strava')"
               :disabled="syncing === 'strava'"
               class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
@@ -249,7 +289,17 @@
               </div>
             </div>
 
+            <UButton
+              v-if="!hevyStatus"
+              to="/settings/apps"
+              color="neutral"
+              variant="solid"
+              class="mt-4 w-full font-bold justify-center rounded-lg"
+            >
+              Configure
+            </UButton>
             <button
+              v-else
               @click="syncIntegration('hevy')"
               :disabled="syncing === 'hevy'"
               class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
@@ -283,7 +333,17 @@
               </div>
             </div>
 
+            <UButton
+              v-if="!withingsStatus"
+              to="/settings/apps"
+              color="neutral"
+              variant="solid"
+              class="mt-4 w-full font-bold justify-center rounded-lg"
+            >
+              Configure
+            </UButton>
             <button
+              v-else
               @click="syncIntegration('withings')"
               :disabled="syncing === 'withings'"
               class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
