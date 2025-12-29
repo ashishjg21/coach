@@ -20,7 +20,7 @@
             icon="i-heroicons-arrow-down-tray"
             @click="showDownloadModal = true"
           >
-            Download
+            <span class="hidden sm:inline">Download</span>
           </UButton>
           
           <UButton
@@ -30,7 +30,7 @@
             icon="i-heroicons-share"
             @click="isShareModalOpen = true"
           >
-            Share
+            <span class="hidden sm:inline">Share</span>
           </UButton>
           <UButton
             v-if="workout && !workout.completed"
@@ -39,7 +39,7 @@
             icon="i-heroicons-check"
             @click="markComplete"
           >
-            Mark Complete
+            <span class="hidden sm:inline">Mark Complete</span>
           </UButton>
         </template>
       </UDashboardNavbar>
@@ -55,32 +55,32 @@
         <!-- Workout Content -->
         <div v-else-if="workout" class="space-y-6">
           <!-- Header Card -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div class="flex items-start justify-between mb-4">
-              <div class="flex-1">
-                <h1 class="text-3xl font-bold mb-2">{{ workout.title }}</h1>
-                <div class="flex flex-wrap items-center gap-3 text-sm text-muted">
-                  <div class="flex items-center gap-1">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row items-start justify-between mb-4 gap-4">
+              <div class="flex-1 min-w-0 w-full">
+                <h1 class="text-2xl sm:text-3xl font-bold mb-2 break-words">{{ workout.title }}</h1>
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-muted">
+                  <div class="flex items-center gap-1 flex-shrink-0">
                     <UIcon name="i-heroicons-calendar" class="w-4 h-4" />
-                    <span>{{ formatDate(workout.date) }}</span>
+                    <span class="whitespace-nowrap">{{ formatDate(workout.date) }}</span>
                   </div>
-                  <span>•</span>
-                  <div class="flex items-center gap-1">
+                  <span class="hidden sm:inline">•</span>
+                  <div class="flex items-center gap-1 flex-shrink-0">
                     <UIcon name="i-heroicons-clock" class="w-4 h-4" />
-                    <span>{{ formatDuration(workout.durationSec) }}</span>
+                    <span class="whitespace-nowrap">{{ formatDuration(workout.durationSec) }}</span>
                   </div>
-                  <span>•</span>
-                  <div class="flex items-center gap-1">
+                  <span class="hidden sm:inline">•</span>
+                  <div class="flex items-center gap-1 flex-shrink-0">
                     <UIcon name="i-heroicons-bolt" class="w-4 h-4" />
-                    <span>{{ Math.round(workout.tss) }} TSS</span>
+                    <span class="whitespace-nowrap">{{ Math.round(workout.tss) }} TSS</span>
                   </div>
-                  <span>•</span>
-                  <UBadge :color="workout.completed ? 'green' : 'amber'" size="sm">
+                  <span class="hidden sm:inline">•</span>
+                  <UBadge :color="workout.completed ? 'green' : 'amber'" size="sm" class="whitespace-nowrap">
                     {{ workout.completed ? 'Completed' : 'Planned' }}
                   </UBadge>
                 </div>
               </div>
-              <div class="flex-shrink-0">
+              <div class="flex-shrink-0 self-end sm:self-start">
                 <div class="text-right">
                   <div class="text-xs text-muted">Type</div>
                   <div class="text-lg font-bold text-primary">{{ workout.type }}</div>
@@ -91,27 +91,27 @@
             <!-- Description -->
             <div v-if="workout.description" class="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <div class="text-sm text-muted mb-1">Description</div>
-              <p class="text-sm">{{ workout.description }}</p>
+              <p class="text-sm break-words">{{ workout.description }}</p>
             </div>
 
             <!-- Training Context -->
             <div v-if="workout.trainingWeek" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div class="text-xs text-muted mb-2">Training Context</div>
               <div class="flex flex-wrap gap-2 text-sm">
-                <UBadge v-if="workout.trainingWeek.block.plan.goal" color="neutral" variant="soft">
-                  Goal: {{ workout.trainingWeek.block.plan.goal.title }}
+                <UBadge v-if="workout.trainingWeek.block.plan.goal" color="neutral" variant="soft" class="whitespace-normal h-auto text-left max-w-full">
+                  <span class="truncate block w-full">Goal: {{ workout.trainingWeek.block.plan.goal.title }}</span>
                 </UBadge>
-                <UBadge v-else-if="workout.trainingWeek.block.plan.name" color="neutral" variant="soft">
-                  Plan: {{ workout.trainingWeek.block.plan.name }}
+                <UBadge v-else-if="workout.trainingWeek.block.plan.name" color="neutral" variant="soft" class="whitespace-normal h-auto text-left max-w-full">
+                  <span class="truncate block w-full">Plan: {{ workout.trainingWeek.block.plan.name }}</span>
                 </UBadge>
-                <UBadge color="neutral" variant="soft">
+                <UBadge color="neutral" variant="soft" class="whitespace-nowrap">
                   {{ workout.trainingWeek.block.name }}
                 </UBadge>
-                <UBadge color="neutral" variant="soft">
+                <UBadge color="neutral" variant="soft" class="whitespace-nowrap">
                   Week {{ workout.trainingWeek.weekNumber }}
                 </UBadge>
-                <UBadge color="neutral" variant="soft">
-                  Focus: {{ workout.trainingWeek.focus || workout.trainingWeek.block.primaryFocus }}
+                <UBadge color="neutral" variant="soft" class="whitespace-normal h-auto text-left max-w-full">
+                  <span class="truncate block w-full">Focus: {{ workout.trainingWeek.focus || workout.trainingWeek.block.primaryFocus }}</span>
                 </UBadge>
               </div>
             </div>

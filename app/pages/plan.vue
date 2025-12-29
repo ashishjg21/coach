@@ -40,13 +40,13 @@
         </div>
 
         <!-- No Plan State / Onboarding -->
-        <div v-else class="max-w-4xl mx-auto text-center py-12">
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-10">
-            <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <UIcon name="i-heroicons-trophy" class="w-10 h-10 text-primary" />
+        <div v-else class="max-w-4xl mx-auto text-center py-8 sm:py-12">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-10">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <UIcon name="i-heroicons-trophy" class="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
             </div>
-            <h2 class="text-3xl font-bold mb-3">Start Your Goal-Driven Plan</h2>
-            <p class="text-lg text-muted mb-8 max-w-lg mx-auto">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-3">Start Your Goal-Driven Plan</h2>
+            <p class="text-base sm:text-lg text-muted mb-8 max-w-lg mx-auto">
               Select a race or fitness goal, and let our AI build a periodized training plan tailored to your schedule and physiology.
             </p>
             <UButton size="xl" color="primary" @click.stop="openWizard">
