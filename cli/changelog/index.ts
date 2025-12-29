@@ -39,7 +39,9 @@ changelogCommand
     let version = '';
 
     for (const line of lines) {
-      const match = line.match(/^##\s+\[(\d+\.\d+\.\d+)\]/);
+      // Changed regex to match single # for version header (standard-version/release-it default)
+      // Matches both # [1.0.0] and ## [1.0.0]
+      const match = line.match(/^#{1,2}\s+\[(\d+\.\d+\.\d+)\]/);
       if (match) {
         if (foundFirstHeader) {
           break; // Stop when we hit the second header
