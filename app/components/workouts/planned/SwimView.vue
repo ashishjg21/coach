@@ -34,6 +34,7 @@
                  <div class="font-medium">{{ step.name || step.type }}</div>
                  <div class="text-sm text-muted">
                     <span v-if="step.distance">{{ step.distance }}m</span>
+                    <span v-else-if="step.durationSeconds">{{ formatDuration(step.durationSeconds) }}</span>
                     <span v-else-if="step.duration">{{ formatDuration(step.duration) }}</span>
                     <span class="mx-2">•</span>
                     <span>{{ step.description || 'Steady' }}</span>

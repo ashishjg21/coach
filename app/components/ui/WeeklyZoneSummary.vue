@@ -74,13 +74,32 @@ const zones = computed(() => {
   props.workouts.forEach(w => {
     if (w.structuredWorkout?.steps && Array.isArray(w.structuredWorkout.steps)) {
       w.structuredWorkout.steps.forEach((step: any) => {
-        let power = 0
-        if (typeof step.power === 'number') power = step.power
-        else if (step.power?.value) power = step.power.value
+        let intensity = 0
+        
+        // Priority 1: Power (Cycling / Running Power)
+        // Usually provided as a decimal ratio (0.75 = 75% FTP) or a 'value' object
+        if (typeof step.power === 'number') {
+          intensity = step.power
+        } else if (step.power?.value) {
+          intensity = step.power.value
+        } 
+        // Priority 2: Heart Rate (Running / Cardio)
+        // Usually provided as decimal ratio of LTHR/MaxHR
+        else if (typeof step.heartRate === 'number') {
+          intensity = step.heartRate
+        } else if (step.heartRate?.value) {
+          intensity = step.heartRate.value
+        }
+        
+        // Intensity 0 means rest or undefined, often Z1
         
         const duration = step.durationSeconds || 0
         
-        const zone = distribution.find(z => power <= z.max) || distribution[distribution.length - 1]
+        // Find matching zone based on intensity
+        // Z1: 0 - 0.55
+        // ...
+        // Z6: 1.20+
+        const zone = distribution.find(z => intensity <= z.max) || distribution[distribution.length - 1]
         zone.duration += duration
       })
     }
