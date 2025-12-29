@@ -186,7 +186,6 @@
                 <th class="px-4 py-2 text-left">Day</th>
                 <th class="px-4 py-2 text-left">Workout</th>
                 <th class="px-4 py-2 text-left">Duration / Metric</th>
-                <th class="px-4 py-2 text-left">Visual</th>
                 <th class="px-4 py-2 text-center">
                   <div class="flex items-center justify-center gap-1">
                     <UIcon name="i-heroicons-chart-bar" class="w-4 h-4 inline" title="Structured Workout" />
@@ -221,44 +220,21 @@
                   <UIcon name="i-heroicons-bars-2" class="w-4 h-4" />
                 </td>
                 <td class="px-4 py-3 text-center border-l-4" :class="getSportColorClass(workout.type)">
-                   <UIcon :name="getWorkoutIcon(workout.type)" class="w-5 h-5 text-muted" />
+                   <UIcon :name="getWorkoutIcon(workout.type)" class="w-5 h-5" :class="getIconColorClass(workout.type)" />
                 </td>
-                <td class="px-4 py-3 font-medium">{{ formatDay(workout.date) }}</td>
+                <td class="px-4 py-3 font-medium hidden sm:table-cell">{{ formatDay(workout.date) }}</td>
                 <td class="px-4 py-3">
                   <div class="font-semibold">{{ workout.title }}</div>
                   <div class="text-xs text-muted">{{ workout.type }}</div>
                 </td>
                 <td class="px-4 py-3">
-                    <div>{{ Math.round(workout.durationSec / 60) }}m</div>
-                    <div v-if="workout.distanceMeters" class="text-xs text-muted">
-                        {{ Math.round(workout.distanceMeters / 1000 * 10) / 10 }} km
-                    </div>
-                </td>
-                <td class="px-4 py-3">
-                    <!-- Dynamic Visual Column -->
-                    <div v-if="workout.type === 'Ride' || workout.type === 'VirtualRide'">
-                        <span class="font-semibold text-gray-700 dark:text-gray-300">
-                            {{ Math.round(workout.tss || 0) }} TSS
-                        </span>
-                        <div v-if="userFtp && workout.workIntensity" class="text-xs text-muted">
-                            {{ Math.round((workout.workIntensity || 0) * userFtp) }}W
-                        </div>
-                    </div>
+                    <div v-if="workout.type === 'Ride' || workout.type === 'VirtualRide'">{{ Math.round(workout.durationSec / 60) }}m</div>
                     <div v-else-if="workout.type === 'Run'">
-                         <div class="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded inline-block">
-                            Run Focus
-                         </div>
+                        {{ Math.round(workout.durationSec / 60) }}m <span v-if="workout.distanceMeters">/ {{ Math.round(workout.distanceMeters / 1000 * 10) / 10 }} km</span>
                     </div>
-                    <div v-else-if="workout.type === 'Swim'">
-                         <div class="text-xs font-bold text-cyan-500 bg-cyan-50 dark:bg-cyan-900/20 px-2 py-1 rounded inline-block">
-                            {{ Math.round(workout.distanceMeters || 0) }}m
-                         </div>
-                    </div>
-                    <div v-else-if="workout.type === 'Gym' || workout.type === 'WeightTraining'">
-                         <div class="flex gap-1">
-                            <span class="text-[10px] font-bold uppercase bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 px-1.5 py-0.5 rounded">Strength</span>
-                         </div>
-                    </div>
+                    <div v-else-if="workout.type === 'Swim'">{{ Math.round(workout.distanceMeters || 0) }}m</div>
+                    <div v-else-if="workout.type === 'Gym' || workout.type === 'WeightTraining'">{{ Math.round(workout.durationSec / 60) }}m</div>
+                    <div v-else>-</div>
                 </td>
                 <td class="px-4 py-3 text-center">
                   <div class="flex justify-center">
@@ -389,6 +365,19 @@ function getWorkoutIcon(type: string) {
     'Active Recovery': 'i-heroicons-arrow-path-rounded-square'
   }
   return map[type] || 'i-heroicons-question-mark-circle'
+}
+
+function getIconColorClass(type: string) {
+    const map: Record<string, string> = {
+        'Ride': 'text-green-500',
+        'VirtualRide': 'text-green-500',
+        'Run': 'text-orange-500',
+        'Swim': 'text-cyan-500',
+        'Gym': 'text-purple-500',
+        'WeightTraining': 'text-purple-500',
+        'Rest': 'text-gray-400'
+    }
+    return map[type] || 'text-gray-400'
 }
 
 function getSportColorClass(type: string) {
