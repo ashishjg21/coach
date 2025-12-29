@@ -12,7 +12,7 @@ defineRouteMeta({
             type: 'object',
             required: ['resourceType', 'resourceId'],
             properties: {
-              resourceType: { type: 'string', enum: ['WORKOUT', 'REPORT', 'NUTRITION', 'PLANNED_WORKOUT'] },
+              resourceType: { type: 'string', enum: ['WORKOUT', 'REPORT', 'NUTRITION', 'PLANNED_WORKOUT', 'TRAINING_PLAN'] },
               resourceId: { type: 'string' },
               expiresIn: { type: 'number', description: 'Expiration in seconds' }
             }
@@ -79,6 +79,11 @@ export default defineEventHandler(async (event) => {
       where: { id: resourceId, userId }
     })
     resourceExists = !!planned
+  } else if (resourceType === 'TRAINING_PLAN') {
+    const plan = await prisma.trainingPlan.findFirst({
+      where: { id: resourceId, userId }
+    })
+    resourceExists = !!plan
   }
 
   if (!resourceExists) {
@@ -112,6 +117,7 @@ export default defineEventHandler(async (event) => {
     case 'WORKOUT': sharePath = '/share/workout'; break;
     case 'NUTRITION': sharePath = '/share/nutrition'; break;
     case 'PLANNED_WORKOUT': sharePath = '/share/planned-workout'; break;
+    case 'TRAINING_PLAN': sharePath = '/share/plan'; break;
     default: sharePath = `/share/${resourceType.toLowerCase()}`;
   }
 

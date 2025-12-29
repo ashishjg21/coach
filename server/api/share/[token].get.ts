@@ -116,6 +116,87 @@ export default defineEventHandler(async (event) => {
         }
       }
     })
+  } else if (shareToken.resourceType === 'TRAINING_PLAN') {
+    data = await prisma.trainingPlan.findUnique({
+      where: { id: shareToken.resourceId },
+      include: {
+        goal: true,
+        blocks: {
+          orderBy: { order: 'asc' },
+          include: {
+            weeks: {
+              orderBy: { weekNumber: 'asc' },
+              include: {
+                workouts: {
+                  orderBy: { date: 'asc' }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    // If workouts don't have share tokens, generate them on the fly for the response
+    if (data && data.blocks) {
+      const workoutsNeedingTokens: string[] = []
+      const workoutIds: string[] = []
+      
+      // @ts-ignore
+      data.blocks.forEach((block: any) => {
+        block.weeks.forEach((week: any) => {
+          week.workouts.forEach((workout: any) => {
+             workoutIds.push(workout.id)
+          })
+        })
+      })
+
+      // Fetch existing tokens for these workouts
+      const existingTokens = await prisma.shareToken.findMany({
+        where: {
+          resourceType: 'PLANNED_WORKOUT',
+          resourceId: { in: workoutIds }
+        }
+      })
+
+      const tokenMap = new Map(existingTokens.map(t => [t.resourceId, t.token]))
+
+      // Identify workouts needing tokens
+      // @ts-ignore
+      data.blocks.forEach((block: any) => {
+        block.weeks.forEach((week: any) => {
+          week.workouts.forEach((workout: any) => {
+            if (!tokenMap.has(workout.id)) {
+               workoutsNeedingTokens.push(workout.id)
+            }
+          })
+        })
+      })
+      
+      if (workoutsNeedingTokens.length > 0) {
+        // Generate tokens for any workouts that don't have them yet
+        await Promise.all(workoutsNeedingTokens.map(async (workoutId) => {
+           const newToken = await prisma.shareToken.create({
+            data: {
+              userId: (data as any).userId,
+              resourceType: 'PLANNED_WORKOUT',
+              resourceId: workoutId,
+            }
+          })
+          tokenMap.set(workoutId, newToken.token)
+        }))
+      }
+
+      // Attach tokens to workouts in the response
+      // @ts-ignore
+      data.blocks.forEach((block: any) => {
+        block.weeks.forEach((week: any) => {
+          week.workouts.forEach((workout: any) => {
+             workout.shareToken = { token: tokenMap.get(workout.id) }
+          })
+        })
+      })
+    }
   }
 
   if (!data) {
