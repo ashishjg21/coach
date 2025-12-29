@@ -639,6 +639,9 @@ model PlannedWorkout {
   // Status
   completed       Boolean? @default(false)
   
+  // Extra fields for AI generation
+  targetArea      String?  // For Gym workouts: "Legs", "Upper Body", "Core"
+  
   // Sync Management
   syncStatus      String?  @default("SYNCED") // SYNCED, PENDING, FAILED, LOCAL_ONLY
   lastSyncedAt    DateTime?
