@@ -77,6 +77,7 @@ useHead({
             <thead class="bg-gray-50 dark:bg-gray-900">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Integrations</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stats</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Admin</th>
@@ -95,9 +96,25 @@ useHead({
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex gap-1 flex-wrap max-w-[200px]">
+                    <UBadge 
+                      v-for="integration in user.integrations" 
+                      :key="integration.provider"
+                      size="xs"
+                      color="neutral"
+                      variant="subtle"
+                    >
+                      {{ integration.provider }}
+                    </UBadge>
+                    <span v-if="!user.integrations?.length" class="text-xs text-gray-400 italic">None</span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-xs space-y-1">
                     <div><span class="font-bold">{{ user._count?.workouts || 0 }}</span> workouts</div>
+                    <div><span class="font-bold">{{ user._count?.plannedWorkouts || 0 }}</span> planned</div>
                     <div><span class="font-bold">{{ user._count?.nutrition || 0 }}</span> meals</div>
+                    <div><span class="font-bold">{{ user._count?.chatParticipations || 0 }}</span> chats</div>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">

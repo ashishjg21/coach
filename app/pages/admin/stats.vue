@@ -80,10 +80,13 @@ useHead({
                <!-- Bar chart component placeholder - assuming Bar is available or used like in other pages -->
                <div class="flex items-end justify-between h-full pt-4 gap-1">
                   <div v-for="day in stats?.workoutsByDay" :key="day.date" 
-                       class="bg-blue-500 rounded-t w-full transition-all hover:bg-blue-600"
+                       class="group relative flex-1 bg-blue-500 rounded-t transition-all hover:bg-blue-600"
                        :style="{ height: `${(day.count / (Math.max(...stats.workoutsByDay.map((d: any) => d.count)) || 1)) * 100}%` }"
-                       :title="`${day.date}: ${day.count} workouts`"
-                  ></div>
+                  >
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
+                      {{ day.date }}: {{ day.count }} workouts
+                    </div>
+                  </div>
                </div>
             </div>
           </UCard>
@@ -98,10 +101,57 @@ useHead({
             <div class="h-64">
               <div class="flex items-end justify-between h-full pt-4 gap-1">
                   <div v-for="day in stats?.aiCostHistory" :key="day.date" 
-                       class="bg-emerald-500 rounded-t w-full transition-all hover:bg-emerald-600"
+                       class="group relative flex-1 bg-emerald-500 rounded-t transition-all hover:bg-emerald-600"
                        :style="{ height: `${(day.cost / (Math.max(...stats.aiCostHistory.map((d: any) => d.cost)) || 0.01)) * 100}%` }"
-                       :title="`${day.date}: $${day.cost.toFixed(4)}`"
-                  ></div>
+                  >
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
+                      {{ day.date }}: ${{ day.cost.toFixed(4) }}
+                    </div>
+                  </div>
+               </div>
+            </div>
+          </UCard>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <UCard>
+            <template #header>
+              <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold uppercase tracking-tight">New Users Per Day</h2>
+                <span class="text-xs text-gray-500">Last 30 Days</span>
+              </div>
+            </template>
+            <div class="h-64">
+               <div class="flex items-end justify-between h-full pt-4 gap-1">
+                  <div v-for="day in stats?.usersByDay" :key="day.date" 
+                       class="group relative flex-1 bg-purple-500 rounded-t transition-all hover:bg-purple-600"
+                       :style="{ height: `${(day.count / (Math.max(...stats.usersByDay.map((d: any) => d.count)) || 1)) * 100}%` }"
+                  >
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
+                      {{ day.date }}: {{ day.count }} users
+                    </div>
+                  </div>
+               </div>
+            </div>
+          </UCard>
+
+          <UCard>
+            <template #header>
+              <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold uppercase tracking-tight">Active Users Per Day</h2>
+                <span class="text-xs text-gray-500">Last 30 Days</span>
+              </div>
+            </template>
+            <div class="h-64">
+               <div class="flex items-end justify-between h-full pt-4 gap-1">
+                  <div v-for="day in stats?.activeUsersByDay" :key="day.date" 
+                       class="group relative flex-1 bg-amber-500 rounded-t transition-all hover:bg-amber-600"
+                       :style="{ height: `${(day.count / (Math.max(...stats.activeUsersByDay.map((d: any) => d.count)) || 1)) * 100}%` }"
+                  >
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
+                      {{ day.date }}: {{ day.count }} active
+                    </div>
+                  </div>
                </div>
             </div>
           </UCard>
@@ -114,22 +164,28 @@ useHead({
               <div class="text-2xl font-bold">{{ stats?.avgWorkoutsPerDay?.toFixed(1) || 0 }}</div>
             </div>
           </UCard>
+          <UCard class="bg-purple-50/50 dark:bg-purple-900/10">
+            <div class="text-center">
+              <div class="text-xs font-bold text-purple-500 uppercase tracking-widest mb-1">Users Joined (30d)</div>
+              <div class="text-2xl font-bold">{{ stats?.totalUsersLast30Days || 0 }}</div>
+            </div>
+          </UCard>
           <UCard class="bg-emerald-50/50 dark:bg-emerald-900/10">
             <div class="text-center">
               <div class="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-1">Avg AI Cost/Call</div>
               <div class="text-2xl font-bold">${{ stats?.avgAiCostPerCall?.toFixed(4) || 0 }}</div>
             </div>
           </UCard>
-          <UCard class="bg-purple-50/50 dark:bg-purple-900/10">
-            <div class="text-center">
-              <div class="text-xs font-bold text-purple-500 uppercase tracking-widest mb-1">Total AI Calls</div>
-              <div class="text-2xl font-bold">{{ stats?.totalAiCalls || 0 }}</div>
-            </div>
-          </UCard>
           <UCard class="bg-amber-50/50 dark:bg-amber-900/10">
             <div class="text-center">
               <div class="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Success Rate</div>
               <div class="text-2xl font-bold">{{ stats?.aiSuccessRate?.toFixed(1) || 0 }}%</div>
+            </div>
+          </UCard>
+          <UCard class="bg-purple-50/50 dark:bg-purple-900/10">
+            <div class="text-center">
+              <div class="text-xs font-bold text-purple-500 uppercase tracking-widest mb-1">Total AI Calls</div>
+              <div class="text-2xl font-bold">{{ stats?.totalAiCalls || 0 }}</div>
             </div>
           </UCard>
         </div>
