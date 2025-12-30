@@ -51,6 +51,9 @@ export const ingestIntervalsTask = task({
       const end = new Date(endDate);
       
       // Fetch and update athlete profile data first
+      /* 
+      // DISABLED: Automatic profile updates can overwrite user's manual settings. 
+      // Profile sync is now handled via the "Autodetect" feature in settings.
       logger.log("Fetching athlete profile data...");
       try {
         const profileData = await fetchIntervalsAthleteProfile(integration);
@@ -76,6 +79,7 @@ export const ingestIntervalsTask = task({
         logger.error("Error updating athlete profile, continuing with data ingestion", { error });
         // Don't fail the entire ingestion if profile update fails
       }
+      */
       
       // Fetch activities
       logger.log("Fetching activities...");

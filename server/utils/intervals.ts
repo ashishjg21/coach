@@ -403,18 +403,69 @@ export async function fetchIntervalsAthleteProfile(integration: Integration) {
   let hrZones = null
   let powerZones = null
   
-  if (athlete.icu_type_settings && athlete.icu_type_settings.length > 0) {
+  // Check for both new (sportSettings) and legacy (icu_type_settings) formats
+  const settings = (athlete.sportSettings && athlete.sportSettings.length > 0) 
+    ? athlete.sportSettings 
+    : (athlete.icu_type_settings || []);
+
+  if (settings.length > 0) {
     // Look for cycling/ride FTP first
-    const cyclingSettings = athlete.icu_type_settings.find((s: any) =>
+    const cyclingSettings = settings.find((s: any) =>
       s.types && (s.types.includes('Ride') || s.types.includes('VirtualRide'))
     )
+    
     if (cyclingSettings) {
       ftp = cyclingSettings.ftp
       lthr = cyclingSettings.lthr
       maxHR = cyclingSettings.max_hr
       
-      // Extract Zones
-      if (cyclingSettings.training_zones) {
+      // Extract Zones (Handle both formats)
+      
+      // 1. New Format (sportSettings has direct arrays)
+      if (cyclingSettings.hr_zones && cyclingSettings.hr_zone_names) {
+        // hr_zones are typically upper bounds? Or boundaries?
+        // Example: [135, 150, 156, 167, 172, 177, 185] (last one matches max_hr)
+        // We'll assume these are upper bounds for each zone 1..N
+        hrZones = cyclingSettings.hr_zones.map((max: number, index: number) => {
+          const prevMax = index === 0 ? 0 : cyclingSettings.hr_zones[index - 1]
+          // Prefix with Z{i} if needed
+          let name = cyclingSettings.hr_zone_names[index] || `Z${index + 1}`
+          if (!name.startsWith('Z')) {
+             name = `Z${index + 1} ${name}`
+          }
+          
+          return {
+            name,
+            min: index === 0 ? 0 : prevMax + 1,
+            max: max
+          }
+        })
+      }
+      
+      if (cyclingSettings.power_zones && cyclingSettings.power_zone_names) {
+        // power_zones are usually % of FTP in the new format
+        // Example: [55, 75, 90, 105, 120, 150, 999]
+        const threshold = ftp || 1
+        powerZones = cyclingSettings.power_zones.map((val: number, index: number) => {
+          const prevVal = index === 0 ? 0 : cyclingSettings.power_zones[index - 1]
+          const prevMaxAbs = Math.round((prevVal / 100) * threshold)
+          
+          // Prefix with Z{i} if needed
+          let name = cyclingSettings.power_zone_names[index] || `Z${index + 1}`
+          if (!name.startsWith('Z') && !name.startsWith('SS')) {
+             name = `Z${index + 1} ${name}`
+          }
+
+          return {
+            name,
+            min: index === 0 ? 0 : prevMaxAbs + 1,
+            max: val >= 900 ? 2000 : Math.round((val / 100) * threshold) // Handle 999 as infinity/high
+          }
+        })
+      }
+
+      // 2. Legacy Format (icu_type_settings had training_zones array)
+      if (!hrZones && cyclingSettings.training_zones) {
         // HR Zones
         const hrZ = cyclingSettings.training_zones.find((z: any) => z.type === 'HEART_RATE')
         if (hrZ && hrZ.zones) {
@@ -441,7 +492,7 @@ export async function fetchIntervalsAthleteProfile(integration: Integration) {
       }
     } else {
       // Use first type setting with FTP
-      const firstWithFtp = athlete.icu_type_settings.find((s: any) => s.ftp)
+      const firstWithFtp = settings.find((s: any) => s.ftp)
       if (firstWithFtp) {
         ftp = firstWithFtp.ftp
         lthr = firstWithFtp.lthr

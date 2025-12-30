@@ -43,59 +43,83 @@ export default defineEventHandler(async (event) => {
     // Fetch profile from Intervals.icu
     const intervalsProfile = await fetchIntervalsAthleteProfile(integration)
     
-    // Detect if key metrics changed to trigger recalculation
-    let metricsChanged = false
-    const metricsUpdate: any = {}
-
+    // Detect if metrics changed
+    const diff: any = {}
+    
+    // Basic Metrics
     if (intervalsProfile.ftp && intervalsProfile.ftp !== user.ftp) {
-      metricsUpdate.ftp = intervalsProfile.ftp
-      metricsChanged = true
+      diff.ftp = intervalsProfile.ftp
     }
+    // Map maxHR (Intervals) to maxHr (Prisma)
     if (intervalsProfile.maxHR && intervalsProfile.maxHR !== user.maxHr) {
-      metricsUpdate.maxHr = intervalsProfile.maxHR
-      metricsChanged = true
+      diff.maxHr = intervalsProfile.maxHR
     }
     if (intervalsProfile.weight && intervalsProfile.weight !== user.weight) {
-      metricsUpdate.weight = intervalsProfile.weight
-      metricsChanged = true
+      diff.weight = intervalsProfile.weight
     }
-
-    let updatedUser;
-
-    // Use service if metrics changed
-    if (metricsChanged) {
-      updatedUser = await athleteMetricsService.updateMetrics(user.id, metricsUpdate)
-    }
-
-    // Handle other fields separately (restingHR, etc.) if they weren't part of the metrics update
-    const otherUpdates: any = {}
-    if (intervalsProfile.restingHR) otherUpdates.restingHr = intervalsProfile.restingHR
-    
-    // If we have other updates, apply them
-    if (Object.keys(otherUpdates).length > 0) {
-      updatedUser = await prisma.user.update({
-        where: { id: user.id },
-        data: otherUpdates
-      })
+    // Map restingHR (Intervals) to restingHr (Prisma)
+    if (intervalsProfile.restingHR && intervalsProfile.restingHR !== user.restingHr) {
+      diff.restingHr = intervalsProfile.restingHR
     }
     
-    // If nothing happened
-    if (!metricsChanged && Object.keys(otherUpdates).length === 0) {
+    // Helper for comparing zones
+    const areZonesDifferent = (current: any[], incoming: any[]) => {
+      if (!current || !incoming) return true
+      if (current.length !== incoming.length) return true
+      
+      for (let i = 0; i < current.length; i++) {
+        const c = current[i]
+        const n = incoming[i]
+        
+        // Compare essential fields (min, max, name)
+        if (c.min !== n.min || c.max !== n.max || c.name !== n.name) {
+          return true
+        }
+      }
+      return false
+    }
+
+    // Zones Comparison
+    if (intervalsProfile.hrZones) {
+      const currentHrZones = user.hrZones as any[] || []
+      const newHrZones = intervalsProfile.hrZones as any[]
+      
+      if (areZonesDifferent(currentHrZones, newHrZones)) {
+        diff.hrZones = newHrZones
+      }
+    }
+    
+    if (intervalsProfile.powerZones) {
+      const currentPowerZones = user.powerZones as any[] || []
+      const newPowerZones = intervalsProfile.powerZones as any[]
+      
+      if (areZonesDifferent(currentPowerZones, newPowerZones)) {
+        diff.powerZones = newPowerZones
+      }
+    }
+    
+    // LTHR (not stored directly on User but useful to return or map if we add it later)
+    // For now we ignore it unless we add lthr to User schema
+    
+    // If no differences
+    if (Object.keys(diff).length === 0) {
       return {
         success: true,
         message: 'No new data found from Intervals.icu',
-        updates: {}
+        updates: {}, // Backward compatibility
+        diff: {},
+        current: user,
+        detected: intervalsProfile
       }
     }
 
-    // Combine updates for response
-    const allUpdates = { ...metricsUpdate, ...otherUpdates }
-
     return {
       success: true,
-      message: 'Profile updated from Intervals.icu',
-      updates: allUpdates,
-      profile: updatedUser
+      message: 'Differences detected from Intervals.icu',
+      updates: diff, // Backward compatibility
+      diff,
+      current: user,
+      detected: intervalsProfile
     }
     
   } catch (error: any) {
