@@ -29,8 +29,7 @@
               variant="outline"
               size="sm"
               class="font-bold"
-              :loading="sharing"
-              @click="handleShare"
+              @click="isShareModalOpen = true"
             >
               <span class="hidden sm:inline">Share</span>
             </UButton>
@@ -720,6 +719,60 @@
      </div>
     </template>
   </UDashboardPanel>
+
+  <!-- Share Modal -->
+  <UModal
+    v-model:open="isShareModalOpen"
+    title="Share Workout"
+    description="Anyone with this link can view this workout. The link will expire in 30 days."
+  >
+    <template #body>
+      <div class="space-y-4">
+        <div v-if="generatingShareLink" class="flex items-center justify-center py-8">
+          <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <div v-else-if="shareLink" class="space-y-4">
+          <div class="flex gap-2">
+            <UInput
+              v-model="shareLink"
+              readonly
+              class="flex-1"
+            />
+            <UButton
+              icon="i-heroicons-clipboard"
+              color="neutral"
+              variant="outline"
+              @click="copyToClipboard"
+            >
+              Copy
+            </UButton>
+          </div>
+          <p class="text-xs text-gray-500">
+            This link provides read-only access to this specific workout.
+          </p>
+        </div>
+        <div v-else class="flex flex-col items-center justify-center py-8 text-center">
+          <UIcon name="i-heroicons-link" class="w-8 h-8 text-gray-400 mb-2" />
+          <p class="text-gray-600 mb-4">Click below to generate a shareable link.</p>
+          <UButton
+            color="primary"
+            @click="generateShareLink"
+            :loading="generatingShareLink"
+          >
+            Generate Link
+          </UButton>
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <UButton
+        label="Close"
+        color="neutral"
+        variant="ghost"
+        @click="isShareModalOpen = false"
+      />
+    </template>
+  </UModal>
 </template>
 
 <script setup lang="ts">
@@ -738,6 +791,47 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const analyzingWorkout = ref(false)
 const sharing = ref(false)
+
+// Share functionality
+const isShareModalOpen = ref(false)
+const shareLink = ref('')
+const generatingShareLink = ref(false)
+
+const generateShareLink = async () => {
+  if (!workout.value?.id) return
+  
+  generatingShareLink.value = true
+  try {
+    const response = await $fetch('/api/share/generate', {
+      method: 'POST',
+      body: {
+        resourceType: 'WORKOUT',
+        resourceId: workout.value.id
+      }
+    })
+    shareLink.value = response.url
+  } catch (error) {
+    console.error('Failed to generate share link:', error)
+    toast.add({
+      title: 'Error',
+      description: 'Failed to generate share link. Please try again.',
+      color: 'error'
+    })
+  } finally {
+    generatingShareLink.value = false
+  }
+}
+
+const copyToClipboard = () => {
+  if (!shareLink.value) return
+  
+  navigator.clipboard.writeText(shareLink.value)
+  toast.add({
+    title: 'Copied',
+    description: 'Share link copied to clipboard.',
+    color: 'success'
+  })
+}
 
 // Set page title and description
 useHead(() => {
@@ -1106,48 +1200,6 @@ function chatAboutWorkout() {
   navigateTo({
     path: '/chat',
     query: { workoutId: workout.value.id }
-  })
-}
-
-// Share workout
-async function handleShare() {
-  if (!workout.value) return
-  
-  // If we already have a public link locally (optimistic), copy it
-  if (workout.value.shareToken) {
-    copyShareLink(workout.value.shareToken)
-    return
-  }
-
-  sharing.value = true
-  try {
-    const response = await $fetch<{ token: string }>(`/api/workouts/${workout.value.id}/share`, {
-      method: 'POST',
-      body: { action: 'generate' }
-    })
-    
-    workout.value.shareToken = response.token
-    copyShareLink(response.token)
-  } catch (e: any) {
-    toast.add({
-      title: 'Share Failed',
-      description: e.message || 'Could not generate share link',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-triangle'
-    })
-  } finally {
-    sharing.value = false
-  }
-}
-
-function copyShareLink(token: string) {
-  const url = `${window.location.origin}/share/workouts/${token}`
-  navigator.clipboard.writeText(url)
-  toast.add({
-    title: 'Link Copied',
-    description: 'Public link copied to clipboard',
-    color: 'success',
-    icon: 'i-heroicons-check-circle'
   })
 }
 
