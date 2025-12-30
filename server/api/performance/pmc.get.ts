@@ -82,9 +82,16 @@ export default defineEventHandler(async (event) => {
   let endDate = new Date()
   
   // If we have data from "tomorrow" (timezone diff), extend the chart to include it
+  // But cap it at 48 hours to prevent showing far future dates
   if (summary.lastUpdated && new Date(summary.lastUpdated) > endDate) {
-    endDate = new Date(summary.lastUpdated)
-    endDate.setUTCHours(23, 59, 59, 999)
+    const lastUpdate = new Date(summary.lastUpdated)
+    const maxDate = new Date()
+    maxDate.setDate(maxDate.getDate() + 2) // Max 2 days ahead
+    
+    if (lastUpdate < maxDate) {
+      endDate = lastUpdate
+      endDate.setUTCHours(23, 59, 59, 999)
+    }
   }
   
   const startDate = new Date()
