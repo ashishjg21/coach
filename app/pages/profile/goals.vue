@@ -302,7 +302,7 @@ useHead({
     </template>
 
     <template #body>
-      <div class="p-6 space-y-6">
+      <div class="p-3 sm:p-6 space-y-4 sm:space-y-6">
         <!-- Page Header -->
         <div>
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Goals</h1>

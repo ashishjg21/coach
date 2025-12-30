@@ -22,7 +22,7 @@
     </template>
 
     <template #body>
-      <div class="p-6 space-y-10">
+      <div class="p-3 sm:p-6 space-y-6 sm:space-y-10">
         <!-- Page Header -->
         <div>
           <h1 class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Performance Scores</h1>
@@ -32,7 +32,7 @@
         </div>
 
         <!-- 1. Activity Highlights (Big Numbers) -->
-        <div class="space-y-4">
+        <div class="space-y-3 sm:space-y-4">
           <div class="flex items-center justify-between px-1">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">Activity Highlights</h2>
             <USelect
@@ -45,7 +45,7 @@
         </div>
 
         <!-- 2. Athlete Profile Scores -->
-        <div class="space-y-4">
+        <div class="space-y-3 sm:space-y-4">
           <div class="flex items-center justify-between px-1">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">Athlete Profile</h2>
             <UBadge v-if="profileData?.scores?.lastUpdated" color="neutral" variant="subtle" size="sm" class="font-bold">
@@ -57,7 +57,7 @@
             <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary" />
           </div>
           
-          <div v-else-if="profileData" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div v-else-if="profileData" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <ScoreCard
               title="Current Fitness"
               :score="profileData.scores?.currentFitness"

@@ -1,7 +1,7 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-3 sm:space-y-6">
     <!-- Header / Overview -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
       <div>
         <h2 class="text-2xl font-bold">{{ plan.goal?.title || plan.name || 'Untitled Plan' }}</h2>
         <div class="flex items-center gap-2 text-muted mt-1">
@@ -155,7 +155,7 @@
 
     <!-- Active Week View -->
     <div v-if="selectedBlock" class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-      <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div class="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
         <h3 class="font-semibold text-lg">{{ selectedBlock.name }} - Overview</h3>
         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
            <UButton
@@ -183,10 +183,10 @@
         </div>
       </div>
 
-      <div class="p-4">
-        <div v-if="selectedWeek" class="space-y-4">
+      <div class="p-3 sm:p-4">
+        <div v-if="selectedWeek" class="space-y-3 sm:space-y-4">
           <!-- Week Stats -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-3 sm:mb-4">
             <div class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <div class="text-xs text-muted">Focus</div>
               <div class="font-bold">{{ selectedWeek.focus || selectedBlock.primaryFocus }}</div>
@@ -304,11 +304,11 @@
           </div>
 
           <!-- Workouts List (Mobile) -->
-          <div class="block sm:hidden space-y-3">
-             <div 
-                v-for="workout in selectedWeek.workouts" 
+          <div class="block sm:hidden space-y-2">
+             <div
+                v-for="workout in selectedWeek.workouts"
                 :key="workout.id"
-                class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center gap-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700 w-full"
+                class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 flex items-center gap-2.5 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700 w-full"
                 @click="navigateToWorkout(workout.id)"
              >
                 <div class="p-2 rounded-full bg-gray-50 dark:bg-gray-900 border flex-shrink-0" :class="getSportColorClass(workout.type)">

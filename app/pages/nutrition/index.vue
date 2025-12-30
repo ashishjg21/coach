@@ -35,7 +35,7 @@
     </template>
 
     <template #body>
-      <div class="p-6 space-y-6">
+      <div class="p-3 sm:p-6 space-y-4 sm:space-y-6">
         <!-- Page Header -->
         <div>
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Nutrition</h1>
@@ -45,8 +45,8 @@
         </div>
 
         <!-- Summary Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
             <div class="text-center">
               <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">
                 {{ totalNutrition }}
@@ -55,7 +55,7 @@
             </div>
           </div>
           
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
             <div class="text-center">
               <div class="text-3xl font-bold text-green-600 dark:text-green-400">
                 {{ analyzedNutrition }}
@@ -64,7 +64,7 @@
             </div>
           </div>
           
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
             <div class="text-center">
               <div class="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
                 {{ avgScore !== null ? avgScore.toFixed(1) : '-' }}
@@ -73,7 +73,7 @@
             </div>
           </div>
           
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
             <div class="text-center">
               <div class="text-3xl font-bold text-purple-600 dark:text-purple-400">
                 {{ avgCalories ? Math.round(avgCalories) : '-' }}

@@ -178,7 +178,7 @@
     </template>
 
     <template #body>
-      <div class="p-6">
+      <div class="p-3 sm:p-6">
         <div v-if="loading" class="flex items-center justify-center py-12">
           <div class="text-center">
             <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>

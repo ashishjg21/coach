@@ -567,8 +567,8 @@
     :ui="{ width: 'sm:max-w-4xl' }"
   >
     <template #body>
-      <div class="p-6">
-        <WorkoutMatcher 
+      <div class="p-3 sm:p-6">
+        <WorkoutMatcher
           :completed-workouts="unlinkedCompletedWorkouts" 
           :planned-workouts="unlinkedPlannedWorkouts" 
           @matched="onWorkoutsMatched" 

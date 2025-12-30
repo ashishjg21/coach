@@ -15,12 +15,12 @@
           >
             <span class="hidden sm:inline">Share</span>
           </UButton>
-          <UButton 
+          <UButton
             v-if="activePlan"
-            size="xs" 
-            color="gray" 
-            variant="ghost" 
-            icon="i-heroicons-plus" 
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            icon="i-heroicons-plus"
             @click="startNewPlan"
           >
             New Plan
@@ -30,7 +30,7 @@
     </template>
 
     <template #body>
-      <div class="p-6 space-y-6">
+      <div class="p-3 sm:p-6 space-y-4 sm:space-y-6">
         <!-- Loading State -->
         <div v-if="loading && !activePlan" class="flex justify-center py-20">
           <UIcon name="i-heroicons-arrow-path" class="w-10 h-10 animate-spin text-primary" />

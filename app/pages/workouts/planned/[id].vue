@@ -46,7 +46,7 @@
     </template>
 
     <template #body>
-      <div class="p-6 max-w-6xl mx-auto space-y-6">
+      <div class="p-3 sm:p-6 max-w-6xl mx-auto space-y-4 sm:space-y-6">
         <!-- Loading State -->
         <div v-if="loading" class="flex justify-center py-20">
           <UIcon name="i-heroicons-arrow-path" class="w-10 h-10 animate-spin text-primary" />
