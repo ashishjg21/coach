@@ -171,7 +171,9 @@ export class WorkoutConverter {
       });
     });
 
-    return fitWriter.finish();
+    const result = fitWriter.finish();
+    // Convert DataView to Uint8Array to satisfy response requirements
+    return new Uint8Array(result.buffer, result.byteOffset, result.byteLength);
   }
 
   static toMRC(workout: WorkoutData): string {
@@ -256,5 +258,76 @@ export class WorkoutConverter {
 
     lines.push('[END COURSE DATA]');
     return lines.join('\r\n');
+  }
+
+  static toIntervalsICU(workout: WorkoutData): string {
+    const lines: string[] = [];
+    
+    // Group steps by type to create sections
+    let currentType = '';
+    
+    workout.steps.forEach((step, index) => {
+      // Add header if type changes
+      // Intervals.icu recognizes: Warmup, Main Set, Cooldown
+      // Our types: Warmup, Active, Rest, Cooldown
+      let sectionHeader = '';
+      if (step.type === 'Warmup') sectionHeader = 'Warmup';
+      else if (step.type === 'Cooldown') sectionHeader = 'Cooldown';
+      else if (step.type === 'Active' || step.type === 'Rest') sectionHeader = 'Main Set';
+      
+      // Only add header if it's different from previous and it's a standard section
+      // Note: Intervals.icu is flexible, but grouping helps readability.
+      // However, strict grouping might be hard if types alternate frequently (intervals).
+      // So we might just group contiguous blocks or just omit headers if mixed.
+      // Let's stick to simple line-by-line for robustness, 
+      // or simplistic headers: Warmup at start, Cooldown at end.
+      
+      if (index === 0 && step.type === 'Warmup') {
+        lines.push('Warmup');
+      } else if (step.type === 'Cooldown' && currentType !== 'Cooldown') {
+        lines.push('\nCooldown');
+      } else if (step.type === 'Active' && currentType === 'Warmup') {
+        lines.push('\nMain Set');
+      }
+
+      currentType = step.type;
+
+      // Format duration
+      let durationStr = '';
+      if (step.durationSeconds % 60 === 0) {
+        durationStr = `${step.durationSeconds / 60}m`;
+      } else {
+        durationStr = `${step.durationSeconds}s`;
+      }
+
+      // Format power
+      let powerStr = '';
+      if (step.power.range) {
+        const start = Math.round(step.power.range.start * 100);
+        const end = Math.round(step.power.range.end * 100);
+        powerStr = `${start}-${end}%`;
+      } else {
+        const val = Math.round((step.power.value || 0) * 100);
+        powerStr = `${val}%`;
+      }
+      
+      // Cadence (optional)
+      let cadenceStr = '';
+      if (step.cadence) {
+        cadenceStr = ` rpm=${step.cadence}`;
+      }
+      
+      // Text/Name (optional)
+      let textStr = '';
+      if (step.name) {
+        // Sanitize name: remove quotes and newlines
+        const cleanName = step.name.replace(/["\n\r]/g, '');
+        textStr = ` text='${cleanName}'`;
+      }
+
+      lines.push(`- ${durationStr} ${powerStr}${cadenceStr}${textStr}`);
+    });
+
+    return lines.join('\n');
   }
 }

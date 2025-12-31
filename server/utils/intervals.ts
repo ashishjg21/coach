@@ -119,6 +119,7 @@ export async function createIntervalsPlannedWorkout(
     type: string
     durationSec?: number
     tss?: number
+    workout_doc?: string
   }
 ): Promise<IntervalsPlannedWorkout> {
   const athleteId = integration.externalUserId || 'i0'
@@ -141,24 +142,33 @@ export async function createIntervalsPlannedWorkout(
   const second = String(data.date.getSeconds()).padStart(2, '0')
   const dateStr = `${year}-${month}-${day}T${hour}:${minute}:${second}`
   
-  const eventData = {
+  const workoutText = data.workout_doc || ''
+  const combinedDescription = data.description 
+    ? `${data.description}\n\n${workoutText}`.trim()
+    : workoutText
+  
+  const eventData: any = {
     start_date_local: dateStr,
     name: data.title,
-    description: data.description || '',
+    description: combinedDescription,
     category,
-    type: sport,
-    duration: data.durationSec,
-    tss: data.tss
+    type: sport
+  }
+
+  // If we don't have workout text, we can send duration/tss explicitly
+  if (!data.workout_doc) {
+    eventData.duration = data.durationSec
+    eventData.tss = data.tss
   }
   
-  console.log('[createIntervalsPlannedWorkout] 📤 Sending to Intervals.icu:', {
+  console.log('[createIntervalsPlannedWorkout] 📤 Sending to Intervals.icu (using description for workout text):', {
     athleteId,
-    url: `https://intervals.icu/api/v1/athlete/${athleteId}/events`,
-    eventData
+    url: `https://intervals.icu/api/v1/athlete/${athleteId}/events`
   })
   
   const url = `https://intervals.icu/api/v1/athlete/${athleteId}/events`
   const auth = Buffer.from(`API_KEY:${integration.accessToken}`).toString('base64')
+  const bodyStr = JSON.stringify(eventData)
     
   const response = await fetch(url, {
     method: 'POST',
@@ -166,7 +176,7 @@ export async function createIntervalsPlannedWorkout(
       'Authorization': `Basic ${auth}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(eventData)
+    body: bodyStr
   })
   
   if (!response.ok) {
@@ -221,6 +231,7 @@ export async function updateIntervalsPlannedWorkout(
     type?: string
     durationSec?: number
     tss?: number
+    workout_doc?: string
   }
 ): Promise<IntervalsPlannedWorkout> {
   const athleteId = integration.externalUserId || 'i0'
@@ -243,10 +254,28 @@ export async function updateIntervalsPlannedWorkout(
   const eventData: any = {}
   if (dateStr) eventData.start_date_local = dateStr
   if (data.title) eventData.name = data.title
-  if (data.description !== undefined) eventData.description = data.description
+  
+  // Handle workout doc / description merge
+  if (data.workout_doc) {
+    const workoutText = data.workout_doc
+    const description = data.description || ''
+    eventData.description = `${description}\n\n${workoutText}`.trim()
+    
+    // Don't send duration/tss if we have workout structure, let Intervals calculate it
+    // Unless specifically requested? Usually safer to let Intervals calc it.
+  } else {
+    if (data.description !== undefined) eventData.description = data.description
+    if (data.durationSec) eventData.duration = data.durationSec
+    if (data.tss) eventData.tss = data.tss
+  }
+  
   if (sport) eventData.type = sport
-  if (data.durationSec) eventData.duration = data.durationSec
-  if (data.tss) eventData.tss = data.tss
+  
+  console.log('[updateIntervalsPlannedWorkout] 📤 Updating on Intervals.icu:', {
+    athleteId,
+    eventId,
+    eventData
+  })
   
   const url = `https://intervals.icu/api/v1/athlete/${athleteId}/events/${eventId}`
   const auth = Buffer.from(`API_KEY:${integration.accessToken}`).toString('base64')
