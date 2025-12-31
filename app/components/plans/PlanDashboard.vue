@@ -221,7 +221,7 @@
                     <th class="px-4 py-2 text-left w-10"></th>
                     <th class="px-4 py-2 text-left">Day</th>
                     <th class="px-4 py-2 text-left">Workout</th>
-                    <th class="px-4 py-2 text-left">Duration / Metric / Target</th>
+                    <th class="px-4 py-2 text-left">Targets</th>
                     <th class="px-4 py-2 text-center">
                     <div class="flex items-center justify-center gap-1">
                         <UIcon name="i-heroicons-chart-bar" class="w-4 h-4 inline" title="Structured Workout" />
@@ -238,6 +238,7 @@
                     </div>
                     </th>
                     <th class="px-4 py-2 text-right">Status</th>
+                    <th class="w-10 px-2 py-2"></th>
                 </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -293,10 +294,23 @@
                         />
                     </div>
                     </td>
-                    <td class="px-4 py-3 text-right">
-                    <UBadge :color="workout.completed ? 'success' : 'neutral'" size="xs">
-                        {{ workout.completed ? 'Done' : 'Planned' }}
-                    </UBadge>
+                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                      <UBadge :color="workout.completed ? 'success' : 'neutral'" size="xs">
+                          {{ workout.completed ? 'Done' : 'Planned' }}
+                      </UBadge>
+                    </td>
+                    <td class="px-2 py-3 text-center w-10">
+                      <UTooltip :text="isLocalWorkout(workout) ? 'Publish to Intervals.icu' : 'Update on Intervals.icu'">
+                        <UButton
+                          v-if="workout.type !== 'Rest' && workout.type !== 'Active Recovery'"
+                          size="xs"
+                          :color="isLocalWorkout(workout) ? 'gray' : 'primary'"
+                          :variant="isLocalWorkout(workout) ? 'ghost' : 'soft'"
+                          :icon="isLocalWorkout(workout) ? 'i-heroicons-cloud-arrow-up' : 'i-heroicons-arrow-path'"
+                          :loading="publishingId === workout.id"
+                          @click.stop="publishWorkout(workout)"
+                        />
+                      </UTooltip>
                     </td>
                 </tr>
                 </tbody>
@@ -318,9 +332,20 @@
                 <div class="flex-1 min-w-0">
                     <div class="flex justify-between items-center mb-1">
                         <span class="text-xs font-semibold text-gray-500">{{ formatDay(workout.date) }}</span>
-                        <UBadge :color="workout.completed ? 'success' : 'neutral'" size="xs" variant="subtle">
-                            {{ workout.completed ? 'Done' : 'Planned' }}
-                        </UBadge>
+                        <div class="flex items-center gap-2">
+                          <UBadge :color="workout.completed ? 'success' : 'neutral'" size="xs" variant="subtle">
+                              {{ workout.completed ? 'Done' : 'Planned' }}
+                          </UBadge>
+                          <UButton
+                            v-if="workout.type !== 'Rest' && workout.type !== 'Active Recovery'"
+                            size="2xs"
+                            :color="isLocalWorkout(workout) ? 'gray' : 'primary'"
+                            :variant="isLocalWorkout(workout) ? 'ghost' : 'soft'"
+                            :icon="isLocalWorkout(workout) ? 'i-heroicons-cloud-arrow-up' : 'i-heroicons-arrow-path'"
+                            :loading="publishingId === workout.id"
+                            @click.stop="publishWorkout(workout)"
+                          />
+                        </div>
                     </div>
                     <div class="font-bold truncate text-sm">{{ workout.title }}</div>
                     <div class="text-xs text-muted mt-0.5 truncate">
@@ -416,6 +441,7 @@ const generatingStructureForWorkoutId = ref<string | null>(null)
 const generatingAllStructures = ref(false)
 const adapting = ref<string | null>(null)
 const draggingId = ref<string | null>(null)
+const publishingId = ref<string | null>(null)
 const toast = useToast()
 
 // Computed
@@ -481,6 +507,45 @@ function getSportColorClass(type: string) {
         'Rest': 'border-gray-200 dark:border-gray-700'
     }
     return map[type] || 'border-gray-200'
+}
+
+function isLocalWorkout(workout: any) {
+  return workout.syncStatus === 'LOCAL_ONLY' || 
+         (workout.externalId && (workout.externalId.startsWith('ai_gen_') || workout.externalId.startsWith('ai-gen-')))
+}
+
+async function publishWorkout(workout: any) {
+  if (!workout.id) return
+  
+  publishingId.value = workout.id
+  try {
+    const response: any = await $fetch(`/api/workouts/planned/${workout.id}/publish`, {
+      method: 'POST'
+    })
+    
+    // Update local state
+    if (response.success && response.workout) {
+      // Direct mutation of the prop object (Vue reactivity handles this)
+      workout.syncStatus = response.workout.syncStatus
+      workout.externalId = response.workout.externalId
+      workout.lastSyncedAt = response.workout.lastSyncedAt
+      
+      toast.add({
+        title: isLocalWorkout(workout) ? 'Published' : 'Updated', // Check logic might be inverted here since we just updated it? No, checking response state.
+        description: response.message || 'Workout synced with Intervals.icu.',
+        color: 'success'
+      })
+    }
+  } catch (error: any) {
+    console.error('Failed to publish/sync workout:', error)
+    toast.add({
+      title: 'Sync Failed',
+      description: error.data?.message || 'Failed to sync workout with Intervals.icu',
+      color: 'error'
+    })
+  } finally {
+    publishingId.value = null
+  }
 }
 
 function navigateToWorkout(workoutId: string) {
