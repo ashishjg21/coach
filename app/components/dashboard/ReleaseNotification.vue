@@ -1,3 +1,24 @@
+<script setup lang="ts">
+import { h } from 'vue'
+
+const { hasNewRelease, currentReleaseContent, isReleaseModalOpen, checkForNewRelease, markAsSeen, openReleaseModal } = useReleaseNotes()
+
+// Custom components to override default Prose components and force small text
+const components = {
+  h1: (props: any, { slots }: any) => h('h1', { ...props, class: 'text-lg font-bold my-2' }, slots.default?.()),
+  h2: (props: any, { slots }: any) => h('h2', { ...props, class: 'text-base font-bold my-2' }, slots.default?.()),
+  h3: (props: any, { slots }: any) => h('h3', { ...props, class: 'text-sm font-bold my-1' }, slots.default?.()),
+  p: (props: any, { slots }: any) => h('p', { ...props, class: 'text-sm my-2 leading-relaxed' }, slots.default?.()),
+  li: (props: any, { slots }: any) => h('li', { ...props, class: 'text-sm my-0.5' }, slots.default?.()),
+  ul: (props: any, { slots }: any) => h('ul', { ...props, class: 'list-disc list-inside my-2' }, slots.default?.()),
+  ol: (props: any, { slots }: any) => h('ol', { ...props, class: 'list-decimal list-inside my-2' }, slots.default?.())
+}
+
+onMounted(() => {
+  checkForNewRelease()
+})
+</script>
+
 <template>
   <ClientOnly>
     <!-- Gift Icon Notification -->
@@ -30,8 +51,9 @@
       </template>
 
       <template #body>
-        <div class="prose prose-sm dark:prose-invert max-w-none prose-h1:text-xl prose-h2:text-lg prose-h3:text-base prose-p:text-sm prose-headings:my-2 prose-p:my-2">
-          <MDC :value="currentReleaseContent || ''" />
+        <!-- We use a div wrapper but rely on explicit component overrides for styling -->
+        <div class="max-w-none text-gray-700 dark:text-gray-300">
+          <MDC :value="currentReleaseContent || ''" :components="components" />
         </div>
       </template>
 
@@ -45,10 +67,6 @@
   </ClientOnly>
 </template>
 
-<script setup lang="ts">
-const { hasNewRelease, currentReleaseContent, isReleaseModalOpen, checkForNewRelease, markAsSeen, openReleaseModal } = useReleaseNotes()
-
-onMounted(() => {
-  checkForNewRelease()
-})
-</script>
+<style scoped>
+/* Scoped styles can still be useful for other elements, but MDC components are now handled by render functions */
+</style>
