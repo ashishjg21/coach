@@ -7,6 +7,7 @@
         </template>
         <template #right>
           <div class="flex items-center gap-3">
+            <DashboardReleaseNotification />
             <UButton
               to="/workouts/upload"
               icon="i-heroicons-cloud-arrow-up"
