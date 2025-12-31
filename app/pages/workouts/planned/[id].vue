@@ -25,6 +25,16 @@
           
           <UButton
             v-if="workout"
+            color="primary"
+            variant="ghost"
+            :icon="isLocalWorkout ? 'i-heroicons-cloud-arrow-up' : 'i-heroicons-arrow-path'"
+            @click="showPublishModal = true"
+          >
+            <span class="hidden sm:inline">{{ isLocalWorkout ? 'Publish' : 'Update Intervals' }}</span>
+          </UButton>
+
+          <UButton
+            v-if="workout"
             color="neutral"
             variant="ghost"
             icon="i-heroicons-share"
@@ -421,22 +431,6 @@
                     label="Garmin (.fit)"
                     @click="downloadWorkout('fit')"
                   />
-                  <UButton
-                    block
-                    color="gray"
-                    variant="ghost"
-                    icon="i-heroicons-chart-bar"
-                    label="MRC (%FTP)"
-                    @click="downloadWorkout('mrc')"
-                  />
-                  <UButton
-                    block
-                    color="gray"
-                    variant="ghost"
-                    icon="i-heroicons-bolt"
-                    label="ERG (Watts)"
-                    @click="downloadWorkout('erg')"
-                  />
                 </div>
               </template>        <template #footer>
           <UButton
@@ -448,6 +442,44 @@
         </template>
       </UModal>
   
+      <UModal 
+        v-if="showPublishModal" 
+        v-model:open="showPublishModal" 
+        :title="isLocalWorkout ? 'Publish to Intervals.icu' : 'Update on Intervals.icu'"
+        :description="isLocalWorkout ? 'Sync this workout to your Intervals.icu calendar.' : 'Push local changes to Intervals.icu.'"
+      >
+        <template #body>
+          <div class="p-6 space-y-4">
+            <p class="text-sm text-gray-600 dark:text-gray-300">
+              This will {{ isLocalWorkout ? 'create a new' : 'update the' }} workout on your Intervals.icu calendar for <strong>{{ formatDate(workout.date) }}</strong>.
+            </p>
+            <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg text-sm">
+              <ul class="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-400">
+                <li>Structured intervals will be {{ isLocalWorkout ? 'included' : 'updated' }}</li>
+                <li>TSS and duration targets will be synced</li>
+                <li>Any coaching messages will be added</li>
+              </ul>
+            </div>
+          </div>
+        </template>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton
+              label="Cancel"
+              color="neutral"
+              variant="ghost"
+              @click="showPublishModal = false"
+            />
+            <UButton
+              :label="isLocalWorkout ? 'Publish Workout' : 'Update Workout'"
+              color="primary"
+              :loading="publishing"
+              @click="publishWorkout"
+            />
+          </div>
+        </template>
+      </UModal>
+
       <UModal
         v-model:open="isShareModalOpen"    title="Share Workout"
     description="Anyone with this link can view this planned workout. The link will expire in 30 days."
@@ -524,6 +556,7 @@ const generatingMessages = ref(false)
 const showAdjustModal = ref(false)
 const showMessageModal = ref(false)
 const showDownloadModal = ref(false)
+const showPublishModal = ref(false)
 const adjustForm = reactive({
   durationMinutes: 60,
   intensity: 'moderate',
@@ -542,6 +575,47 @@ let pollingInterval: NodeJS.Timeout | null = null
 const isShareModalOpen = ref(false)
 const shareLink = ref('')
 const generatingShareLink = ref(false)
+const publishing = ref(false)
+
+const isLocalWorkout = computed(() => {
+  if (!workout.value) return false
+  // Show publish if explicitly marked as LOCAL_ONLY, PENDING, FAILED
+  // OR if externalId looks like a generated one (starts with ai_gen_ or ai-gen-)
+  // OR if syncStatus is missing but externalId is generated
+  return workout.value.syncStatus !== 'SYNCED' || 
+         (workout.value.externalId && (workout.value.externalId.startsWith('ai_gen_') || workout.value.externalId.startsWith('ai-gen-')))
+})
+
+async function publishWorkout() {
+  if (!workout.value?.id) return
+  
+  publishing.value = true
+  try {
+    const response: any = await $fetch(`/api/workouts/planned/${workout.value.id}/publish`, {
+      method: 'POST'
+    })
+    
+    // Update local state
+    if (response.success && response.workout) {
+      workout.value = response.workout
+      showPublishModal.value = false
+      
+      toast.add({
+        title: 'Published',
+        description: 'Workout published to Intervals.icu successfully.',
+        color: 'success'
+      })
+    }  } catch (error: any) {
+    console.error('Failed to publish workout:', error)
+    toast.add({
+      title: 'Publish Failed',
+      description: error.data?.message || 'Failed to publish workout to Intervals.icu',
+      color: 'error'
+    })
+  } finally {
+    publishing.value = false
+  }
+}
 
 function downloadWorkout(format: string) {
   if (!workout.value?.id) return
