@@ -4,7 +4,11 @@ import { FitWriter } from '@markw65/fit-file-writer';
 interface WorkoutStep {
   type: 'Warmup' | 'Active' | 'Rest' | 'Cooldown';
   durationSeconds: number;
-  power: {
+  power?: {
+    value?: number;
+    range?: { start: number; end: number };
+  };
+  heartRate?: {
     value?: number;
     range?: { start: number; end: number };
   };
@@ -41,6 +45,9 @@ export class WorkoutConverter {
     workout.steps.forEach(step => {
       // Safely access power
       const power = step.power || { value: 0 };
+      
+      // If we only have Heart Rate, ZWO is not the best format but we can try to approximate or just use 0 power
+      // Zwift is primarily power-based.
 
       // ZWO uses percentage of FTP (0.0 - 1.0+)
       if (power.range) {
@@ -124,38 +131,37 @@ export class WorkoutConverter {
       // BUT for workout steps, we define intensity target.
       // target_type: 0 (speed), 1 (heart_rate), 2 (open), 3 (cadence), 4 (power)
       
-      // Values are often:
-      // 1000 + %FTP * 100 ? No.
-      // Usually: 
-      // If custom_target_value_low/high are used with target_type=power, units are Watts if absolute.
-      // If using %FTP, valid values are often in the range of 0-1000 where 1000=100%? Or 100=100%?
-      // Many implementations use: value = % * 100. (e.g. 95% = 95).
+      let targetType: 'power' | 'heart_rate' | 'open' = 'power'; // 4
+      let customTargetValueLow = 0;
+      let customTargetValueHigh = 0;
       
-      // Let's assume standard Garmin convention:
-      // target_value: 1000 = 100% FTP?
-      // Actually, standard is Watts. 
-      // BUT we want portable %FTP.
-      // Garmin FIT SDK allows `target_type=4` (Power).
-      // And `custom_target_value_low` / `high`.
-      
-      // Since we might not know the user's FTP at download time perfectly (or want it portable), 
-      // we usually export absolute Watts if we know FTP, or rely on device settings.
-      
-      // Let's calculate ABSOLUTE WATTS if FTP is provided, otherwise fallback to a default 250W.
-      const ftp = workout.ftp || 250;
-      
-      let powerLow = 0;
-      let powerHigh = 0;
-
-      if (isRamp && power.range) {
-        powerLow = Math.round(power.range.start * ftp);
-        powerHigh = Math.round(power.range.end * ftp);
+      // Check if HR based
+      if (!power.value && !power.range && step.heartRate) {
+         // targetType = 'heart_rate'; // 1
+         
+         // HR values are typically BPM in FIT files, or % max HR? 
+         // FIT SDK usually expects BPM for absolute values.
+         // But we store % LTHR.
+         // We'd need the user's LTHR to convert to BPM.
+         // Or we use zone numbers (1-5).
+         
+         // For now, let's assume we can't easily export HR targets without knowing absolute BPM zones reliably here.
+         // We'll skip complex HR export logic for FIT for now or use open targets.
+         targetType = 'open'; // 2
       } else {
-        // Steady: Low and High define the zone window.
-        // Usually target - 5% to target + 5%
-        const val = (power.value || 0) * ftp;
-        powerLow = Math.round(val - 10);
-        powerHigh = Math.round(val + 10);
+        // Let's calculate ABSOLUTE WATTS if FTP is provided, otherwise fallback to a default 250W.
+        const ftp = workout.ftp || 250;
+        
+        if (isRamp && power.range) {
+          customTargetValueLow = Math.round(power.range.start * ftp);
+          customTargetValueHigh = Math.round(power.range.end * ftp);
+        } else {
+          // Steady: Low and High define the zone window.
+          // Usually target - 5% to target + 5%
+          const val = (power.value || 0) * ftp;
+          customTargetValueLow = Math.round(val - 10);
+          customTargetValueHigh = Math.round(val + 10);
+        }
       }
 
       fitWriter.writeMessage('workout_step', {
@@ -163,10 +169,10 @@ export class WorkoutConverter {
         wkt_step_name: step.name ? step.name.substring(0, 15) : undefined,
         duration_type: 'time', // 0
         duration_value: step.durationSeconds * 1000, // ms
-        target_type: 'power', // 4
+        target_type: targetType, 
         // Let's use raw Watts.
-        custom_target_value_low: powerLow,
-        custom_target_value_high: powerHigh,
+        custom_target_value_low: customTargetValueLow,
+        custom_target_value_high: customTargetValueHigh,
         
         intensity: step.type === 'Active' ? 'active' : step.type === 'Rest' ? 'rest' : step.type === 'Warmup' ? 'warmup' : 'cooldown'
       });
@@ -310,32 +316,67 @@ export class WorkoutConverter {
         durationStr = `${step.durationSeconds}s`;
       }
 
-      // Format power
-      let powerStr = '';
-      if (power.range) {
-        const start = Math.round(power.range.start * 100);
-        const end = Math.round(power.range.end * 100);
-        powerStr = `${start}-${end}%`;
-      } else {
-        const val = Math.round((power.value || 0) * 100);
-        powerStr = `${val}%`;
+      // Format power or heart rate
+      let intensityStr = '';
+      
+      // Check for power first
+      if (power.value || power.range) {
+        if (power.range) {
+          const start = Math.round(power.range.start * 100);
+          const end = Math.round(power.range.end * 100);
+          intensityStr = `${start}-${end}%`;
+        } else {
+          const val = Math.round((power.value || 0) * 100);
+          intensityStr = `${val}%`;
+        }
+      } 
+      // Then check for Heart Rate
+      else if (step.heartRate) {
+        // Heart Rate for Intervals.icu
+        // Format: 85% LTHR (or % HR)
+        // If range: 80-90% LTHR
+        if (step.heartRate.range) {
+          const start = Math.round(step.heartRate.range.start * 100);
+          const end = Math.round(step.heartRate.range.end * 100);
+          intensityStr = `${start}-${end}% LTHR`;
+        } else {
+          const val = Math.round((step.heartRate.value || 0) * 100);
+          intensityStr = `${val}% LTHR`;
+        }
+      } 
+      else {
+        // Default to low intensity if nothing specified
+        intensityStr = '50%'; 
       }
       
       // Cadence (optional)
       let cadenceStr = '';
       if (step.cadence) {
-        cadenceStr = ` rpm=${step.cadence}`;
+        cadenceStr = ` ${step.cadence}rpm`;
       }
       
       // Text/Name (optional)
-      let textStr = '';
+      // Intervals.icu parsing rule: "Everything before the first duration/intensity becomes the cue."
+      // We will place the name BEFORE the duration/intensity to act as the cue/text prompt.
+      // Format: "- [StepName] [Duration] [Intensity] [Cadence]"
+      
+      let line = '-';
+      
       if (step.name) {
-        // Sanitize name: remove quotes and newlines
-        const cleanName = step.name.replace(/["\n\r]/g, '');
-        textStr = ` text='${cleanName}'`;
+        const cleanName = step.name.replace(/["\n\r]/g, '').trim();
+        if (cleanName) {
+          line += ` ${cleanName}`;
+        }
       }
+      
+      line += ` ${durationStr} ${intensityStr}${cadenceStr}`;
+      
+      lines.push(line);
+    });
 
-      lines.push(`- ${durationStr} ${powerStr}${cadenceStr}${textStr}`);
+    return lines.join('\n');
+  }
+}
     });
 
     return lines.join('\n');

@@ -159,6 +159,14 @@ export async function createIntervalsPlannedWorkout(
   if (!data.workout_doc) {
     eventData.duration = data.durationSec
     eventData.tss = data.tss
+  } else {
+    // If we have workout structure, Intervals.icu might calculate TSS itself from the structure.
+    // However, if we have a target TSS estimated, we should probably send it to ensure it appears in calendars correctly.
+    // Intervals.icu usually recalculates based on the structure provided in the description/doc.
+    // But sending tss might act as a target/planned value.
+    if (data.tss) {
+      eventData.tss = data.tss
+    }
   }
   
   console.log('[createIntervalsPlannedWorkout] 📤 Sending to Intervals.icu (using description for workout text):', {
@@ -426,9 +434,9 @@ export async function fetchIntervalsAthleteProfile(integration: Integration) {
   }
   
   // Extract FTP and other metrics from type settings
-  let ftp = null
-  let lthr = null
-  let maxHR = null
+  let ftp: number | null = null
+  let lthr: number | null = null
+  let maxHR: number | null = null
   let hrZones = null
   let powerZones = null
   
