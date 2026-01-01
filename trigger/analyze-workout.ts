@@ -25,10 +25,15 @@ interface StructuredAnalysis {
   weaknesses?: string[];
   scores?: {
     overall: number;
+    overall_explanation: string;
     technical: number;
+    technical_explanation: string;
     effort: number;
+    effort_explanation: string;
     pacing: number;
+    pacing_explanation: string;
     execution: number;
+    execution_explanation: string;
   };
   metrics_summary?: {
     avg_power?: number;
@@ -343,8 +348,24 @@ function buildWorkoutAnalysisData(workout: any) {
   if (workout.maxHr) data.max_hr = workout.maxHr
   
   // Cadence
-  if (workout.averageCadence) data.avg_cadence = workout.averageCadence
-  if (workout.maxCadence) data.max_cadence = workout.maxCadence
+  if (workout.averageCadence) {
+    // If running, ensure cadence is in steps per minute (SPM).
+    // Most devices export running cadence as "steps per foot" or RPM (e.g. 80-90),
+    // but runners expect total steps per minute (e.g. 160-180).
+    // If we see a running cadence < 120, it's likely RPM and needs to be doubled.
+    if (workout.type === 'Run' && workout.averageCadence < 120) {
+      data.avg_cadence = workout.averageCadence * 2
+    } else {
+      data.avg_cadence = workout.averageCadence
+    }
+  }
+  if (workout.maxCadence) {
+    if (workout.type === 'Run' && workout.maxCadence < 120) {
+      data.max_cadence = workout.maxCadence * 2
+    } else {
+      data.max_cadence = workout.maxCadence
+    }
+  }
   
   // Speed
   if (workout.averageSpeed) data.avg_speed_ms = workout.averageSpeed / 3.6 // km/h to m/s
