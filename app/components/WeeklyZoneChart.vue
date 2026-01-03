@@ -156,7 +156,7 @@ const chartOptions = computed(() => {
         stacked: true,
         grid: { display: false },
         ticks: { 
-          font: { size: 9, weight: 'bold' },
+          font: { size: 9, weight: 'bold' as const },
           color: isDark ? '#9ca3af' : '#6b7280'
         }
       },

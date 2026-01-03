@@ -17,7 +17,7 @@
                   {{ item.step.name }}
                 </span>
                 <div v-if="item.step" class="flex gap-1">
-                  <UBadge size="xs" variant="soft" color="gray" class="text-[8px] px-1 py-0 uppercase">
+                  <UBadge size="xs" variant="soft" color="neutral" class="text-[8px] px-1 py-0 uppercase">
                     {{ item.step.type }}
                   </UBadge>
                   <UBadge size="xs" variant="soft" :color="getZoneColor(item.zone)" class="text-[8px] px-1 py-0 uppercase">
@@ -108,15 +108,15 @@ function getZone(power: number): string {
   return 'Z6'
 }
 
-function getZoneColor(zone?: string) {
-  const colors: Record<string, string> = {
-    'Z1': 'gray',
+function getZoneColor(zone?: string): 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral' {
+  const colors: Record<string, 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'> = {
+    'Z1': 'neutral',
     'Z2': 'primary',
     'Z3': 'success',
     'Z4': 'warning',
-    'Z5': 'orange',
+    'Z5': 'warning',
     'Z6': 'error'
   }
-  return colors[zone || ''] || 'gray'
+  return colors[zone || ''] || 'neutral'
 }
 </script>

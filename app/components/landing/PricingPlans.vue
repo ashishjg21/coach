@@ -5,7 +5,7 @@
       :key="index"
       class="flex flex-col relative overflow-hidden"
       :class="{ 'ring-2 ring-primary border-primary': plan.popular, 'opacity-90 hover:opacity-100 transition-opacity': !plan.popular }"
-      :ui="{ body: { base: 'flex-grow' } }"
+      :ui="{ body: 'flex-grow' }"
     >
       <div v-if="plan.popular" class="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
         POPULAR
@@ -29,7 +29,7 @@
 
       <template #footer>
         <UButton 
-          :color="plan.popular ? 'primary' : 'gray'" 
+          :color="plan.popular ? 'primary' : 'neutral'" 
           :variant="plan.popular ? 'solid' : 'outline'" 
           block 
           :to="plan.link || '/login'"

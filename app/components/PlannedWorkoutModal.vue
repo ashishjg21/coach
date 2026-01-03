@@ -68,7 +68,7 @@
             <h4 class="font-semibold text-sm text-gray-500 dark:text-gray-400">Workout Structure</h4>
             <UButton 
               size="xs" 
-              color="gray" 
+              color="neutral" 
               variant="ghost" 
               icon="i-heroicons-arrow-path" 
               :loading="generating" 
@@ -403,7 +403,32 @@ const showWorkoutSelector = ref(false)
 const selectedWorkoutId = ref<string | null>(null)
 const availableWorkouts = ref<any[]>([])
 const loadingWorkouts = ref(false)
+const generating = ref(false)
 const showManualEntry = ref(false)
+
+async function generateStructure() {
+  if (!props.plannedWorkout) return
+  
+  generating.value = true
+  try {
+    await $fetch(`/api/planned-workouts/${props.plannedWorkout.id}/generate-structure`, {
+      method: 'POST' as any
+    })
+    
+    // Refresh planned workout data
+    const updated = await $fetch(`/api/planned-workouts/${props.plannedWorkout.id}`)
+    if (updated) {
+        // We can't directly mutate props, so we might need a local copy or emit an event
+        // For now, let's just refresh the parent
+        emit('completed') // Using this to trigger refresh in parent
+    }
+  } catch (error) {
+    console.error('Error generating workout structure:', error)
+  } finally {
+    generating.value = false
+  }
+}
+
 const manualWorkout = ref({
   title: '',
   durationMinutes: '',

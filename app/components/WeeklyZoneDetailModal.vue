@@ -124,12 +124,15 @@ const zoneBreakdown = computed(() => {
   
   if (total === 0) return []
   
-  return zones.map((zone: any, index: number) => ({
-    name: zone.name,
-    time: aggregatedZones.value[index],
-    percentage: (aggregatedZones.value[index] / total) * 100,
-    color: zoneColors[index] || '#999999'
-  })).filter((z: any) => z.time > 0)
+  return zones.map((zone: any, index: number) => {
+    const timeInZone = aggregatedZones.value[index] || 0
+    return {
+      name: zone.name,
+      time: timeInZone,
+      percentage: total > 0 ? (timeInZone / total) * 100 : 0,
+      color: zoneColors[index] || '#999999'
+    }
+  }).filter((z: any) => z.time > 0)
 })
 
 const workoutTypeBreakdown = computed(() => {

@@ -304,7 +304,7 @@
                         <UButton
                           v-if="workout.type !== 'Rest' && workout.type !== 'Active Recovery'"
                           size="xs"
-                          :color="isLocalWorkout(workout) ? 'gray' : 'primary'"
+                          color="neutral"
                           :variant="isLocalWorkout(workout) ? 'ghost' : 'soft'"
                           :icon="isLocalWorkout(workout) ? 'i-heroicons-cloud-arrow-up' : 'i-heroicons-arrow-path'"
                           :loading="publishingId === workout.id"
@@ -338,8 +338,8 @@
                           </UBadge>
                           <UButton
                             v-if="workout.type !== 'Rest' && workout.type !== 'Active Recovery'"
-                            size="2xs"
-                            :color="isLocalWorkout(workout) ? 'gray' : 'primary'"
+                            size="xs"
+                            color="neutral"
                             :variant="isLocalWorkout(workout) ? 'ghost' : 'soft'"
                             :icon="isLocalWorkout(workout) ? 'i-heroicons-cloud-arrow-up' : 'i-heroicons-arrow-path'"
                             :loading="publishingId === workout.id"

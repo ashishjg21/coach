@@ -100,7 +100,9 @@ const zones = computed(() => {
         // ...
         // Z6: 1.20+
         const zone = distribution.find(z => intensity <= z.max) || distribution[distribution.length - 1]
-        zone.duration += duration
+        if (zone) {
+          zone.duration += duration
+        }
       })
     }
   })

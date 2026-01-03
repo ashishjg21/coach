@@ -89,7 +89,7 @@
               <div class="flex items-center justify-end gap-2" @click.stop>
                 <UButton
                   icon="i-heroicons-pencil-square"
-                  color="gray"
+                  color="neutral"
                   variant="ghost"
                   size="xs"
                   @click="$emit('edit', event)"

@@ -2,7 +2,7 @@
   <ClientOnly>
     <UButton
       icon="i-heroicons-moon"
-      color="gray"
+      color="neutral"
       variant="ghost"
       aria-label="Theme"
       class="opacity-50 cursor-not-allowed"

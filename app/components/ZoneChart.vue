@@ -66,7 +66,7 @@
           >
             <div
               class="w-4 h-4 rounded"
-              :style="{ backgroundColor: zoneColors[index] }"
+              :style="{ backgroundColor: getZoneColor(Number(index)) }"
             ></div>
             <div class="text-xs">
               <div class="font-medium text-gray-700 dark:text-gray-300">{{ zone.name }}</div>
@@ -110,16 +110,16 @@
               <div class="flex justify-between text-xs mb-1">
                 <span class="font-medium text-gray-600 dark:text-gray-400">{{ zone.name }}</span>
                 <span class="text-gray-500 dark:text-gray-400">
-                  {{ formatDuration(timeInZones[index] || 0) }} 
-                  ({{ totalTime > 0 ? ((timeInZones[index] || 0) / totalTime * 100).toFixed(1) : 0 }}%)
+                  {{ formatDuration(timeInZones[Number(index)] || 0) }} 
+                  ({{ totalTime > 0 ? ((timeInZones[Number(index)] || 0) / totalTime * 100).toFixed(1) : 0 }}%)
                 </span>
               </div>
               <div class="h-2 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div
                   class="h-full transition-all duration-500"
                   :style="{ 
-                    width: (totalTime > 0 ? ((timeInZones[index] || 0) / totalTime * 100) : 0) + '%',
-                    backgroundColor: zoneColors[index]
+                    width: (totalTime > 0 ? ((timeInZones[Number(index)] || 0) / totalTime * 100) : 0) + '%',
+                    backgroundColor: getZoneColor(Number(index))
                   }"
                 ></div>
               </div>
@@ -167,6 +167,10 @@ const zoneColors = [
   'rgb(249, 115, 22)',   // Z4 - Orange (Threshold)
   'rgb(239, 68, 68)',    // Z5 - Red (Anaerobic/VO2 Max)
 ]
+
+function getZoneColor(index: number): string {
+  return zoneColors[index] || '#999999'
+}
 
 // Computed properties
 const hasStreamData = computed(() => {
@@ -369,7 +373,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
             if (activeZones.length > 0) {
               return `Active Zone: ${activeZones[0].dataset.label}`
             }
-            return null
+            return ''
           }
         }
       }
@@ -451,7 +455,7 @@ function formatDuration(seconds: number): string {
 
 // Fetch data
 async function fetchData() {
-  console.log('ZoneChart: fetchData called', { workoutId: props.workoutId, hasWorkoutData: !!props.workoutData })
+  console.log('ZoneChart: fetchData called', { workoutId: props.workoutId })
   loading.value = true
   error.value = null
   

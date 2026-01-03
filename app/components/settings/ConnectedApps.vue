@@ -7,7 +7,7 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Intervals.icu -->
-        <UCard :ui="{ body: { base: 'flex flex-col h-full justify-between gap-4' } }">
+        <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
               <UIcon name="i-heroicons-chart-bar" class="w-6 h-6 text-blue-600" />
@@ -63,7 +63,7 @@
         </UCard>
 
         <!-- WHOOP -->
-        <UCard :ui="{ body: { base: 'flex flex-col h-full justify-between gap-4' } }">
+        <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
               <UIcon name="i-heroicons-heart" class="w-6 h-6 text-red-600" />
@@ -121,7 +121,7 @@
         </UCard>
 
         <!-- Withings -->
-        <UCard :ui="{ body: { base: 'flex flex-col h-full justify-between gap-4' } }">
+        <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center shrink-0">
               <UIcon name="i-heroicons-scale" class="w-6 h-6 text-cyan-600" />
@@ -167,7 +167,7 @@
         </UCard>
 
         <!-- Yazio -->
-        <UCard :ui="{ body: { base: 'flex flex-col h-full justify-between gap-4' } }">
+        <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
               <UIcon name="i-heroicons-cake" class="w-6 h-6 text-green-600" />
@@ -213,7 +213,7 @@
         </UCard>
 
         <!-- Hevy -->
-        <UCard :ui="{ body: { base: 'flex flex-col h-full justify-between gap-4' } }">
+        <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center shrink-0">
               <UIcon name="i-heroicons-trophy" class="w-6 h-6 text-indigo-600" />
@@ -259,7 +259,7 @@
         </UCard>
 
         <!-- Strava -->
-        <UCard :ui="{ body: { base: 'flex flex-col h-full justify-between gap-4' } }">
+        <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center shrink-0">
               <UIcon name="i-heroicons-bolt" class="w-6 h-6 text-orange-600" />

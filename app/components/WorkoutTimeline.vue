@@ -56,7 +56,7 @@
           <div class="px-4 py-2" style="height: 150px;">
             <Line
               :data="getChartData(metric)"
-              :options="getChartOptions(metric, index === selectedMetrics.length - 1)"
+              :options="getChartOptions(metric, index === selectedMetrics.length - 1) as any"
             />
           </div>
         </div>
@@ -264,7 +264,7 @@ const cursorLinePlugin = {
 
 function getChartOptions(metricKey: string, isLastChart: boolean = false) {
   const metric = availableMetrics.value.find(m => m.key === metricKey)
-  const isDark = document.documentElement.classList.contains('dark')
+  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
   
   return {
     responsive: true,

@@ -244,8 +244,8 @@
                 <div class="text-sm text-muted mb-2">{{ getBlockDescription(block.type) }}</div>
                 <div class="flex flex-wrap gap-2">
                   <UBadge size="xs" color="primary" variant="subtle">Focus: {{ formatFocus(block.primaryFocus) }}</UBadge>
-                  <UBadge size="xs" color="gray" variant="subtle">{{ block.type }}</UBadge>
-                  <UBadge v-if="block.name.includes('[Race:')" size="xs" color="purple" variant="soft" icon="i-heroicons-flag">
+                  <UBadge size="xs" color="neutral" variant="subtle">{{ block.type }}</UBadge>
+                  <UBadge v-if="block.name.includes('[Race:')" size="xs" color="info" variant="soft" icon="i-heroicons-flag">
                     {{ block.name.match(/\[Race: (.*?)\]/)?.[1] || 'Race' }}
                   </UBadge>
                 </div>
@@ -383,13 +383,13 @@ async function fetchGoals() {
 function selectGoal(goal: any) {
   selectedGoal.value = goal
   if (goal.eventDate) {
-    endDate.value = new Date(goal.eventDate).toISOString().split('T')[0]
+    endDate.value = new Date(goal.eventDate).toISOString().split('T')[0] || ''
     isEventBased.value = true
   } else {
     // Default to 12 weeks if no event date
     const d = new Date()
     d.setDate(d.getDate() + 84) 
-    endDate.value = d.toISOString().split('T')[0]
+    endDate.value = d.toISOString().split('T')[0] || ''
     isEventBased.value = false
   }
 }
@@ -401,9 +401,9 @@ function onGoalCreated() {
 }
 
 function getPriorityColor(p: string) {
-  if (p === 'HIGH') return 'red'
-  if (p === 'MEDIUM') return 'orange'
-  return 'green'
+  if (p === 'HIGH') return 'error'
+  if (p === 'MEDIUM') return 'warning'
+  return 'success'
 }
 
 function formatDate(date: string) {
@@ -460,6 +460,12 @@ function recommendStrategy() {
 async function initializePlan() {
   initializing.value = true
   
+  if (!startDate.value) {
+    toast.add({ title: 'Please select a start date', color: 'error' })
+    initializing.value = false
+    return
+  }
+
   // Calculate end date if duration mode
   let finalEndDate = endDate.value
   if (!isEventBased.value) {

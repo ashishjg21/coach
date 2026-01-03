@@ -208,7 +208,7 @@
 
 <script setup lang="ts">
 import { format, isToday as isTodayFn, isSameMonth } from 'date-fns'
-import type { CalendarActivity } from '~/types/calendar'
+import type { CalendarActivity } from '../../types/calendar'
 
 const props = defineProps<{
   date: Date

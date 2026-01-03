@@ -1,14 +1,14 @@
 <template>
-  <UPopover :ui="{ width: 'w-72' }">
+  <UPopover :ui="{ content: 'w-72' }">
     <UButton
       icon="i-heroicons-view-columns"
-      color="gray"
+      color="neutral"
       variant="ghost"
       size="sm"
       label="Columns"
     />
 
-    <template #panel>
+    <template #content>
       <div class="p-4 space-y-4">
         <div class="space-y-2">
           <UInput
@@ -29,7 +29,7 @@
             <div class="flex items-center gap-2 overflow-hidden">
               <UCheckbox
                 :model-value="isSelected(col.id)"
-                @update:model-value="(val) => toggleColumn(col.id, val)"
+                @update:model-value="(val) => toggleColumn(col.id, val === true)"
               />
               <span class="text-sm truncate" :title="col.header">
                 {{ col.header }}
@@ -44,16 +44,16 @@
               <UButton
                 icon="i-heroicons-chevron-up"
                 variant="ghost"
-                color="gray"
-                size="2xs"
+                color="neutral"
+                size="xs"
                 :disabled="index === 0"
                 @click.stop="moveColumn(index, -1)"
               />
               <UButton
                 icon="i-heroicons-chevron-down"
                 variant="ghost"
-                color="gray"
-                size="2xs"
+                color="neutral"
+                size="xs"
                 :disabled="index === displayColumns.length - 1"
                 @click.stop="moveColumn(index, 1)"
               />
@@ -65,7 +65,7 @@
             <UButton
                 size="xs"
                 variant="ghost"
-                color="gray"
+                color="neutral"
                 label="Reset"
                 @click="reset"
             />
@@ -169,10 +169,12 @@ function moveColumn(index: number, direction: number) {
   
   // Swap
   const temp = current[index]
-  current[index] = current[newIndex]
-  current[newIndex] = temp
-  
-  emit('update:modelValue', current)
+  const target = current[newIndex]
+  if (temp !== undefined && target !== undefined) {
+    current[index] = target
+    current[newIndex] = temp
+    emit('update:modelValue', current)
+  }
 }
 
 function reset() {

@@ -9,7 +9,7 @@
     </div>
     <div class="flex items-center gap-4">
       <UButton 
-        color="black" 
+        color="neutral" 
         variant="solid" 
         size="xs" 
         label="Exit Impersonation" 

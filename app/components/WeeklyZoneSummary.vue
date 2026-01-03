@@ -34,8 +34,8 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   autoLoad: true,
-  userZones: null,
-  streams: null
+  userZones: undefined,
+  streams: () => []
 })
 
 defineEmits<{

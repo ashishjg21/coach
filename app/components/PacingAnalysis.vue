@@ -184,7 +184,32 @@ const endpoint = computed(() => props.publicToken
   : `/api/workouts/${props.workoutId}/streams`
 )
 
-const { data: streams, pending: loading, error: fetchError } = await useFetch(
+interface PacingStreams {
+  avgPacePerKm: number
+  paceVariability: number
+  pacingStrategy: {
+    strategy: string
+    description: string
+    firstHalfPace: number
+    secondHalfPace: number
+    paceDifference: number
+    evenness: number
+  }
+  lapSplits: Array<{
+    lap: number
+    distance: number
+    time: number
+    pace: string
+    paceSeconds: number
+  }>
+  surges: Array<{
+    time: number
+    increase: number
+  }>
+  time: number[]
+}
+
+const { data: streams, pending: loading, error: fetchError } = await useFetch<PacingStreams>(
   endpoint,
   {
     lazy: true
@@ -205,6 +230,7 @@ const showSplits = ref(false)
 function getSurgePosition(surgeTime: number): number {
   if (!streams.value?.time || streams.value.time.length === 0) return 0
   const totalTime = streams.value.time[streams.value.time.length - 1]
+  if (!totalTime) return 0
   return (surgeTime / totalTime) * 100
 }
 

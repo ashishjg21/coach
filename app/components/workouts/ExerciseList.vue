@@ -39,7 +39,7 @@
           </thead>
           <tbody>
             <tr v-for="(set, index) in workoutExercise.sets" :key="set.id" class="border-b dark:border-gray-700 last:border-b-0">
-              <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">{{ index + 1 }}</td>
+              <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">{{ Number(index) + 1 }}</td>
               <td class="px-4 py-2">
                 <span v-if="set.type !== 'NORMAL'" class="text-xs font-semibold px-2 py-0.5 rounded" :class="getSetTypeClass(set.type)">
                   {{ set.type }}

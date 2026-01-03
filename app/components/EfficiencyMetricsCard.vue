@@ -7,7 +7,7 @@
 
     <div v-if="hasMetrics" class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Variability Index -->
-      <div v-if="metrics.variabilityIndex !== null" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+      <div v-if="metrics.variabilityIndex !== null && metrics.variabilityIndex !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
           <span class="text-sm text-gray-600 dark:text-gray-400">Variability Index</span>
           <UBadge :color="getVIColor(metrics.variabilityIndex)" variant="subtle">
@@ -23,7 +23,7 @@
       </div>
 
       <!-- Efficiency Factor -->
-      <div v-if="metrics.efficiencyFactor !== null" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+      <div v-if="metrics.efficiencyFactor !== null && metrics.efficiencyFactor !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
           <span class="text-sm text-gray-600 dark:text-gray-400">Efficiency Factor</span>
           <UBadge :color="getEFColor(metrics.efficiencyFactor)" variant="subtle">
@@ -39,7 +39,7 @@
       </div>
 
       <!-- Decoupling -->
-      <div v-if="metrics.decoupling !== null" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+      <div v-if="metrics.decoupling !== null && metrics.decoupling !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
           <span class="text-sm text-gray-600 dark:text-gray-400">Aerobic Decoupling</span>
           <UBadge :color="getDecouplingColor(metrics.decoupling)" variant="subtle">
@@ -55,7 +55,7 @@
       </div>
 
       <!-- Power/HR Ratio -->
-      <div v-if="metrics.powerHrRatio !== null" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+      <div v-if="metrics.powerHrRatio !== null && metrics.powerHrRatio !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
           <span class="text-sm text-gray-600 dark:text-gray-400">Power/HR Ratio</span>
         </div>
@@ -68,7 +68,7 @@
       </div>
 
       <!-- Polarization Index -->
-      <div v-if="metrics.polarizationIndex !== null" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+      <div v-if="metrics.polarizationIndex !== null && metrics.polarizationIndex !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
           <span class="text-sm text-gray-600 dark:text-gray-400">Polarization Index</span>
         </div>
@@ -81,7 +81,7 @@
       </div>
 
       <!-- L/R Balance -->
-      <div v-if="metrics.lrBalance !== null" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+      <div v-if="metrics.lrBalance !== null && metrics.lrBalance !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
           <span class="text-sm text-gray-600 dark:text-gray-400">L/R Balance</span>
           <UBadge :color="getLRBalanceColor(metrics.lrBalance)" variant="subtle">
@@ -137,53 +137,61 @@ const hasMetrics = computed(() => {
 })
 
 // Variability Index ratings
-function getVIColor(vi: number): string {
-  if (vi <= 1.05) return 'green'
-  if (vi <= 1.10) return 'yellow'
-  return 'orange'
+function getVIColor(vi: number | null | undefined): 'success' | 'warning' | 'error' | 'neutral' {
+  if (vi == null) return 'neutral'
+  if (vi <= 1.05) return 'success'
+  if (vi <= 1.10) return 'warning'
+  return 'error'
 }
 
-function getVIRating(vi: number): string {
+function getVIRating(vi: number | null | undefined): string {
+  if (vi == null) return 'N/A'
   if (vi <= 1.05) return 'Excellent'
   if (vi <= 1.10) return 'Good'
   return 'Variable'
 }
 
 // Efficiency Factor ratings (rough guidelines)
-function getEFColor(ef: number): string {
-  if (ef >= 2.0) return 'green'
-  if (ef >= 1.5) return 'yellow'
-  return 'orange'
+function getEFColor(ef: number | null | undefined): 'success' | 'warning' | 'error' | 'neutral' {
+  if (ef == null) return 'neutral'
+  if (ef >= 2.0) return 'success'
+  if (ef >= 1.5) return 'warning'
+  return 'error'
 }
 
-function getEFRating(ef: number): string {
+function getEFRating(ef: number | null | undefined): string {
+  if (ef == null) return 'N/A'
   if (ef >= 2.0) return 'Excellent'
   if (ef >= 1.5) return 'Good'
   return 'Fair'
 }
 
 // Decoupling ratings
-function getDecouplingColor(dec: number): string {
-  if (dec <= 0.05) return 'green'
-  if (dec <= 0.10) return 'yellow'
-  return 'orange'
+function getDecouplingColor(dec: number | null | undefined): 'success' | 'warning' | 'error' | 'neutral' {
+  if (dec == null) return 'neutral'
+  if (dec <= 0.05) return 'success'
+  if (dec <= 0.10) return 'warning'
+  return 'error'
 }
 
-function getDecouplingRating(dec: number): string {
+function getDecouplingRating(dec: number | null | undefined): string {
+  if (dec == null) return 'N/A'
   if (dec <= 0.05) return 'Excellent'
   if (dec <= 0.10) return 'Good'
   return 'High'
 }
 
 // L/R Balance ratings
-function getLRBalanceColor(balance: number): string {
+function getLRBalanceColor(balance: number | null | undefined): 'success' | 'warning' | 'error' | 'neutral' {
+  if (balance == null) return 'neutral'
   const deviation = Math.abs(balance - 50)
-  if (deviation <= 2) return 'green'
-  if (deviation <= 4) return 'yellow'
-  return 'orange'
+  if (deviation <= 2) return 'success'
+  if (deviation <= 4) return 'warning'
+  return 'error'
 }
 
-function getLRBalanceRating(balance: number): string {
+function getLRBalanceRating(balance: number | null | undefined): string {
+  if (balance == null) return 'N/A'
   const deviation = Math.abs(balance - 50)
   if (deviation <= 2) return 'Balanced'
   if (deviation <= 4) return 'Fair'
