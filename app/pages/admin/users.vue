@@ -79,6 +79,7 @@ useHead({
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Integrations</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stats</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">LLM Usage</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Admin</th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
@@ -115,6 +116,14 @@ useHead({
                     <div><span class="font-bold">{{ user._count?.plannedWorkouts || 0 }}</span> planned</div>
                     <div><span class="font-bold">{{ user._count?.nutrition || 0 }}</span> meals</div>
                     <div><span class="font-bold">{{ user._count?.chatParticipations || 0 }}</span> chats</div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-xs space-y-1">
+                    <div><span class="font-bold">{{ user.llmUsage?.count || 0 }}</span> calls</div>
+                    <div class="text-emerald-600 dark:text-emerald-400 font-medium">
+                      {{ new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(user.llmUsage?.cost || 0) }}
+                    </div>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
