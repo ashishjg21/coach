@@ -8,7 +8,7 @@ export default defineNuxtPlugin(() => {
     onRequest({ options }) {
       if (coachingStore.actingAsUserId) {
         options.headers = {
-          ...options.headers,
+          ...(options.headers as any),
           'x-act-as-user': coachingStore.actingAsUserId
         }
       }
