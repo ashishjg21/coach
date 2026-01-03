@@ -10,6 +10,7 @@ import 'dotenv/config'
 
 const useProd = process.argv.includes('--prod')
 const isDryRun = process.argv.includes('--dry')
+const forceTss = process.argv.includes('--force-tss')
 
 // Set the DATABASE_URL before importing prisma to ensure the singleton uses the correct one
 if (useProd) {
@@ -27,11 +28,16 @@ if (isDryRun) {
   console.log('🧪 DRY RUN MODE: No database changes will be made.')
 }
 
+if (forceTss) {
+  console.log('🔄 FORCE TSS MODE: TSS will be re-normalized for non-Intervals workouts.')
+}
+
 async function main() {
   // Use dynamic imports to ensure process.env.DATABASE_URL is set BEFORE prisma is initialized
   const { prisma } = await import('../server/utils/db')
   // We import pure calculation functions. Note: training-stress.ts is safe to import as it uses dynamic imports for db
   const { calculateCTL, calculateATL, getStressScore } = await import('../server/utils/training-stress')
+  const { normalizeTSS } = await import('../server/utils/normalize-tss')
 
   console.log('🚀 Starting global training stress recalculation...')
   
@@ -128,7 +134,20 @@ async function main() {
             }
         }
 
-        const tss = getStressScore(workout)
+        let tss = getStressScore(workout)
+
+        // Force TSS re-normalization if requested
+        if (forceTss && workout.source !== 'intervals') {
+          const result = await normalizeTSS(workout.id, user.id, true)
+          if (result.tss !== null) {
+            tss = result.tss
+            if (workout.tss !== tss) {
+              changedCount++
+              console.log(`      🔄 Updated TSS for "${workout.source}" workout: ${workout.tss} -> ${tss}`)
+            }
+          }
+        }
+
         ctl = calculateCTL(ctl, tss)
         atl = calculateATL(atl, tss)
         

@@ -92,18 +92,28 @@ function estimateTSSFromDuration(
   avgHR: number | null,
   maxHR: number | null
 ): number {
-  // Base estimate on duration (1 hour at moderate intensity = ~60 TSS)
   const durationHours = durationSeconds / 3600
-  let baseTSS = durationHours * 60
 
-  // Adjust based on HR intensity if available
+  // If we have HR data, use a squared intensity model (TSS ~ IF^2)
   if (avgHR && maxHR) {
-    const hrIntensity = avgHR / maxHR
-    // Adjust TSS based on intensity (0.6 = easy, 0.8 = moderate, 0.9+ = hard)
-    baseTSS = baseTSS * (hrIntensity / 0.75) // Normalize around 75% of max HR
+    const intensity = avgHR / maxHR
+    
+    let estimatedIF = intensity
+
+    // For very low intensity (e.g., walking, active recovery < 55% Max HR),
+    // physiological stress is disproportionately low. Apply a dampener.
+    if (intensity < 0.55) {
+      estimatedIF = intensity * 0.75
+    }
+
+    // Formula: TSS = Duration(hrs) * 100 * IF^2
+    // We use HR Intensity as a proxy for IF
+    return Math.round(durationHours * 100 * (estimatedIF * estimatedIF))
   }
 
-  return Math.round(baseTSS)
+  // Fallback if no HR data: Assume moderate activity (IF ~0.6)
+  // 0.6^2 = 0.36 -> 36 TSS/hr
+  return Math.round(durationHours * 36)
 }
 
 /**
@@ -126,7 +136,8 @@ function parseStreamData(data: any): number[] | null {
  */
 export async function normalizeTSS(
   workoutId: string,
-  userId: string
+  userId: string,
+  force: boolean = false
 ): Promise<TSSNormalizationResult> {
   // Get workout with streams
   const workout = await prisma.workout.findUnique({
@@ -139,12 +150,23 @@ export async function normalizeTSS(
   }
 
   // 1. Check if TSS is already set from source
-  if (workout.tss !== null && workout.tss > 0) {
+  // If force is true, we ignore existing TSS UNLESS it's from intervals (source of truth)
+  if (!force && workout.tss !== null && workout.tss > 0) {
     return {
       tss: workout.tss,
       source: workout.source === 'intervals' ? 'intervals' : 'calculated_power',
       confidence: 'high',
       method: 'Pre-calculated by source'
+    }
+  }
+
+  // If force is true and source is intervals, we still keep it
+  if (force && workout.source === 'intervals' && workout.tss !== null) {
+    return {
+      tss: workout.tss,
+      source: 'intervals',
+      confidence: 'high',
+      method: 'Pre-calculated by source (Intervals.icu)'
     }
   }
 
