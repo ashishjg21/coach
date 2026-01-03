@@ -4,6 +4,7 @@ import { prisma } from "../server/utils/db";
 import { workoutRepository } from "../server/utils/repositories/workoutRepository";
 import { wellnessRepository } from "../server/utils/repositories/wellnessRepository";
 import { userReportsQueue } from "./queues";
+import { generateTrainingContext, formatTrainingContextForPrompt } from "../server/utils/training-metrics";
 
 const suggestionSchema = {
   type: 'object',
@@ -94,6 +95,15 @@ export const dailyCoachTask = task({
       activeGoals: activeGoals.length
     });
     
+    // Generate comprehensive training context
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const now = new Date();
+    const trainingContext = await generateTrainingContext(userId, thirtyDaysAgo, now, {
+      includeZones: false, // Skip expensive zone calculation for daily check
+      period: 'Last 30 Days'
+    });
+    const formattedContext = formatTrainingContextForPrompt(trainingContext);
+
     // Build athlete profile context
     let athleteContext = '';
     if (athleteProfile?.analysisJson) {

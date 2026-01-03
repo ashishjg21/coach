@@ -235,7 +235,17 @@ Focus on "${getMetricDisplayName('workout', metric)}" and provide structured ana
     required: ["executive_summary", "sections", "recommendations"]
   };
 
-  return await generateStructuredAnalysis<TrendAnalysis>(prompt, schema, 'flash');
+  return await generateStructuredAnalysis<TrendAnalysis>(
+    prompt,
+    schema,
+    'flash',
+    {
+      userId,
+      operation: 'workout_score_explanation',
+      entityType: 'ScoreTrendExplanation',
+      entityId: undefined
+    }
+  );
 }
 
 async function calculateNutritionSummary(userId: string, period: number) {
