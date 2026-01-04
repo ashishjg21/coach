@@ -483,6 +483,9 @@ model Workout {
   
   // Link to raw FIT file
   fitFile         FitFile?
+  
+  // Plan Adherence Analysis
+  planAdherence   PlanAdherence?
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -666,6 +669,7 @@ model PlannedWorkout {
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   recommendations ActivityRecommendation[]
   completedWorkouts Workout[] // Workouts that completed this planned workout
+  planAdherences  PlanAdherence[] // Adherence analysis for completed workouts
   
   shareToken      String?  @unique
 
@@ -1298,4 +1302,39 @@ model LlmUsage {
   @@index([operation, createdAt])
   @@index([provider, model, createdAt])
   @@index([success, createdAt])
+}
+
+// --------------------------------------
+// Plan Adherence Analysis
+// --------------------------------------
+
+model PlanAdherence {
+  id                String   @id @default(uuid())
+  workoutId         String   @unique
+  plannedWorkoutId  String
+  
+  // Scores (0-100)
+  overallScore      Int?
+  intensityScore    Int?
+  durationScore     Int?
+  executionScore    Int?
+  
+  // Analysis
+  summary           String?  @db.Text
+  deviations        Json?    // Array of { metric, planned, actual, deviation, impact }
+  recommendations   Json?    // Array of improvement tips
+  
+  // AI Metadata
+  analysisStatus    String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  analyzedAt        DateTime?
+  modelVersion      String?
+  
+  workout           Workout        @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  plannedWorkout    PlannedWorkout @relation(fields: [plannedWorkoutId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([workoutId])
+  @@index([plannedWorkoutId])
 }
