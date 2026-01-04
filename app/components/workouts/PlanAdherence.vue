@@ -181,7 +181,7 @@ function getScoreLabel(score: number) {
 
 function getDeviationColor(metric: string) {
   // Simple heuristic
-  return 'warning'
+  return 'warning' as const
 }
 
 function getDeviationBorderColor(metric: string) {
