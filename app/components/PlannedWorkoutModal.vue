@@ -352,7 +352,7 @@
     </template>
 
     <template #footer>
-      <div class="flex justify-between gap-2">
+      <div class="flex justify-between gap-2 w-full">
         <UButton
           v-if="!plannedWorkout?.completed"
           color="error"
@@ -364,14 +364,23 @@
           Delete
         </UButton>
         <div class="flex-1"></div>
-        <UButton
-          color="neutral"
-          variant="ghost"
-          @click="closeModal"
-          :disabled="loading"
-        >
-          Close
-        </UButton>
+        <div class="flex gap-2">
+          <UButton
+            v-if="plannedWorkout"
+            color="primary"
+            @click="viewFullPlannedWorkout"
+          >
+            View Details
+          </UButton>
+          <UButton
+            color="neutral"
+            variant="ghost"
+            @click="closeModal"
+            :disabled="loading"
+          >
+            Close
+          </UButton>
+        </div>
       </div>
     </template>
   </UModal>
@@ -604,6 +613,12 @@ async function confirmDelete() {
 
 function closeModal() {
   isOpen.value = false
+}
+
+function viewFullPlannedWorkout() {
+  if (props.plannedWorkout?.id) {
+    navigateTo(`/workouts/planned/${props.plannedWorkout.id}`)
+  }
 }
 
 function formatDate(dateStr: string) {
