@@ -234,14 +234,14 @@ const groups = computed(() => [{
       <template #header="{ collapsed }">
         <NuxtLink 
           to="/dashboard" 
-          class="flex items-center justify-center w-full overflow-hidden shrink-0" 
-          :class="collapsed ? 'p-1' : 'p-4'"
+          class="flex items-center w-full overflow-hidden shrink-0" 
+          :class="collapsed ? 'p-1 justify-center' : 'p-4 justify-start lg:justify-center'"
         >
           <img 
             v-if="!collapsed"
             src="/media/coach-watts.webp" 
             alt="Coach Watts" 
-            class="w-full h-auto object-contain"
+            class="h-8 lg:h-10 w-auto object-contain"
           />
           <img 
             v-else
