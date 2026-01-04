@@ -9,7 +9,9 @@
           <UButton 
             v-if="activePlan"
             color="neutral" 
-            variant="ghost" 
+            variant="outline"
+            size="sm"
+            class="font-bold"
             icon="i-heroicons-share" 
             @click="isShareModalOpen = true"
           >
@@ -17,13 +19,15 @@
           </UButton>
           <UButton
             v-if="activePlan"
-            size="xs"
             color="neutral"
-            variant="ghost"
+            variant="outline"
+            size="sm"
+            class="font-bold"
             icon="i-heroicons-plus"
             @click="startNewPlan"
           >
-            New Plan
+            <span class="hidden sm:inline">New Plan</span>
+            <span class="sm:hidden">New</span>
           </UButton>
         </template>
       </UDashboardNavbar>
@@ -32,8 +36,26 @@
     <template #body>
       <div class="p-3 sm:p-6 space-y-4 sm:space-y-6">
         <!-- Loading State -->
-        <div v-if="loading && !activePlan" class="flex justify-center py-20">
-          <UIcon name="i-heroicons-arrow-path" class="w-10 h-10 animate-spin text-primary" />
+        <div v-if="loading && !activePlan" class="space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <UCard v-for="i in 3" :key="i">
+              <template #header>
+                <USkeleton class="h-4 w-32" />
+              </template>
+              <div class="flex flex-col items-center justify-center h-32 space-y-3">
+                <USkeleton class="h-12 w-12 rounded-full" />
+                <USkeleton class="h-4 w-24" />
+              </div>
+            </UCard>
+          </div>
+          <UCard>
+            <template #header>
+              <USkeleton class="h-4 w-48" />
+            </template>
+            <div class="space-y-4">
+              <USkeleton v-for="i in 5" :key="i" class="h-12 w-full" />
+            </div>
+          </UCard>
         </div>
 
         <!-- Active Plan View -->

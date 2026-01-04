@@ -16,7 +16,9 @@
           <UButton
             v-if="workout?.structuredWorkout"
             color="neutral"
-            variant="ghost"
+            variant="outline"
+            size="sm"
+            class="font-bold"
             icon="i-heroicons-arrow-down-tray"
             @click="showDownloadModal = true"
           >
@@ -26,7 +28,9 @@
           <UButton
             v-if="workout"
             color="primary"
-            variant="ghost"
+            variant="outline"
+            size="sm"
+            class="font-bold"
             :icon="isLocalWorkout ? 'i-heroicons-cloud-arrow-up' : 'i-heroicons-arrow-path'"
             @click="showPublishModal = true"
           >
@@ -36,7 +40,9 @@
           <UButton
             v-if="workout"
             color="neutral"
-            variant="ghost"
+            variant="outline"
+            size="sm"
+            class="font-bold"
             icon="i-heroicons-share"
             @click="isShareModalOpen = true"
           >
@@ -44,12 +50,15 @@
           </UButton>
           <UButton
             v-if="workout && !workout.completed"
-            size="xs"
+            size="sm"
             color="primary"
+            variant="solid"
+            class="font-bold"
             icon="i-heroicons-check"
             @click="markComplete"
           >
             <span class="hidden sm:inline">Mark Complete</span>
+            <span class="sm:hidden">Done</span>
           </UButton>
         </template>
       </UDashboardNavbar>
@@ -58,8 +67,22 @@
     <template #body>
       <div class="p-3 sm:p-6 max-w-6xl mx-auto space-y-4 sm:space-y-6">
         <!-- Loading State -->
-        <div v-if="loading" class="flex justify-center py-20">
-          <UIcon name="i-heroicons-arrow-path" class="w-10 h-10 animate-spin text-primary" />
+        <div v-if="loading" class="space-y-6">
+          <UCard>
+            <div class="flex items-center justify-between mb-4">
+              <div class="space-y-2">
+                <USkeleton class="h-8 w-64" />
+                <USkeleton class="h-4 w-48" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+              <USkeleton v-for="i in 4" :key="i" class="h-16 w-full rounded-lg" />
+            </div>
+          </UCard>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <USkeleton v-for="i in 3" :key="i" class="h-24 w-full rounded-xl" />
+          </div>
+          <USkeleton class="h-64 w-full rounded-xl" />
         </div>
 
         <!-- Workout Content -->

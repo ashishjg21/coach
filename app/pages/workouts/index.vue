@@ -16,7 +16,8 @@
               size="sm"
               class="font-bold"
             >
-              Insights
+              <span class="hidden sm:inline">Insights</span>
+              <span class="sm:hidden">AI</span>
             </UButton>
             <UButton
               @click="analyzeAllWorkouts"
@@ -27,7 +28,8 @@
               icon="i-heroicons-cpu-chip"
               class="font-bold"
             >
-              Analyze
+              <span class="hidden sm:inline">Analyze</span>
+              <span class="sm:hidden">Sync</span>
             </UButton>
           </div>
         </template>
@@ -62,7 +64,8 @@
 
         <!-- Charts Section -->
         <WorkoutCharts
-          v-if="!loading && allWorkouts.length > 0"
+          v-if="loading || allWorkouts.length > 0"
+          :loading="loading"
           :distribution-data="activityDistributionData"
           :scores-data="scoresTimelineData"
           :load-data="trainingLoadData"

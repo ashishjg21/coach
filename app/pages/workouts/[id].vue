@@ -179,11 +179,38 @@
 
     <template #body>
       <div class="p-3 sm:p-6">
-        <div v-if="loading" class="flex items-center justify-center py-12">
-          <div class="text-center">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-            <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">Loading workout...</p>
+        <div v-if="loading" class="space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+              <UCard class="h-full">
+                <div class="space-y-4">
+                  <USkeleton class="h-8 w-3/4" />
+                  <div class="flex gap-3">
+                    <USkeleton class="h-4 w-24" />
+                    <USkeleton class="h-4 w-24" />
+                    <USkeleton class="h-4 w-24" />
+                  </div>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+                    <USkeleton v-for="i in 4" :key="i" class="h-16 w-full rounded-lg" />
+                  </div>
+                </div>
+              </UCard>
+            </div>
+            <div class="lg:col-span-1">
+              <UCard class="h-full">
+                <USkeleton class="h-4 w-32 mb-4" />
+                <div class="flex justify-center items-center h-48">
+                  <USkeleton class="h-32 w-32 rounded-full" />
+                </div>
+              </UCard>
+            </div>
           </div>
+          <UCard>
+            <USkeleton class="h-4 w-48 mb-6" />
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <USkeleton v-for="i in 4" :key="i" class="h-24 w-full rounded-lg" />
+            </div>
+          </UCard>
         </div>
 
         <div v-else-if="error" class="text-center py-12">

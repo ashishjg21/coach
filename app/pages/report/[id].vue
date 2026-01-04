@@ -19,8 +19,30 @@
 
     <template #body>
       <div class="p-4 sm:p-6 max-w-4xl mx-auto">
-        <div v-if="pending" class="flex justify-center py-20">
-        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary" />
+        <div v-if="pending" class="space-y-6">
+        <!-- Header Skeleton -->
+        <div class="mb-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div class="space-y-2">
+              <USkeleton class="h-8 w-64" />
+              <USkeleton class="h-4 w-48" />
+            </div>
+            <USkeleton class="h-8 w-24 rounded-full" />
+          </div>
+        </div>
+
+        <!-- Cards Skeleton -->
+        <UCard v-for="i in 3" :key="i">
+          <template #header>
+            <div class="flex items-center justify-between">
+              <USkeleton class="h-6 w-48" />
+              <USkeleton class="h-6 w-24 rounded-full" />
+            </div>
+          </template>
+          <div class="space-y-3">
+            <USkeleton v-for="j in 3" :key="j" class="h-4 w-full" />
+          </div>
+        </UCard>
       </div>
       
       <div v-else-if="report">

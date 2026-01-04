@@ -39,7 +39,8 @@
                 size="sm"
                 class="font-bold"
               >
-                Last 3 Workouts
+                <span class="hidden lg:inline">Last 3 Workouts</span>
+                <span class="lg:hidden">Workouts</span>
               </UButton>
               <UButton
                 @click="generateReport('WEEKLY_ANALYSIS')"
@@ -50,7 +51,8 @@
                 size="sm"
                 class="font-bold"
               >
-                Weekly
+                <span class="hidden lg:inline">Weekly Analysis</span>
+                <span class="lg:hidden">Weekly</span>
               </UButton>
               <UButton
                 @click="generateReport('LAST_3_NUTRITION')"
@@ -61,7 +63,8 @@
                 size="sm"
                 class="font-bold"
               >
-                Last 3 Days
+                <span class="hidden lg:inline">Last 3 Days</span>
+                <span class="lg:hidden">Nutrition</span>
               </UButton>
               <UButton
                 @click="generateReport('LAST_7_NUTRITION')"
@@ -72,7 +75,8 @@
                 size="sm"
                 class="font-bold"
               >
-                Weekly Nutrition
+                <span class="hidden lg:inline">Weekly Nutrition</span>
+                <span class="lg:hidden">Trends</span>
               </UButton>
             </div>
             <UDropdownMenu
@@ -112,9 +116,25 @@
         
         <!-- Reports Table -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          <div v-if="reportStore.status === 'pending'" class="p-8 text-center text-gray-600 dark:text-gray-400">
-            <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary mx-auto mb-2" />
-            <p>Loading reports...</p>
+          <div v-if="reportStore.status === 'pending'" class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead class="bg-gray-50 dark:bg-gray-900">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Report Type</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date Range</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Created</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tr v-for="i in 5" :key="i">
+                  <td v-for="j in 5" :key="j" class="px-6 py-4">
+                    <USkeleton class="h-4 w-full" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
           
           <div v-else-if="reportStore.status === 'error'" class="p-8 text-center text-red-600 dark:text-red-400">
