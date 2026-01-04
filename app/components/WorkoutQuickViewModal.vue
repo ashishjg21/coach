@@ -48,7 +48,7 @@
             </div>
           </div>
           <UBadge 
-            :color="workout.source === 'manual' ? 'warning' : 'gray'" 
+            :color="workout.source === 'manual' ? 'warning' : 'neutral'" 
             variant="subtle"
             size="xs"
           >
@@ -113,7 +113,7 @@
         <div v-if="workout.plannedWorkout" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800 relative group">
           <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <UButton
-              color="gray"
+              color="neutral"
               variant="ghost"
               size="xs"
               icon="i-heroicons-link-slash"
@@ -197,9 +197,9 @@
             size="sm"
             :items="[{ label: 'Description', content: workout.description, icon: 'i-heroicons-document-text' }]"
           >
-            <template #item="{ item }">
+            <template #body>
               <p class="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap py-2">
-                {{ item.content }}
+                {{ workout.description }}
               </p>
             </template>
           </UAccordion>
