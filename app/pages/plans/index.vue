@@ -5,7 +5,7 @@
     </template>
 
     <template #body>
-      <div class="p-6 space-y-8">
+      <div class="p-3 sm:p-6 space-y-4 sm:space-y-6">
         <!-- Templates Section -->
         <div>
           <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">

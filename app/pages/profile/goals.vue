@@ -311,7 +311,7 @@ useHead({
           </p>
         </div>
         
-        <div class="max-w-6xl mx-auto space-y-6">
+        <div class="space-y-6">
           
           <!-- AI Features Section -->
           <div class="flex gap-3">
