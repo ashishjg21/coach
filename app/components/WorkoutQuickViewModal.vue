@@ -33,20 +33,87 @@
     <span class="hidden"></span>
 
     <template #body>
-      <div v-if="workout" class="space-y-4">
-        <!-- Title -->
-        <div>
-          <h3 class="text-lg font-semibold">{{ workout.title }}</h3>
-          <p v-if="workout.description" class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {{ workout.description }}
-          </p>
+      <div v-if="workout" class="space-y-6">
+        <!-- Header Info -->
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ workout.title }}</h3>
+            <div class="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <div class="flex items-center gap-1">
+                <UIcon :name="getActivityIcon(workout.type)" class="w-4 h-4" />
+                <span>{{ workout.type || 'Activity' }}</span>
+              </div>
+              <span>•</span>
+              <span>{{ formatDate(workout.date) }}</span>
+            </div>
+          </div>
+          <UBadge 
+            :color="workout.source === 'manual' ? 'warning' : 'gray'" 
+            variant="subtle"
+            size="xs"
+          >
+            {{ workout.source.toUpperCase() }}
+          </UBadge>
         </div>
 
-        <!-- Planned Workout Badge & Details -->
+        <!-- Clean Stats Grid (Top Level) -->
+        <div class="pt-2 pb-4">
+          <dl class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-4">
+            <div v-if="workout.durationSec">
+              <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Duration</dt>
+              <dd class="mt-1 text-sm font-bold text-gray-900 dark:text-white">{{ formatDuration(workout.durationSec) }}</dd>
+            </div>
+
+            <div v-if="workout.tss">
+              <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">TSS</dt>
+              <dd class="mt-1 text-sm font-bold text-gray-900 dark:text-white">{{ Math.round(workout.tss) }}</dd>
+            </div>
+
+            <div v-if="workout.averageHr">
+              <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Avg HR</dt>
+              <dd class="mt-1 text-sm font-bold text-gray-900 dark:text-white flex items-baseline gap-1">
+                {{ workout.averageHr }} <span class="text-[10px] font-normal text-gray-500 uppercase">bpm</span>
+              </dd>
+            </div>
+
+            <div v-if="workout.kilojoules">
+              <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Work</dt>
+              <dd class="mt-1 text-sm font-bold text-gray-900 dark:text-white flex items-baseline gap-1">
+                {{ workout.kilojoules }} <span class="text-[10px] font-normal text-gray-500 uppercase">kJ</span>
+              </dd>
+            </div>
+
+            <div v-if="workout.distanceMeters">
+              <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Distance</dt>
+              <dd class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ (workout.distanceMeters / 1000).toFixed(2) }} km</dd>
+            </div>
+
+            <div v-if="workout.averageWatts">
+              <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Avg Power</dt>
+              <dd class="mt-1 text-sm font-semibold text-gray-900 dark:text-white flex items-baseline gap-1">
+                {{ workout.averageWatts }} <span class="text-[10px] font-normal text-gray-500">W</span>
+              </dd>
+            </div>
+
+            <div v-if="workout.normalizedPower">
+              <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">NP</dt>
+              <dd class="mt-1 text-sm font-semibold text-gray-900 dark:text-white flex items-baseline gap-1">
+                {{ workout.normalizedPower }} <span class="text-[10px] font-normal text-gray-500">W</span>
+              </dd>
+            </div>
+
+            <div v-if="workout.rpe">
+              <dt class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">RPE</dt>
+              <dd class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ workout.rpe }}/10</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Planned Workout Section (Preserved) -->
         <div v-if="workout.plannedWorkout" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800 relative group">
           <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <UButton
-              color="neutral"
+              color="gray"
               variant="ghost"
               size="xs"
               icon="i-heroicons-link-slash"
@@ -60,7 +127,7 @@
             <div class="flex items-center gap-2">
               <UBadge color="primary" variant="subtle" size="xs">
                 <UIcon name="i-heroicons-calendar" class="w-3.5 h-3.5" />
-                <span class="ml-1">Completed from Plan</span>
+                <span class="ml-1">Plan</span>
               </UBadge>
               <div class="flex flex-col">
                 <NuxtLink 
@@ -122,61 +189,20 @@
           </div>
         </div>
 
-        <!-- Quick Stats -->
-        <div class="grid grid-cols-2 gap-4">
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Type</div>
-            <div class="flex items-center gap-2">
-              <UIcon :name="getActivityIcon(workout.type)" class="w-4 h-4" />
-              <span class="font-medium">{{ workout.type || 'Activity' }}</span>
-            </div>
-          </div>
-
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Date</div>
-            <div class="font-medium">{{ formatDate(workout.date) }}</div>
-          </div>
-
-          <div v-if="workout.durationSec" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Duration</div>
-            <div class="font-medium">{{ formatDuration(workout.durationSec) }}</div>
-          </div>
-
-          <div v-if="workout.distanceMeters" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Distance</div>
-            <div class="font-medium">{{ (workout.distanceMeters / 1000).toFixed(2) }} km</div>
-          </div>
-
-          <div v-if="workout.tss" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">TSS</div>
-            <div class="font-medium">{{ Math.round(workout.tss) }}</div>
-          </div>
-
-          <div v-if="workout.averageHr" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Avg HR</div>
-            <div class="font-medium">{{ workout.averageHr }} bpm</div>
-          </div>
-
-          <div v-if="workout.averageWatts" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Avg Power</div>
-            <div class="font-medium">{{ workout.averageWatts }} W</div>
-          </div>
-
-          <div v-if="workout.rpe" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-            <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">RPE</div>
-            <div class="font-medium">{{ workout.rpe }}/10</div>
-          </div>
-        </div>
-
-        <!-- Source Badge -->
-        <div class="flex items-center gap-2">
-          <UBadge 
-            :color="workout.source === 'manual' ? 'warning' : 'info'" 
-            variant="subtle"
-            size="xs"
+        <!-- Collapsible Description -->
+        <div v-if="workout.description">
+          <UAccordion
+            color="white"
+            variant="ghost"
+            size="sm"
+            :items="[{ label: 'Description', content: workout.description, icon: 'i-heroicons-document-text' }]"
           >
-            {{ workout.source.toUpperCase() }}
-          </UBadge>
+            <template #item="{ item }">
+              <p class="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap py-2">
+                {{ item.content }}
+              </p>
+            </template>
+          </UAccordion>
         </div>
       </div>
     </template>
