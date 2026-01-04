@@ -59,6 +59,16 @@ By following these guidelines, you can avoid common pitfalls and ensure that mod
 4.  **USE** the Repository Pattern for data access.
 5.  **FOLLOW** the specific UI/UX guidelines for Nuxt UI.
 
+### Database Verification
+When the user mentions specific UUIDs, IDs, or asks to verify data integrity:
+1.  **Use the PostgreSQL MCP Tool:** Utilize `postgres__execute_sql` to directly query the database.
+2.  **Check Schema First:** Refer to `prisma/schema.prisma` to understand table names, column names, and relationships before querying.
+3.  **Query Specific Tables:** For example, query the `public.workouts` table filtering by `id` or `externalId` to verify workout existence and details.
+    ```sql
+    SELECT * FROM "Workout" WHERE id = 'your-uuid-here';
+    ```
+4.  **Verify Relationships:** Check related tables (e.g., `ShareToken`, `PlannedWorkout`) if the issue involves linked data.
+
 ### [Architecture](./architecture.md)
 **System design and technical decisions**
 
