@@ -59,7 +59,13 @@
     </template>
 
     <template #footer>
-      <div class="flex gap-2 justify-end">
+      <div class="flex gap-2 justify-end items-center w-full">
+        <!-- Debug Info (Temporary) -->
+        <!-- <div class="text-xs text-gray-400 mr-auto">
+          HasMods: {{ !!recommendation?.analysisJson?.suggested_modifications }}
+          Accepted: {{ recommendation?.userAccepted }}
+        </div> -->
+        
         <UButton color="neutral" variant="outline" @click="isOpen = false">
           Close
         </UButton>
@@ -93,8 +99,9 @@ const isOpen = computed({
 })
 
 const canAccept = computed(() => {
-  return props.recommendation?.analysisJson?.suggested_modifications && 
-         !props.recommendation?.userAccepted
+  const hasMods = !!props.recommendation?.analysisJson?.suggested_modifications
+  const isAccepted = props.recommendation?.userAccepted === true
+  return hasMods && !isAccepted
 })
 
 async function handleAccept() {
