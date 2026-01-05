@@ -734,7 +734,7 @@ export function normalizeIntervalsWorkout(activity: IntervalsActivity, userId: s
     atl: activity.icu_atl || null,
     
     // Subjective metrics
-    rpe: activity.perceived_exertion || null,
+    rpe: activity.perceived_exertion || activity.icu_rpe || null,
     sessionRpe: activity.session_rpe || null,
     feel: activity.feel || null,
     
