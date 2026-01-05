@@ -67,15 +67,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'No suggested modifications found' })
   }
 
-  // Prepare description update
-  const oldDescription = recommendation.plannedWorkout?.description || ''
-  const modificationNote = `
-
-**AI Modification (${new Date().toLocaleDateString()}):**
-${modifications.description}
-${modifications.zone_adjustments ? `Zone Adjustments: ${modifications.zone_adjustments}` : ''}`
-  
-  const newDescription = oldDescription + modificationNote
+  // Prepare the new description (completely replacing the old one)
+  const newDescription = `${modifications.description}${modifications.zone_adjustments ? `\n\nZone Adjustments: ${modifications.zone_adjustments}` : ''}`
 
   // Update Planned Workout
   await prisma.plannedWorkout.update({
