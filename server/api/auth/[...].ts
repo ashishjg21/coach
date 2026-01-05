@@ -2,6 +2,7 @@ import { NuxtAuthHandler } from '#auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '../../utils/db'
+import { tasks } from '@trigger.dev/sdk/v3'
 
 const adapter = PrismaAdapter(prisma)
 const originalLinkAccount = adapter.linkAccount
@@ -11,6 +12,54 @@ adapter.linkAccount = (account: any) => {
     delete sanitizedAccount.athlete
   }
   return originalLinkAccount!(sanitizedAccount)
+}
+
+const syncIntervalsIntegration = async (user: any, account: any) => {
+  try {
+    await prisma.integration.upsert({
+      where: {
+        userId_provider: {
+          userId: user.id,
+          provider: 'intervals'
+        }
+      },
+      update: {
+        accessToken: account.access_token!,
+        refreshToken: account.refresh_token,
+        expiresAt: account.expires_at ? new Date(account.expires_at * 1000) : undefined,
+        externalUserId: account.providerAccountId,
+        scope: account.scope,
+        lastSyncAt: new Date(),
+        syncStatus: 'SUCCESS'
+      },
+      create: {
+        userId: user.id,
+        provider: 'intervals',
+        accessToken: account.access_token!,
+        refreshToken: account.refresh_token,
+        expiresAt: account.expires_at ? new Date(account.expires_at * 1000) : undefined,
+        externalUserId: account.providerAccountId,
+        scope: account.scope,
+        syncStatus: 'SUCCESS',
+        lastSyncAt: new Date(),
+        ingestWorkouts: true
+      }
+    })
+    console.log('Successfully synced Intervals.icu integration')
+    
+    // Trigger initial sync (last 365 days)
+    const endDate = new Date().toISOString()
+    const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
+    
+    await tasks.trigger('ingest-intervals', {
+      userId: user.id,
+      startDate,
+      endDate
+    })
+    console.log('Triggered initial Intervals.icu sync')
+  } catch (error) {
+    console.error('Failed to sync Intervals.icu integration:', error)
+  }
 }
 
 export default NuxtAuthHandler({
@@ -61,40 +110,12 @@ export default NuxtAuthHandler({
   events: {
     async linkAccount({ user, account }: any) {
       if (account.provider === 'intervals') {
-        try {
-          await prisma.integration.upsert({
-            where: {
-              userId_provider: {
-                userId: user.id,
-                provider: 'intervals'
-              }
-            },
-            update: {
-              accessToken: account.access_token!,
-              refreshToken: account.refresh_token,
-              expiresAt: account.expires_at ? new Date(account.expires_at * 1000) : undefined,
-              externalUserId: account.providerAccountId,
-              scope: account.scope,
-              lastSyncAt: new Date(),
-              syncStatus: 'SUCCESS'
-            },
-            create: {
-              userId: user.id,
-              provider: 'intervals',
-              accessToken: account.access_token!,
-              refreshToken: account.refresh_token,
-              expiresAt: account.expires_at ? new Date(account.expires_at * 1000) : undefined,
-              externalUserId: account.providerAccountId,
-              scope: account.scope,
-              syncStatus: 'SUCCESS',
-              lastSyncAt: new Date(),
-              ingestWorkouts: true
-            }
-          })
-          console.log('Successfully synced Intervals.icu integration')
-        } catch (error) {
-          console.error('Failed to sync Intervals.icu integration:', error)
-        }
+        await syncIntervalsIntegration(user, account)
+      }
+    },
+    async signIn({ user, account }: any) {
+      if (account?.provider === 'intervals') {
+        await syncIntervalsIntegration(user, account)
       }
     }
   }

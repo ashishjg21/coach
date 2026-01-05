@@ -59,6 +59,15 @@ export default defineEventHandler(async (event) => {
           externalUserId: true,
           ingestWorkouts: true
         }
+      },
+      accounts: {
+        where: { provider: 'intervals' },
+        select: {
+          provider: true,
+          access_token: true,
+          providerAccountId: true,
+          scope: true
+        }
       }
     }
   })
@@ -68,6 +77,42 @@ export default defineEventHandler(async (event) => {
       statusCode: 404,
       message: 'User not found'
     })
+  }
+
+  // Self-healing: If user has an intervals account but no intervals integration, create it
+  const hasIntervalsAccount = user.accounts.some(a => a.provider === 'intervals')
+  const hasIntervalsIntegration = user.integrations.some(i => i.provider === 'intervals')
+
+  if (hasIntervalsAccount && !hasIntervalsIntegration) {
+    const account = user.accounts.find(a => a.provider === 'intervals')
+    if (account?.access_token) {
+      try {
+        const newIntegration = await prisma.integration.create({
+          data: {
+            userId: user.id,
+            provider: 'intervals',
+            accessToken: account.access_token,
+            externalUserId: account.providerAccountId,
+            scope: account.scope,
+            syncStatus: 'SUCCESS',
+            lastSyncAt: new Date(),
+            ingestWorkouts: true
+          }
+        })
+        // Add the new integration to the list we return
+        user.integrations.push({
+          id: newIntegration.id,
+          provider: newIntegration.provider,
+          lastSyncAt: newIntegration.lastSyncAt,
+          syncStatus: newIntegration.syncStatus,
+          externalUserId: newIntegration.externalUserId,
+          ingestWorkouts: newIntegration.ingestWorkouts
+        })
+        console.log(`Self-healed missing Intervals.icu integration for user ${user.id}`)
+      } catch (error) {
+        console.error('Failed to self-heal Intervals.icu integration:', error)
+      }
+    }
   }
 
   return {
