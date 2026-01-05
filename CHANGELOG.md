@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.5.6](https://github.com/newpush/coach/compare/v0.5.5...v0.5.6) (2026-01-05)
+
+
+### Bug Fixes
+
+* **api:** ensure complete cleanup when disconnecting intervals.icu ([25bc613](https://github.com/newpush/coach/commit/25bc61339516e13812f04d748960963137e2866f))
+* **api:** improve intervals.icu integration reliability and self-healing ([266d354](https://github.com/newpush/coach/commit/266d354c950738878506395e546999a8df6c62eb))
+* **components:** replace invalid color prop in connected apps settings ([cc57805](https://github.com/newpush/coach/commit/cc57805a89c10f915778ce376b3320f8c6edf0d1))
+* **profile:** standardize heart rate property casing in dashboard and api ([b1fae30](https://github.com/newpush/coach/commit/b1fae30568644149bc43c5c82946ed3a06088af8))
+
+
+### Features
+
+* **api:** add endpoint to disconnect intervals integration ([fc51726](https://github.com/newpush/coach/commit/fc517264410f2460d7cf7fed5c1d635e991042bc))
+* **api:** implement system-wide webhook logging and auditing ([0f5b3f1](https://github.com/newpush/coach/commit/0f5b3f17853057fd6a82e81d69377b3af94d3329))
+* **assets:** add integration logos for whoop, strava, hevy, and others ([df81bac](https://github.com/newpush/coach/commit/df81bac7e7f6ddba2e114506afbe45a30f80eded))
+* **auth:** add intervals.icu oauth provider and account linking ([128949a](https://github.com/newpush/coach/commit/128949a6d1078168684c02363e2a8b7698ebb673))
+* **auth:** add oauth support for intervals.icu integration ([fb00576](https://github.com/newpush/coach/commit/fb00576ec210488bb27b5794ae418cffe542d045))
+* **branding:** add branding assets and documentation ([0793842](https://github.com/newpush/coach/commit/079384272a679986c487da079e9bbe12d1cc2157))
+* **layouts:** update sidebar and home page with new branding logos ([d6bb3ff](https://github.com/newpush/coach/commit/d6bb3ffe1b720e2492a7184f09d99d33a1835ca6))
+* **pages:** add changelog page and navigation in settings ([b53b31c](https://github.com/newpush/coach/commit/b53b31ca16941f0eb7c1dae84f3dbee803b65b43))
+* **pages:** add seo title to my plans page ([576319b](https://github.com/newpush/coach/commit/576319b0b9e3388abd35f73e7f5e8f5057eea053))
+* **pages:** update refresh button on activities page to trigger data sync ([2f9b339](https://github.com/newpush/coach/commit/2f9b339bccc9424b01894714bcd7c1a4a4f407c6))
+* **server:** add exponential backoff retry for intervals.icu api rate limits ([1f354a5](https://github.com/newpush/coach/commit/1f354a5e7c1a13d3fb7bc389cb13c0b1a4c4dec2))
+* **trigger:** add user ingestion queue configuration ([4f3fc15](https://github.com/newpush/coach/commit/4f3fc15a83be8e350c943af5646deb08b6c7acb3))
+* **ui:** add intervals.icu oauth login and connection settings ([76cef10](https://github.com/newpush/coach/commit/76cef10fada62903996e24da289931e61e15f7d8))
+
 ## [0.5.5](https://github.com/newpush/coach/compare/v0.5.4...v0.5.5) (2026-01-04)
 
 
