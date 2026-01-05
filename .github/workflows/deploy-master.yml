@@ -36,6 +36,22 @@ jobs:
       - name: Build successful
         run: echo "✅ Application built successfully!"
 
+      - name: Discord Notification on Failure
+        if: failure() # Only runs if previous steps failed
+        uses: ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: '🚨 The build failed for {{ EVENT_PAYLOAD.repository.full_name }}!'
+
+      - name: Discord Notification on Success
+        if: success()
+        uses: ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: '✅ Build passed successfully!'
+
   deploy:
     name: Deploy Trigger.dev to Staging
     needs: build
