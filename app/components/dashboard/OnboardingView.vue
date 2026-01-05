@@ -37,11 +37,11 @@
 
             <div class="flex items-center gap-4">
               <UButton
-                to="/connect-intervals"
                 size="lg"
                 color="primary"
                 class="font-bold px-8"
                 icon="i-heroicons-link"
+                @click="signIn('intervals')"
               >
                 Connect Now
               </UButton>
@@ -191,6 +191,5 @@
 </template>
 
 <script setup lang="ts">
-// Logic for handling connections and status checks can be added here if needed
-// For now, this view assumes it's only shown when !intervalsConnected
+const { signIn } = useAuth()
 </script>
