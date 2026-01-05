@@ -132,7 +132,9 @@ export default defineEventHandler(async (event) => {
     return rows.reduce((acc, row) => {
       // row.date might be a Date object or string depending on driver
       const d = new Date(row.date).toISOString().split('T')[0]
-      acc[d] = Number(row[valKey] || 0) // Convert BigInt/Decimal to Number
+      if (d) {
+        acc[d] = Number(row[valKey] || 0) // Convert BigInt/Decimal to Number
+      }
       return acc
     }, {} as Record<string, number>)
   }
