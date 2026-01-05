@@ -30,6 +30,14 @@ export default defineEventHandler(async (event) => {
     }
   })
 
+  // Delete the account (fix for reconnection issue)
+  await prisma.account.deleteMany({
+    where: {
+      userId: user.id,
+      provider: 'intervals'
+    }
+  })
+
   // Also remove the linked account if it exists (for OAuth login/linking)
   // But be careful not to delete the user's primary login if they have one?
   // The Account table stores the OAuth link.
