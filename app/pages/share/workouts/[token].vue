@@ -66,19 +66,27 @@
             <!-- Key Stats Grid -->
             <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div v-if="workout.trainingLoad" class="rounded-lg p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                <div class="text-xs text-blue-600 dark:text-blue-400 mb-1">Training Load</div>
+                <UTooltip :text="metricTooltips['Training Load']" :popper="{ placement: 'top' }">
+                  <div class="text-xs text-blue-600 dark:text-blue-400 mb-1 border-b border-dashed border-blue-300 dark:border-blue-700 inline-block cursor-help">Training Load</div>
+                </UTooltip>
                 <div class="text-xl font-bold text-blue-900 dark:text-blue-100">{{ Math.round(workout.trainingLoad) }}</div>
               </div>
               <div v-if="workout.averageHr" class="rounded-lg p-3 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800">
-                <div class="text-xs text-pink-600 dark:text-pink-400 mb-1">Avg HR</div>
+                <UTooltip :text="metricTooltips['Avg HR']" :popper="{ placement: 'top' }">
+                  <div class="text-xs text-pink-600 dark:text-pink-400 mb-1 border-b border-dashed border-pink-300 dark:border-pink-700 inline-block cursor-help">Avg HR</div>
+                </UTooltip>
                 <div class="text-xl font-bold text-pink-900 dark:text-pink-100">{{ workout.averageHr }} <span class="text-sm">bpm</span></div>
               </div>
               <div v-if="workout.averageWatts" class="rounded-lg p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-                <div class="text-xs text-purple-600 dark:text-purple-400 mb-1">Avg Power</div>
+                <UTooltip :text="metricTooltips['Avg Power']" :popper="{ placement: 'top' }">
+                  <div class="text-xs text-purple-600 dark:text-purple-400 mb-1 border-b border-dashed border-purple-300 dark:border-purple-700 inline-block cursor-help">Avg Power</div>
+                </UTooltip>
                 <div class="text-xl font-bold text-purple-900 dark:text-purple-100">{{ workout.averageWatts }}<span class="text-sm">W</span></div>
               </div>
               <div v-if="workout.normalizedPower" class="rounded-lg p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
-                <div class="text-xs text-indigo-600 dark:text-indigo-400 mb-1">Norm Power</div>
+                <UTooltip :text="metricTooltips['Norm Power']" :popper="{ placement: 'top' }">
+                  <div class="text-xs text-indigo-600 dark:text-indigo-400 mb-1 border-b border-dashed border-indigo-300 dark:border-indigo-700 inline-block cursor-help">Norm Power</div>
+                </UTooltip>
                 <div class="text-xl font-bold text-indigo-900 dark:text-indigo-100">{{ workout.normalizedPower }}<span class="text-sm">W</span></div>
               </div>
             </div>
@@ -116,7 +124,9 @@
           <!-- TSS -->
           <div class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-sm font-medium text-blue-700 dark:text-blue-300">TSS (Load)</span>
+              <UTooltip :text="metricTooltips['TSS (Load)']" :popper="{ placement: 'top' }">
+                <span class="text-sm font-medium text-blue-700 dark:text-blue-300 border-b border-dashed border-blue-300 dark:border-blue-700 cursor-help">TSS (Load)</span>
+              </UTooltip>
             </div>
             <div class="text-2xl font-bold text-blue-900 dark:text-blue-100">
               {{ Math.round(workout.tss || workout.trainingLoad || 0) }}
@@ -126,7 +136,9 @@
           <!-- CTL (Fitness) -->
           <div class="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-sm font-medium text-green-700 dark:text-green-300">Fitness (CTL)</span>
+              <UTooltip :text="metricTooltips['Fitness (CTL)']" :popper="{ placement: 'top' }">
+                <span class="text-sm font-medium text-green-700 dark:text-green-300 border-b border-dashed border-green-300 dark:border-green-700 cursor-help">Fitness (CTL)</span>
+              </UTooltip>
             </div>
             <div class="text-2xl font-bold text-green-900 dark:text-green-100">
               {{ workout.ctl ? Math.round(workout.ctl) : '-' }}
@@ -136,7 +148,9 @@
           <!-- ATL (Fatigue) -->
           <div class="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-sm font-medium text-orange-700 dark:text-orange-300">Fatigue (ATL)</span>
+              <UTooltip :text="metricTooltips['Fatigue (ATL)']" :popper="{ placement: 'top' }">
+                <span class="text-sm font-medium text-orange-700 dark:text-orange-300 border-b border-dashed border-orange-300 dark:border-orange-700 cursor-help">Fatigue (ATL)</span>
+              </UTooltip>
             </div>
             <div class="text-2xl font-bold text-orange-900 dark:text-orange-100">
               {{ workout.atl ? Math.round(workout.atl) : '-' }}
@@ -146,7 +160,9 @@
           <!-- TSB (Form) -->
           <div class="p-4 rounded-lg" :class="getFormClass(calculateForm(workout))">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-sm font-medium opacity-80">Form (TSB)</span>
+              <UTooltip :text="metricTooltips['Form (TSB)']" :popper="{ placement: 'top' }">
+                <span class="text-sm font-medium opacity-80 border-b border-dashed border-gray-400 cursor-help">Form (TSB)</span>
+              </UTooltip>
             </div>
             <div class="text-2xl font-bold">
               {{ calculateForm(workout) !== null ? calculateForm(workout) : '-' }}
@@ -307,7 +323,9 @@
             :key="metric.key"
             class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
           >
-            <span class="text-sm text-gray-600 dark:text-gray-400">{{ metric.label }}</span>
+            <UTooltip :text="metricTooltips[metric.label]" :popper="{ placement: 'top' }">
+              <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">{{ metric.label }}</span>
+            </UTooltip>
             <span class="text-sm font-medium text-gray-900 dark:text-white">{{ metric.value }}</span>
           </div>
         </div>
@@ -323,6 +341,34 @@ import PlanAdherence from '~/components/workouts/PlanAdherence.vue'
 definePageMeta({
   layout: 'share'
 })
+
+const metricTooltips: Record<string, string> = {
+  'Training Load': 'A measure of the total physiological stress of the workout.',
+  'Avg HR': 'Average Heart Rate: The mean number of heartbeats per minute.',
+  'Avg Power': 'Average Power: The mean power output in Watts.',
+  'Norm Power': 'Normalized Power (NP): An estimate of the power you could have maintained for the same physiological cost if your effort had been perfectly constant. It accounts for the extra physiological cost of high-intensity surges.',
+  'TSS (Load)': 'Training Stress Score: A score based on duration and intensity relative to your FTP. 100 TSS is roughly 1 hour at max sustainable effort.',
+  'Fitness (CTL)': 'Chronic Training Load: Your long-term fitness, representing a weighted average of your daily training load over the last 42 days.',
+  'Fatigue (ATL)': 'Acute Training Load: Your recent fatigue, representing a weighted average of your daily training load over the last 7 days.',
+  'Form (TSB)': 'Training Stress Balance: Fitness (CTL) minus Fatigue (ATL). Positive values indicate freshness; negative values indicate accumulated fatigue.',
+  'Variability Index': 'VI: The ratio of Normalized Power to Average Power. A VI of 1.0 means steady pacing (like a time trial); higher values (e.g., 1.2+) indicate "spiky" or variable effort.',
+  'Efficiency Factor': 'EF: Normalized Power divided by Average Heart Rate. Measures your aerobic efficiency (power produced per heartbeat). Higher is generally better.',
+  'Decoupling': 'Aerobic Decoupling (Pw:HR): Measures how much your heart rate drifts upward relative to power over the session. Less than 5% usually indicates good endurance.',
+  'Power/HR Ratio': 'The ratio of power output to heart rate. Similar to Efficiency Factor but often calculated on raw averages.',
+  'Polarization Index': 'A metric indicating how "polarized" your training intensity is (spending time in easy and hard zones, avoiding the middle "grey zone").',
+  'L/R Balance': 'Left/Right Power Balance: The percentage split of total power contributed by each leg.',
+  'Max Power': 'The highest power output recorded (usually for 1 second).',
+  'Max HR': 'The highest heart rate recorded during the session.',
+  'Weighted Avg Power': 'Similar to Normalized Power, placing more weight on higher-intensity efforts.',
+  'FTP at Time': 'Functional Threshold Power: Your estimated maximum sustainable power for one hour at the time of this workout.',
+  'RPE': 'Rate of Perceived Exertion: A subjective rating of how hard the workout felt (1-10).',
+  'Session RPE': 'A load metric calculated as RPE multiplied by duration in minutes.',
+  'TRIMP': 'Training Impulse: A score quantifying training load based on heart rate zones and duration.',
+  'Average Cadence': 'The average number of pedal revolutions per minute (RPM).',
+  'Max Cadence': 'The highest pedal cadence recorded.',
+  'Avg Temperature': 'The average ambient temperature during the activity.',
+  'Indoor Trainer': 'Indicates whether the activity was recorded on an indoor trainer.'
+}
 
 const route = useRoute()
 const token = route.params.token as string

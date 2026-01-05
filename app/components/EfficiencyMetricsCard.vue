@@ -9,7 +9,9 @@
       <!-- Variability Index -->
       <div v-if="metrics.variabilityIndex !== null && metrics.variabilityIndex !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400">Variability Index</span>
+          <UTooltip :text="metricTooltips['Variability Index']" :popper="{ placement: 'top' }">
+            <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">Variability Index</span>
+          </UTooltip>
           <UBadge :color="getVIColor(metrics.variabilityIndex)" variant="subtle">
             {{ getVIRating(metrics.variabilityIndex) }}
           </UBadge>
@@ -25,7 +27,9 @@
       <!-- Efficiency Factor -->
       <div v-if="metrics.efficiencyFactor !== null && metrics.efficiencyFactor !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400">Efficiency Factor</span>
+          <UTooltip :text="metricTooltips['Efficiency Factor']" :popper="{ placement: 'top' }">
+            <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">Efficiency Factor</span>
+          </UTooltip>
           <UBadge :color="getEFColor(metrics.efficiencyFactor)" variant="subtle">
             {{ getEFRating(metrics.efficiencyFactor) }}
           </UBadge>
@@ -41,7 +45,9 @@
       <!-- Decoupling -->
       <div v-if="metrics.decoupling !== null && metrics.decoupling !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400">Aerobic Decoupling</span>
+          <UTooltip :text="metricTooltips['Aerobic Decoupling']" :popper="{ placement: 'top' }">
+            <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">Aerobic Decoupling</span>
+          </UTooltip>
           <UBadge :color="getDecouplingColor(metrics.decoupling)" variant="subtle">
             {{ getDecouplingRating(metrics.decoupling) }}
           </UBadge>
@@ -57,7 +63,9 @@
       <!-- Power/HR Ratio -->
       <div v-if="metrics.powerHrRatio !== null && metrics.powerHrRatio !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400">Power/HR Ratio</span>
+          <UTooltip :text="metricTooltips['Power/HR Ratio']" :popper="{ placement: 'top' }">
+            <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">Power/HR Ratio</span>
+          </UTooltip>
         </div>
         <div class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ metrics.powerHrRatio.toFixed(2) }}
@@ -70,7 +78,9 @@
       <!-- Polarization Index -->
       <div v-if="metrics.polarizationIndex !== null && metrics.polarizationIndex !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400">Polarization Index</span>
+          <UTooltip :text="metricTooltips['Polarization Index']" :popper="{ placement: 'top' }">
+            <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">Polarization Index</span>
+          </UTooltip>
         </div>
         <div class="text-2xl font-bold text-gray-900 dark:text-white">
           {{ metrics.polarizationIndex.toFixed(2) }}
@@ -83,7 +93,9 @@
       <!-- L/R Balance -->
       <div v-if="metrics.lrBalance !== null && metrics.lrBalance !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400">L/R Balance</span>
+          <UTooltip :text="metricTooltips['L/R Balance']" :popper="{ placement: 'top' }">
+            <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">L/R Balance</span>
+          </UTooltip>
           <UBadge :color="getLRBalanceColor(metrics.lrBalance)" variant="subtle">
             {{ getLRBalanceRating(metrics.lrBalance) }}
           </UBadge>
@@ -126,6 +138,15 @@ const props = defineProps<{
     lrBalance?: number | null
   }
 }>()
+
+const metricTooltips: Record<string, string> = {
+  'Variability Index': 'VI: The ratio of Normalized Power to Average Power. A VI of 1.0 means steady pacing (like a time trial); higher values (e.g., 1.2+) indicate "spiky" or variable effort.',
+  'Efficiency Factor': 'EF: Normalized Power divided by Average Heart Rate. Measures your aerobic efficiency (power produced per heartbeat). Higher is generally better.',
+  'Aerobic Decoupling': 'Aerobic Decoupling (Pw:HR): Measures how much your heart rate drifts upward relative to power over the session. Less than 5% usually indicates good endurance.',
+  'Power/HR Ratio': 'The ratio of power output to heart rate. Similar to Efficiency Factor but often calculated on raw averages.',
+  'Polarization Index': 'A metric indicating how "polarized" your training intensity is (spending time in easy and hard zones, avoiding the middle "grey zone").',
+  'L/R Balance': 'Left/Right Power Balance: The percentage split of total power contributed by each leg.'
+}
 
 const hasMetrics = computed(() => {
   return props.metrics.variabilityIndex !== null ||
