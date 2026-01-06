@@ -74,7 +74,8 @@ export const ingestStravaTask = task({
       for (const activity of activities) {
         // Check if this activity already exists from Intervals.icu
         // Match by date (within 5 minutes), type, and duration (within 30 seconds)
-        const activityDate = new Date(activity.start_date_local);
+        // ALWAYS use start_date (UTC) for matching absolute time points
+        const activityDate = new Date(activity.start_date);
         const fiveMinutesBefore = new Date(activityDate.getTime() - 5 * 60 * 1000);
         const fiveMinutesAfter = new Date(activityDate.getTime() + 5 * 60 * 1000);
         

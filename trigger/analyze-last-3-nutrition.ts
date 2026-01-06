@@ -3,6 +3,7 @@ import { generateStructuredAnalysis } from "../server/utils/gemini";
 import { prisma } from "../server/utils/db";
 import { nutritionRepository } from "../server/utils/repositories/nutritionRepository";
 import { userReportsQueue } from "./queues";
+import { getUserTimezone, formatUserDate, getStartOfDaysAgoUTC } from "../server/utils/date";
 
 // Analysis schema for nutrition reports
 const nutritionAnalysisSchema = {
@@ -95,10 +96,10 @@ const nutritionAnalysisSchema = {
   required: ["type", "title", "executive_summary", "sections"]
 }
 
-function buildNutritionSummary(nutritionDays: any[]) {
+function buildNutritionSummary(nutritionDays: any[], timezone: string) {
   return nutritionDays.map((day, idx) => {
     const dayNum = nutritionDays.length - idx;
-    const dateStr = new Date(day.date).toLocaleDateString();
+    const dateStr = formatUserDate(day.date, timezone, 'EEE, MMM d');
     
     return `Day ${dayNum} (${dateStr}):
 - Calories: ${day.calories || 'N/A'}${day.caloriesGoal ? ` / ${day.caloriesGoal} goal` : ''} (${day.caloriesGoal ? Math.round((day.calories / day.caloriesGoal) * 100) : 'N/A'}%)
@@ -110,9 +111,9 @@ function buildNutritionSummary(nutritionDays: any[]) {
   }).join('\n\n');
 }
 
-function buildAnalysisPrompt(nutritionDays: any[], user: any) {
+function buildAnalysisPrompt(nutritionDays: any[], user: any, timezone: string) {
   const dateRange = nutritionDays.length > 0 
-    ? `${new Date(nutritionDays[nutritionDays.length - 1].date).toLocaleDateString()} - ${new Date(nutritionDays[0].date).toLocaleDateString()}`
+    ? `${formatUserDate(nutritionDays[nutritionDays.length - 1].date, timezone)} - ${formatUserDate(nutritionDays[0].date, timezone)}`
     : 'Unknown';
 
   return `You are a friendly, supportive nutrition coach analyzing your athlete's recent dietary intake.
@@ -123,7 +124,7 @@ USER PROFILE:
 - Cycling athlete - endurance training focus
 
 RECENT NUTRITION DATA (Last ${nutritionDays.length} Days):
-${buildNutritionSummary(nutritionDays)}
+${buildNutritionSummary(nutritionDays, timezone)}
 
 ANALYSIS FOCUS:
 1. **Caloric Balance**: Are they meeting their energy needs for training? Undereating or overeating?
@@ -210,15 +211,18 @@ export const analyzeLast3NutritionTask = task({
     });
     
     try {
+      const timezone = await getUserTimezone(userId);
+      const startDate = getStartOfDaysAgoUTC(timezone, 3);
+
       // Fetch last 3 days of nutrition data
-      // Using repo getForUser and filtering in memory
       const recentNutrition = await nutritionRepository.getForUser(userId, {
+        startDate,
         limit: 10,
         orderBy: { date: 'desc' }
       });
       
       const nutritionDays = recentNutrition
-        .filter(n => n.calories != null)
+        .filter(n => n.calories != null && n.date >= startDate)
         .slice(0, 3);
       
       if (nutritionDays.length === 0) {
@@ -237,7 +241,7 @@ export const analyzeLast3NutritionTask = task({
       });
       
       // Build the analysis prompt
-      const prompt = buildAnalysisPrompt(nutritionDays, user);
+      const prompt = buildAnalysisPrompt(nutritionDays, user, timezone);
       
       logger.log("Generating structured nutrition analysis with Gemini");
       

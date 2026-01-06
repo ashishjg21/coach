@@ -5,6 +5,7 @@ import { workoutRepository } from "../server/utils/repositories/workoutRepositor
 import { wellnessRepository } from "../server/utils/repositories/wellnessRepository";
 import { userReportsQueue } from "./queues";
 import { generateTrainingContext, formatTrainingContextForPrompt } from "../server/utils/training-metrics";
+import { getUserLocalDate, getUserTimezone, getStartOfDaysAgoUTC, getEndOfDayUTC } from "../server/utils/date";
 
 const suggestionSchema = {
   type: 'object',
@@ -38,21 +39,21 @@ export const dailyCoachTask = task({
     
     logger.log("Starting daily coach analysis", { userId });
     
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const today = new Date();
-    const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const timezone = await getUserTimezone(userId);
+    const todayDateOnly = getUserLocalDate(timezone);
+    const yesterdayStart = getStartOfDaysAgoUTC(timezone, 1);
+    const yesterdayEnd = getEndOfDayUTC(timezone, yesterdayStart);
+    const todayStart = getStartOfDaysAgoUTC(timezone, 0);
+    const todayEnd = getEndOfDayUTC(timezone, todayStart);
     
     // Fetch data
     const [yesterdayWorkout, todayMetric, user, athleteProfile, activeGoals] = await Promise.all([
-      workoutRepository.findFirst(userId, { // Add findFirst to repo or use getForUser with limit 1
-        // Actually getForUser is findMany.
-        // We can use getForUser and take first.
-      }).then(() => workoutRepository.getForUser(userId, {
-        startDate: yesterday,
-        endDate: today, // lt today?
+      workoutRepository.getForUser(userId, {
+        startDate: yesterdayStart,
+        endDate: yesterdayEnd,
         limit: 1,
         orderBy: { date: 'desc' }
-      })).then(workouts => workouts[0]),
+      }).then(workouts => workouts[0]),
       wellnessRepository.getByDate(userId, todayDateOnly),
       prisma.user.findUnique({
         where: { id: userId },
@@ -95,12 +96,12 @@ export const dailyCoachTask = task({
       activeGoals: activeGoals.length
     });
     
-    // Generate comprehensive training context
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const now = new Date();
-    const trainingContext = await generateTrainingContext(userId, thirtyDaysAgo, now, {
+    // Generate comprehensive training context (Last 30 Days)
+    const thirtyDaysAgo = getStartOfDaysAgoUTC(timezone, 30);
+    const trainingContext = await generateTrainingContext(userId, thirtyDaysAgo, todayEnd, {
       includeZones: false, // Skip expensive zone calculation for daily check
-      period: 'Last 30 Days'
+      period: 'Last 30 Days',
+      timezone // Pass timezone for correct day alignment in metrics
     });
     const formattedContext = formatTrainingContextForPrompt(trainingContext);
 

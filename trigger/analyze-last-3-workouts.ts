@@ -3,6 +3,7 @@ import { generateStructuredAnalysis, buildWorkoutSummary } from "../server/utils
 import { prisma } from "../server/utils/db";
 import { workoutRepository } from "../server/utils/repositories/workoutRepository";
 import { userReportsQueue } from "./queues";
+import { getUserTimezone, formatUserDate, getStartOfDaysAgoUTC } from "../server/utils/date";
 
 // Reuse the flexible analysis schema (same as workout analysis)
 const analysisSchema = {
@@ -93,9 +94,9 @@ const analysisSchema = {
   required: ["type", "title", "executive_summary", "sections"]
 }
 
-function buildAnalysisPrompt(workouts: any[], user: any) {
+function buildAnalysisPrompt(workouts: any[], user: any, timezone: string) {
   const dateRange = workouts.length > 0 
-    ? `${new Date(workouts[workouts.length - 1].date).toLocaleDateString()} - ${new Date(workouts[0].date).toLocaleDateString()}`
+    ? `${formatUserDate(workouts[workouts.length - 1].date, timezone)} - ${formatUserDate(workouts[0].date, timezone)}`
     : 'Unknown';
 
   return `You are a friendly, supportive cycling coach analyzing your athlete's recent training progression.
@@ -190,6 +191,7 @@ export const analyzeLast3WorkoutsTask = task({
     });
     
     try {
+      const timezone = await getUserTimezone(userId);
       // Fetch last 3 cycling workouts
       // TODO: Repository needs support for 'type' filtering or dynamic where
       // We will use the repo getForUser and filter in memory if volume is low, OR extend repo.
@@ -229,7 +231,7 @@ export const analyzeLast3WorkoutsTask = task({
       });
       
       // Build the analysis prompt
-      const prompt = buildAnalysisPrompt(workouts, user);
+      const prompt = buildAnalysisPrompt(workouts, user, timezone);
       
       logger.log("Generating structured analysis with Gemini Flash");
       

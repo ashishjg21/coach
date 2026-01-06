@@ -3,6 +3,7 @@ import { generateStructuredAnalysis } from "../server/utils/gemini";
 import { prisma } from "../server/utils/db";
 import { nutritionRepository } from "../server/utils/repositories/nutritionRepository";
 import { userReportsQueue } from "./queues";
+import { getUserTimezone, formatUserDate } from "../server/utils/date";
 
 // Analysis schema for nutrition reports
 const nutritionAnalysisSchema = {
@@ -96,10 +97,10 @@ const nutritionAnalysisSchema = {
   required: ["type", "title", "executive_summary", "sections"]
 }
 
-function buildNutritionSummary(nutritionDays: any[]) {
+function buildNutritionSummary(nutritionDays: any[], timezone: string) {
   return nutritionDays.map((day, idx) => {
     const dayNum = nutritionDays.length - idx;
-    const dateStr = new Date(day.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const dateStr = formatUserDate(day.date, timezone, 'EEE, MMM d');
     
     return `Day ${dayNum} (${dateStr}):
 - Calories: ${day.calories || 'N/A'}${day.caloriesGoal ? ` / ${day.caloriesGoal} goal` : ''} (${day.caloriesGoal && day.calories ? Math.round((day.calories / day.caloriesGoal) * 100) + '%' : 'N/A'})
@@ -111,9 +112,9 @@ function buildNutritionSummary(nutritionDays: any[]) {
   }).join('\n\n');
 }
 
-function buildAnalysisPrompt(nutritionDays: any[], user: any) {
+function buildAnalysisPrompt(nutritionDays: any[], user: any, timezone: string) {
   const dateRange = nutritionDays.length > 0 
-    ? `${new Date(nutritionDays[nutritionDays.length - 1].date).toLocaleDateString()} - ${new Date(nutritionDays[0].date).toLocaleDateString()}`
+    ? `${formatUserDate(nutritionDays[nutritionDays.length - 1].date, timezone)} - ${formatUserDate(nutritionDays[0].date, timezone)}`
     : 'Unknown';
 
   return `You are a friendly, supportive nutrition coach analyzing your athlete's weekly dietary intake.
@@ -124,7 +125,7 @@ USER PROFILE:
 - Cycling athlete - endurance training focus
 
 WEEKLY NUTRITION DATA (Last ${nutritionDays.length} Days):
-${buildNutritionSummary(nutritionDays)}
+${buildNutritionSummary(nutritionDays, timezone)}
 
 ANALYSIS FOCUS:
 1. **Weekly Caloric Balance**: Overall energy intake trends across the week - consistency and adequacy
@@ -207,6 +208,8 @@ export const analyzeLast7NutritionTask = task({
     
     logger.log("Starting Last 7 Days Nutrition analysis", { userId, reportId });
     
+    const timezone = await getUserTimezone(userId);
+
     // Update report status to PROCESSING
     await prisma.report.update({
       where: { id: reportId },
@@ -214,15 +217,20 @@ export const analyzeLast7NutritionTask = task({
     });
     
     try {
-      // Fetch last 7 days of nutrition data
+      // Calculate date range (last 7 days)
+      const startDate = getStartOfDaysAgoUTC(timezone, 7);
+      
+      // Fetch nutrition data
       const recentNutrition = await nutritionRepository.getForUser(userId, {
-        limit: 14,
+        startDate,
+        limit: 20, // Fetch a few more just in case, but filter by date
         orderBy: { date: 'desc' }
       });
       
+      // Filter for days with calorie data and ensure we only take those >= startDate
       const nutritionDays = recentNutrition
-        .filter(n => n.calories != null)
-        .slice(0, 7);
+        .filter(n => n.calories != null && n.date >= startDate)
+        .slice(0, 7); // Take up to 7 days
       
       if (nutritionDays.length === 0) {
         throw new Error('No nutrition data found for analysis');
@@ -240,7 +248,7 @@ export const analyzeLast7NutritionTask = task({
       });
       
       // Build the analysis prompt
-      const prompt = buildAnalysisPrompt(nutritionDays, user);
+      const prompt = buildAnalysisPrompt(nutritionDays, user, timezone);
       
       logger.log("Generating structured nutrition analysis with Gemini");
       

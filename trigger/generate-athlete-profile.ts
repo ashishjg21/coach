@@ -6,6 +6,7 @@ import { wellnessRepository } from "../server/utils/repositories/wellnessReposit
 import { nutritionRepository } from "../server/utils/repositories/nutritionRepository";
 import { userReportsQueue } from "./queues";
 import { generateTrainingContext, formatTrainingContextForPrompt } from "../server/utils/training-metrics";
+import { getUserTimezone, getStartOfDaysAgoUTC, getEndOfDayUTC, formatUserDate } from "../server/utils/date";
 
 // Athlete Profile schema for structured JSON output
 const athleteProfileSchema = {
@@ -318,11 +319,13 @@ export const generateAthleteProfileTask = task({
     });
     
     try {
-      const now = new Date();
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const timezone = await getUserTimezone(userId);
+      const now = new Date(); // Current system time for "now" queries if needed, but better to use range end
+      const todayEnd = getEndOfDayUTC(timezone, now);
+      const thirtyDaysAgo = getStartOfDaysAgoUTC(timezone, 30);
+      const sevenDaysAgo = getStartOfDaysAgoUTC(timezone, 7);
       
-      logger.log("Fetching comprehensive athlete data");
+      logger.log("Fetching comprehensive athlete data", { timezone, thirtyDaysAgo, todayEnd });
       
       // Fetch all relevant data
       const [user, recentWorkouts, recentWellness, recentNutrition, recentReports, recentRecommendations, activeGoals] = await Promise.all([
@@ -332,7 +335,7 @@ export const generateAthleteProfileTask = task({
         }),
         workoutRepository.getForUser(userId, {
           startDate: thirtyDaysAgo,
-          endDate: now,
+          endDate: todayEnd,
           limit: 20,
           orderBy: { date: 'desc' },
           select: {
@@ -348,13 +351,13 @@ export const generateAthleteProfileTask = task({
         }),
         wellnessRepository.getForUser(userId, {
           startDate: thirtyDaysAgo,
-          endDate: now,
+          endDate: todayEnd,
           limit: 30,
           orderBy: { date: 'desc' }
         }),
         nutritionRepository.getForUser(userId, {
           startDate: sevenDaysAgo,
-          endDate: now,
+          endDate: todayEnd,
           limit: 14,
           orderBy: { date: 'desc' },
           select: {
@@ -440,7 +443,7 @@ export const generateAthleteProfileTask = task({
         .filter(w => w.aiAnalysisJson)
         .map(w => {
           const analysis = w.aiAnalysisJson as any;
-          return `${new Date(w.date).toLocaleDateString()}: ${w.title} - ${analysis.quick_take || analysis.executive_summary || 'Analysis available'}`;
+          return `${formatUserDate(w.date, timezone)}: ${w.title} - ${analysis.quick_take || analysis.executive_summary || 'Analysis available'}`;
         })
         .slice(0, 10)
         .join('\n');
@@ -459,7 +462,7 @@ Recent sleep: ${recentWellness.slice(0, 7).map(w => `${w.sleepHours?.toFixed(1) 
       
       // Build recent recommendations summary
       const recommendationsSummary = recentRecommendations
-        .map(r => `${new Date(r.date).toLocaleDateString()}: ${r.recommendation.toUpperCase()} - ${r.reasoning}`)
+        .map(r => `${formatUserDate(r.date, timezone)}: ${r.recommendation.toUpperCase()} - ${r.reasoning}`)
         .join('\n');
       
       // Build recent reports summary
@@ -498,9 +501,10 @@ Recent sleep: ${recentWellness.slice(0, 7).map(w => `${w.sleepHours?.toFixed(1) 
       
       // Generate comprehensive training context with advanced metrics
       logger.log("Generating comprehensive training context");
-      const trainingContext = await generateTrainingContext(userId, thirtyDaysAgo, now, {
+      const trainingContext = await generateTrainingContext(userId, thirtyDaysAgo, todayEnd, {
         includeZones: true,
-        period: 'Last 30 Days'
+        period: 'Last 30 Days',
+        timezone
       });
       const formattedContext = formatTrainingContextForPrompt(trainingContext);
       

@@ -4,6 +4,7 @@ import { prisma } from "../server/utils/db";
 import { workoutRepository } from "../server/utils/repositories/workoutRepository";
 import { wellnessRepository } from "../server/utils/repositories/wellnessRepository";
 import { userReportsQueue } from "./queues";
+import { getUserTimezone, getStartOfDaysAgoUTC, getEndOfDayUTC, formatUserDate } from "../server/utils/date";
 
 // Goal review schema for structured JSON output
 const goalReviewSchema = {
@@ -211,10 +212,12 @@ export const reviewGoalsTask = task({
     logger.log("Starting goals review", { userId });
     
     try {
+      const timezone = await getUserTimezone(userId);
       const now = new Date();
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const todayEnd = getEndOfDayUTC(timezone, now);
+      const thirtyDaysAgo = getStartOfDaysAgoUTC(timezone, 30);
       
-      logger.log("Fetching athlete data and goals for review");
+      logger.log("Fetching athlete data and goals for review", { timezone, thirtyDaysAgo, todayEnd });
       
       // Fetch comprehensive data
       const [user, activeGoals, recentWorkouts, recentWellness, athleteProfile, recentReports] = await Promise.all([
@@ -259,7 +262,7 @@ export const reviewGoalsTask = task({
         }),
         workoutRepository.getForUser(userId, {
           startDate: thirtyDaysAgo,
-          endDate: now,
+          endDate: todayEnd,
           limit: 20,
           orderBy: { date: 'desc' },
           select: {
@@ -273,7 +276,7 @@ export const reviewGoalsTask = task({
         }),
         wellnessRepository.getForUser(userId, {
           startDate: thirtyDaysAgo,
-          endDate: now,
+          endDate: todayEnd,
           limit: 30,
           orderBy: { date: 'desc' },
           select: {
@@ -357,7 +360,7 @@ Start Value: ${g.startValue || 'N/A'}
 Current Value: ${g.currentValue || 'N/A'}
 Target Value: ${g.targetValue || 'N/A'}
 Progress: ${progressPct !== null ? progressPct + '%' : 'N/A'}
-Target Date: ${g.targetDate ? new Date(g.targetDate).toLocaleDateString() : 'N/A'}
+Target Date: ${g.targetDate ? formatUserDate(g.targetDate, timezone) : 'N/A'}
 Days to Target: ${daysToTarget !== null ? daysToTarget : 'N/A'}
 Days Active: ${daysActive}
 AI Context: ${g.aiContext || 'N/A'}`;
@@ -368,7 +371,7 @@ AI Context: ${g.aiContext || 'N/A'}`;
       if (athleteProfile) {
         const profile = athleteProfile.analysisJson as any;
         profileInsights = `
-ATHLETE PROFILE (from ${new Date(athleteProfile.createdAt).toLocaleDateString()}):
+ATHLETE PROFILE (from ${formatUserDate(athleteProfile.createdAt, timezone)}):
 Executive Summary: ${profile?.executive_summary || 'N/A'}
 Current Fitness: ${profile?.current_fitness?.status_label || 'N/A'}
 Strengths: ${profile?.training_characteristics?.strengths?.join(', ') || 'N/A'}

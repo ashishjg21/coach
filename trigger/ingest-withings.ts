@@ -1,11 +1,20 @@
 import { logger, task } from "@trigger.dev/sdk/v3";
 import { userIngestionQueue } from "./queues";
-import { fetchWithingsMeasures, normalizeWithingsMeasureGroup, WITHINGS_MEASURE_TYPES, fetchWithingsWorkouts, normalizeWithingsWorkout, fetchWithingsSleep, normalizeWithingsSleep, fetchWithingsIntraday } from "../server/utils/withings";
+import {
+  fetchWithingsMeasures,
+  fetchWithingsActivities,
+  fetchWithingsSleep,
+  fetchWithingsWorkouts,
+  normalizeWithingsMeasureGroup,
+  normalizeWithingsActivity,
+  normalizeWithingsSleep,
+  normalizeWithingsWorkout,
+  WITHINGS_MEASURE_TYPES
+} from "../server/utils/withings";
 import { prisma } from "../server/utils/db";
 import { wellnessRepository } from "../server/utils/repositories/wellnessRepository";
 import { workoutRepository } from "../server/utils/repositories/workoutRepository";
-import { normalizeTSS } from "../server/utils/normalize-tss";
-import { calculateWorkoutStress } from "../server/utils/calculate-workout-stress";
+import { getUserTimezone, getStartOfDayUTC } from "../server/utils/date";
 
 export const ingestWithingsTask = task({
   id: "ingest-withings",

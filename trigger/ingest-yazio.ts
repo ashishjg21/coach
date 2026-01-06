@@ -2,6 +2,7 @@ import { logger, task } from "@trigger.dev/sdk/v3"
 import { userIngestionQueue } from "./queues";
 import { prisma } from "../server/utils/db"
 import { nutritionRepository } from "../server/utils/repositories/nutritionRepository"
+import { getUserTimezone, getStartOfDayUTC } from "../server/utils/date"
 import {
   fetchYazioDailySummary,
   fetchYazioConsumedItems,

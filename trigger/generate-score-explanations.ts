@@ -3,6 +3,7 @@ import { prisma } from "../server/utils/db";
 import { workoutRepository } from "../server/utils/repositories/workoutRepository";
 import { nutritionRepository } from "../server/utils/repositories/nutritionRepository";
 import { generateStructuredAnalysis } from "../server/utils/gemini";
+import { getUserTimezone, getStartOfDaysAgoUTC, getEndOfDayUTC, formatUserDate } from "../server/utils/date";
 
 interface TrendAnalysis {
   executive_summary: string
@@ -49,11 +50,11 @@ async function generateNutritionExplanation(
   userId: string,
   period: number,
   metric: string,
-  summary: any
+  summary: any,
+  timezone: string
 ): Promise<TrendAnalysis> {
   // Fetch recent nutrition data for context
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - period);
+  const startDate = getStartOfDaysAgoUTC(timezone, period);
   
   const nutrition = await nutritionRepository.getForUser(userId, {
     startDate,
@@ -85,7 +86,7 @@ ${nutrition.map(n => {
   const proteinPct = totalMacros > 0 ? ((n.protein || 0) / totalMacros * 100).toFixed(0) : 0;
   const carbsPct = totalMacros > 0 ? ((n.carbs || 0) / totalMacros * 100).toFixed(0) : 0;
   const fatPct = totalMacros > 0 ? ((n.fat || 0) / totalMacros * 100).toFixed(0) : 0;
-  return `- ${n.date.toISOString().split('T')[0]}: ${n.calories || 0}kcal (P:${proteinPct}% C:${carbsPct}% F:${fatPct}%) Water: ${n.waterMl ? (n.waterMl / 1000).toFixed(1) : 0}L`;
+  return `- ${formatUserDate(n.date, timezone)}: ${n.calories || 0}kcal (P:${proteinPct}% C:${carbsPct}% F:${fatPct}%) Water: ${n.waterMl ? (n.waterMl / 1000).toFixed(1) : 0}L`;
 }).join('\n')}
 
 Focus on "${getMetricDisplayName('nutrition', metric)}" and provide structured analysis with actionable nutrition improvements.`;
@@ -151,11 +152,11 @@ async function generateWorkoutExplanation(
   userId: string,
   period: number,
   metric: string,
-  summary: any
+  summary: any,
+  timezone: string
 ): Promise<TrendAnalysis> {
   // Fetch recent workout data for context
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - period);
+  const startDate = getStartOfDaysAgoUTC(timezone, period);
   
   const workouts = await workoutRepository.getForUser(userId, {
     startDate,
@@ -186,7 +187,7 @@ SUMMARY (Last ${period} days):
 
 RECENT WORKOUTS:
 ${workouts.map(w => {
-  return `- ${w.date.toISOString().split('T')[0]}: ${w.title} (${w.type}) - ${Math.round(w.durationSec / 60)}min, TSS: ${w.tss?.toFixed(0) || 'N/A'}, Power: ${w.averageWatts || 'N/A'}W, HR: ${w.averageHr || 'N/A'}bpm, RPE: ${w.rpe || 'N/A'}, Feel: ${w.feel || 'N/A'}`;
+  return `- ${formatUserDate(w.date, timezone)}: ${w.title} (${w.type}) - ${Math.round(w.durationSec / 60)}min, TSS: ${w.tss?.toFixed(0) || 'N/A'}, Power: ${w.averageWatts || 'N/A'}W, HR: ${w.averageHr || 'N/A'}bpm, RPE: ${w.rpe || 'N/A'}, Feel: ${w.feel || 'N/A'}`;
 }).join('\n')}
 
 Focus on "${getMetricDisplayName('workout', metric)}" and provide structured analysis with actionable training improvements.`;
@@ -248,9 +249,8 @@ Focus on "${getMetricDisplayName('workout', metric)}" and provide structured ana
   );
 }
 
-async function calculateNutritionSummary(userId: string, period: number) {
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - period);
+async function calculateNutritionSummary(userId: string, period: number, timezone: string) {
+  const startDate = getStartOfDaysAgoUTC(timezone, period);
   
   // Note: getForUser does not support complex filtering like 'overallScore: { not: null }' directly yet.
   // Using getForUser and filtering in memory or extending repository is preferred.
@@ -281,9 +281,8 @@ async function calculateNutritionSummary(userId: string, period: number) {
   };
 }
 
-async function calculateWorkoutSummary(userId: string, period: number) {
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - period);
+async function calculateWorkoutSummary(userId: string, period: number, timezone: string) {
+  const startDate = getStartOfDaysAgoUTC(timezone, period);
   
   // Similar logic for workouts
   const allWorkouts = await workoutRepository.getForUser(userId, {
@@ -323,6 +322,8 @@ export const generateScoreExplanationsTask = task({
     logger.log(`User ID: ${userId}`);
     logger.log("");
 
+    const timezone = await getUserTimezone(userId);
+
     const results = {
       generated: 0,
       skipped: 0,
@@ -336,7 +337,7 @@ export const generateScoreExplanationsTask = task({
     // Generate nutrition explanations
     logger.log("📊 Generating Nutrition Explanations...");
     for (const period of PERIODS) {
-      const summary = await calculateNutritionSummary(userId, period);
+      const summary = await calculateNutritionSummary(userId, period, timezone);
       
       if (!summary) {
         logger.log(`  ⏭️  Skipping ${period}d - no nutrition data`);
@@ -367,7 +368,7 @@ export const generateScoreExplanationsTask = task({
           }
 
           logger.log(`  🔄 ${period}d ${metric}...`);
-          const analysis = await generateNutritionExplanation(userId, period, metric, summary);
+          const analysis = await generateNutritionExplanation(userId, period, metric, summary, timezone);
 
           await prisma.scoreTrendExplanation.upsert({
             where: {
@@ -422,7 +423,7 @@ export const generateScoreExplanationsTask = task({
     logger.log("");
     logger.log("💪 Generating Workout Explanations...");
     for (const period of PERIODS) {
-      const summary = await calculateWorkoutSummary(userId, period);
+      const summary = await calculateWorkoutSummary(userId, period, timezone);
       
       if (!summary) {
         logger.log(`  ⏭️  Skipping ${period}d - no workout data`);
@@ -453,7 +454,7 @@ export const generateScoreExplanationsTask = task({
           }
 
           logger.log(`  🔄 ${period}d ${metric}...`);
-          const analysis = await generateWorkoutExplanation(userId, period, metric, summary);
+          const analysis = await generateWorkoutExplanation(userId, period, metric, summary, timezone);
 
           await prisma.scoreTrendExplanation.upsert({
             where: {

@@ -5,6 +5,7 @@ import { workoutRepository } from "../server/utils/repositories/workoutRepositor
 import { wellnessRepository } from "../server/utils/repositories/wellnessRepository";
 import { nutritionRepository } from "../server/utils/repositories/nutritionRepository";
 import { userReportsQueue } from "./queues";
+import { getUserTimezone, getStartOfDaysAgoUTC, getEndOfDayUTC, formatUserDate } from "../server/utils/date";
 
 // Goal suggestions schema for structured JSON output
 const goalSuggestionsSchema = {
@@ -147,11 +148,13 @@ export const suggestGoalsTask = task({
     logger.log("Starting goal suggestions generation", { userId });
     
     try {
+      const timezone = await getUserTimezone(userId);
       const now = new Date();
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const todayEnd = getEndOfDayUTC(timezone, now);
+      const thirtyDaysAgo = getStartOfDaysAgoUTC(timezone, 30);
+      const sevenDaysAgo = getStartOfDaysAgoUTC(timezone, 7);
       
-      logger.log("Fetching athlete data for goal suggestions");
+      logger.log("Fetching athlete data for goal suggestions", { timezone, thirtyDaysAgo, todayEnd });
       
       // Fetch comprehensive athlete data
       const [user, recentWorkouts, recentWellness, recentNutrition, athleteProfile, existingGoals, recentReports] = await Promise.all([
@@ -175,7 +178,7 @@ export const suggestGoalsTask = task({
         }),
         workoutRepository.getForUser(userId, {
           startDate: thirtyDaysAgo,
-          endDate: now,
+          endDate: todayEnd,
           limit: 20,
           orderBy: { date: 'desc' },
           select: {
@@ -190,7 +193,7 @@ export const suggestGoalsTask = task({
         }),
         wellnessRepository.getForUser(userId, {
           startDate: thirtyDaysAgo,
-          endDate: now,
+          endDate: todayEnd,
           limit: 30,
           orderBy: { date: 'desc' },
           select: {
@@ -202,7 +205,7 @@ export const suggestGoalsTask = task({
         }),
         nutritionRepository.getForUser(userId, {
           startDate: sevenDaysAgo,
-          endDate: now,
+          endDate: todayEnd,
           limit: 7,
           orderBy: { date: 'desc' },
           select: {
@@ -288,7 +291,7 @@ export const suggestGoalsTask = task({
       if (athleteProfile) {
         const profile = athleteProfile.analysisJson as any;
         profileInsights = `
-ATHLETE PROFILE INSIGHTS (from ${new Date(athleteProfile.createdAt).toLocaleDateString()}):
+ATHLETE PROFILE INSIGHTS (from ${formatUserDate(athleteProfile.createdAt, timezone)}):
 Executive Summary: ${profile?.executive_summary || 'N/A'}
 Current Fitness: ${profile?.current_fitness?.status_label || 'N/A'}
 Training Style: ${profile?.training_characteristics?.training_style || 'N/A'}

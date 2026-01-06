@@ -8,6 +8,7 @@ import { prisma } from "../server/utils/db";
 import { workoutRepository } from "../server/utils/repositories/workoutRepository";
 import { wellnessRepository } from "../server/utils/repositories/wellnessRepository";
 import { userReportsQueue } from "./queues";
+import { getUserTimezone, getStartOfDaysAgoUTC, getEndOfDayUTC } from "../server/utils/date";
 
 // Analysis schema for structured JSON output
 const analysisSchema = {
@@ -171,11 +172,12 @@ export const generateWeeklyReportTask = task({
     });
     
     try {
-      // Calculate date range (last 7 days / previous week)
-      const endDate = new Date();
-      const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      // Calculate date range (last 7 days / previous week) based on user timezone
+      const timezone = await getUserTimezone(userId);
+      const startDate = getStartOfDaysAgoUTC(timezone, 7);
+      const endDate = getEndOfDayUTC(timezone, new Date()); // End of "today" in local time
       
-      logger.log("Fetching data", { startDate, endDate });
+      logger.log("Fetching data", { startDate, endDate, timezone });
       
       // Fetch data (excluding duplicate workouts)
       const [workouts, metrics, user, activeGoals] = await Promise.all([

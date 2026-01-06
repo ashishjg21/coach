@@ -2,6 +2,7 @@ import { logger, task } from "@trigger.dev/sdk/v3";
 import { generateStructuredAnalysis } from "../server/utils/gemini";
 import { prisma } from "../server/utils/db";
 import { userReportsQueue } from "./queues";
+import { getUserTimezone, getUserLocalDate, getEndOfDayUTC } from "../server/utils/date";
 
 export const adaptTrainingPlanTask = task({
   id: "adapt-training-plan",
@@ -11,6 +12,8 @@ export const adaptTrainingPlanTask = task({
     
     logger.log("Adapting training plan", { planId, adaptationType });
     
+    const timezone = await getUserTimezone(userId);
+
     // 1. Fetch Current State
     const plan = await prisma.trainingPlan.findUnique({
       where: { id: planId },

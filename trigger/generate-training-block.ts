@@ -2,6 +2,7 @@ import { logger, task } from "@trigger.dev/sdk/v3";
 import { generateStructuredAnalysis } from "../server/utils/gemini";
 import { prisma } from "../server/utils/db";
 import { userReportsQueue } from "./queues";
+import { getUserTimezone, getStartOfDaysAgoUTC, getStartOfDayUTC, formatUserDate } from "../server/utils/date";
 
 const trainingBlockSchema = {
   type: "object",
@@ -52,6 +53,8 @@ export const generateTrainingBlockTask = task({
     
     logger.log("Starting training block generation", { userId, blockId });
     
+    const timezone = await getUserTimezone(userId);
+
     // 1. Fetch Context
     const block = await prisma.trainingBlock.findUnique({
       where: { id: blockId },
@@ -92,8 +95,8 @@ export const generateTrainingBlockTask = task({
     
     // 3. Build Prompt
     const eventsList = block.plan.goal.events && block.plan.goal.events.length > 0 
-      ? block.plan.goal.events.map((e: any) => `- ${e.title}: ${new Date(e.date).toDateString()} (${e.type || 'Race'})`).join('\n')
-      : `- Primary Event Date: ${new Date(block.plan.goal.eventDate || block.plan.targetDate).toDateString()}`;
+      ? block.plan.goal.events.map((e: any) => `- ${e.title}: ${formatUserDate(e.date, timezone)} (${e.type || 'Race'})`).join('\n')
+      : `- Primary Event Date: ${formatUserDate(block.plan.goal.eventDate || block.plan.targetDate || new Date(), timezone)}`;
 
     // NEW: Get activity types from plan
     const allowedTypes = (block.plan as any).activityTypes || ["Ride"]; // Default to Ride if missing
@@ -118,7 +121,7 @@ BLOCK CONTEXT:
 - Phase Type: ${block.type} (e.g. Base, Build, Peak)
 - Primary Focus: ${block.primaryFocus}
 - Duration: ${block.durationWeeks} weeks
-- Start Date: ${new Date(block.startDate).toDateString()}
+- Start Date: ${formatUserDate(block.startDate, timezone)}
 - Progression Logic: ${block.progressionLogic || "Standard linear progression"}
 - Recovery Week: Week ${block.recoveryWeekIndex || 4} is a recovery week.
 
@@ -202,7 +205,15 @@ Return valid JSON matching the schema provided.`;
           // Logic assuming Block Start is ALWAYS aligned to start of week (e.g. Monday)
           // Mon=1 -> offset 0
           // Sun=0 -> offset 6
-          const offset = workout.dayOfWeek === 0 ? 6 : workout.dayOfWeek - 1;
+          
+          // Validate dayOfWeek (0-6)
+          let dayOfWeek = workout.dayOfWeek;
+          if (dayOfWeek < 0 || dayOfWeek > 6) {
+             logger.warn("Invalid dayOfWeek from AI, clamping", { dayOfWeek, weekNumber: weekData.weekNumber });
+             dayOfWeek = Math.max(0, Math.min(6, dayOfWeek));
+          }
+
+          const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
           const workoutDate = new Date(weekStartDate);
           workoutDate.setDate(workoutDate.getDate() + offset);
 
@@ -216,7 +227,7 @@ Return valid JSON matching the schema provided.`;
             durationSec: (workout.durationMinutes || 0) * 60,
             tss: workout.tssEstimate,
             workIntensity: getIntensityScore(workout.intensity),
-            externalId: `ai-gen-${createdWeek.id}-${workout.dayOfWeek}-${index}-${Date.now()}`,
+            externalId: `ai-gen-${createdWeek.id}-${dayOfWeek}-${index}-${Date.now()}`,
             category: 'WORKOUT'
           };
         });

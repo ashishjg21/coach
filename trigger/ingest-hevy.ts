@@ -1,10 +1,11 @@
-import { task } from '@trigger.dev/sdk/v3'
+import { logger, task } from "@trigger.dev/sdk/v3";
 import { userIngestionQueue } from "./queues";
-import { prisma } from '../server/utils/db' // Adjusted path for trigger folder
-import { fetchHevyWorkouts, normalizeHevyWorkout, fetchHevyExerciseTemplate } from '../server/utils/hevy'
-import type { HevyWorkout, HevyExercise, HevySet } from '../server/utils/hevy'
+import { prisma } from "../server/utils/db";
+import { workoutRepository } from "../server/utils/repositories/workoutRepository";
+import { calculateWorkoutStress } from "../server/utils/calculate-workout-stress";
+import { getUserTimezone, getStartOfDayUTC } from "../server/utils/date";
 
-export const ingestHevy = task({
+export const ingestHevyTask = task({
   id: 'ingest-hevy',
   queue: userIngestionQueue,
   run: async (payload: { userId: string, fullSync?: boolean }) => {

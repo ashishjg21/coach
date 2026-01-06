@@ -9,6 +9,7 @@ import { workoutRepository } from "../server/utils/repositories/workoutRepositor
 import { nutritionRepository } from "../server/utils/repositories/nutritionRepository";
 import { wellnessRepository } from "../server/utils/repositories/wellnessRepository";
 import { userReportsQueue } from "./queues";
+import { getUserTimezone, formatUserDate } from "../server/utils/date";
 
 // Analysis schema for structured JSON output
 const analysisSchema = {
@@ -159,16 +160,16 @@ const analysisSchema = {
   required: ["type", "title", "executive_summary", "sections"]
 }
 
-function buildNutritionSummary(nutritionDays: any[]): string {
+function buildNutritionSummary(nutritionDays: any[], timezone: string): string {
   if (nutritionDays.length === 0) return "No nutrition data available";
   
   return nutritionDays.map(day => {
-    const date = new Date(day.date).toLocaleDateString();
+    const date = formatUserDate(day.date, timezone);
     return `${date}: ${Math.round(day.calories || 0)} cal | P: ${Math.round(day.proteinG || 0)}g | C: ${Math.round(day.carbsG || 0)}g | F: ${Math.round(day.fatG || 0)}g`;
   }).join('\n');
 }
 
-function buildCustomPrompt(config: any, workouts: any[], nutrition: any[], metrics: any[], user: any): string {
+function buildCustomPrompt(config: any, workouts: any[], nutrition: any[], metrics: any[], user: any, timezone: string): string {
   const dataTypeLabel = config.dataType === 'workouts' ? 'Training' : 
                        config.dataType === 'nutrition' ? 'Nutrition' : 
                        'Training & Nutrition';
@@ -180,7 +181,7 @@ function buildCustomPrompt(config: any, workouts: any[], nutrition: any[], metri
     const itemType = config.dataType === 'workouts' ? 'workouts' : 'nutrition days';
     timeframeDesc = `last ${config.count} ${itemType}`;
   } else if (config.timeframeType === 'range') {
-    timeframeDesc = `${new Date(config.startDate).toLocaleDateString()} to ${new Date(config.endDate).toLocaleDateString()}`;
+    timeframeDesc = `${formatUserDate(new Date(config.startDate), timezone)} to ${formatUserDate(new Date(config.endDate), timezone)}`;
   }
   
   const focusAreaPrompts: Record<string, string> = {
@@ -207,7 +208,7 @@ USER PROFILE:
 
   if (config.dataType === 'nutrition' || config.dataType === 'both') {
     prompt += `\nNUTRITION DATA:\n`;
-    prompt += buildNutritionSummary(nutrition) + '\n';
+    prompt += buildNutritionSummary(nutrition, timezone) + '\n';
   }
 
   if (metrics.length > 0) {
@@ -250,6 +251,8 @@ export const generateCustomReportTask = task({
     });
     
     try {
+      const timezone = await getUserTimezone(userId);
+
       // Fetch user profile
       const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -337,7 +340,7 @@ export const generateCustomReportTask = task({
       }
       
       // Build custom prompt based on config
-      const prompt = buildCustomPrompt(config, workouts, nutrition, metrics, user);
+      const prompt = buildCustomPrompt(config, workouts, nutrition, metrics, user, timezone);
       
       logger.log("Generating structured report with Gemini");
       

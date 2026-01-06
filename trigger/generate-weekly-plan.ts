@@ -5,6 +5,7 @@ import { workoutRepository } from "../server/utils/repositories/workoutRepositor
 import { wellnessRepository } from "../server/utils/repositories/wellnessRepository";
 import { generateTrainingContext } from "../server/utils/training-metrics";
 import { userBackgroundQueue } from "./queues";
+import { getUserTimezone, getStartOfDaysAgoUTC, formatUserDate, getStartOfDayUTC, getEndOfDayUTC } from "../server/utils/date";
 
     const weeklyPlanSchema = {
   type: 'object',
@@ -70,27 +71,65 @@ export const generateWeeklyPlanTask = task({
     
     logger.log("Starting weekly plan generation", { userId, startDate, daysToPlann, userInstructions, trainingWeekId });
     
-    const start = new Date(startDate);
-    logger.log("Parsed startDate", { original: startDate, parsed: start.toISOString(), localString: start.toString() });
-
-    start.setHours(0, 0, 0, 0); // Start of day 00:00:00 local time
+    const timezone = await getUserTimezone(userId);
     
-    // Calculate week boundaries
-    const weekStart = new Date(start);
-    const day = weekStart.getDay();
-    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
-    weekStart.setDate(diff);
-    weekStart.setHours(0, 0, 0, 0); // Ensure 00:00:00
+    // Parse startDate. If string, treat as local day. If Date, treat as... well, Date.
+    // Assuming input is the start of the week user wants to plan for.
+    // If startDate is 2026-01-08 (Thursday), we might want to align to Monday or start from there.
+    // The original code adjusted to Monday. Let's keep that logic but using timezone helpers.
     
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + (daysToPlann - 1));
-    weekEnd.setHours(23, 59, 59, 999); // Ensure end of day
+    const inputDate = new Date(startDate);
+    // Find the start of that day in UTC for the user's timezone
+    const startOfDayUTC = getStartOfDayUTC(timezone, inputDate);
+    
+    // Calculate week boundaries (Monday aligned)
+    // We convert to zoned time to get the day of week in local time
+    // But since we have helper functions, maybe we can simplify.
+    // Let's stick to the existing logic but ensure boundaries are UTC.
+    
+    // Original logic:
+    // const day = weekStart.getDay(); 
+    // const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+    
+    // We need to do this adjustment in "Local Time" domain, then convert back to UTC.
+    // Or just use the inputDate if it's already aligned?
+    // Let's assume inputDate IS the start date requested.
+    // But the code says "Adjust to Monday".
+    
+    // Safe approach: Use the existing logic but on the Date object derived from timezone.
+    // Actually, getStartOfDayUTC gives us a UTC timestamp that represents 00:00 Local.
+    // So `weekStart` (UTC) = 00:00 Local.
+    
+    const weekStart = new Date(startOfDayUTC);
+    // Adjust to Monday relative to the DATE value (which is shifted in UTC)
+    // Wait, if I'm in UTC+9, 00:00 Local is 15:00 Prev Day UTC.
+    // `weekStart.getDay()` will return the day of week in LOCAL time? No, in browser/server local.
+    // Server is UTC. So `weekStart.getDay()` returns day in UTC.
+    // 15:00 Prev Day is likely the day before.
+    // This logic is tricky.
+    
+    // Better approach: Use formatted string to get local day of week.
+    const localDateStr = formatUserDate(weekStart, timezone, 'yyyy-MM-dd');
+    const [y, m, d] = localDateStr.split('-').map(Number);
+    const localDateObj = new Date(y, m - 1, d); // Local Date object (system timezone assumed match or just abstract)
+    const day = localDateObj.getDay();
+    const diff = localDateObj.getDate() - day + (day === 0 ? -6 : 1);
+    localDateObj.setDate(diff);
+    
+    // Now convert that back to UTC start of day
+    const alignedWeekStart = getStartOfDayUTC(timezone, localDateObj);
+    
+    const alignedWeekEnd = new Date(alignedWeekStart);
+    alignedWeekEnd.setDate(alignedWeekEnd.getDate() + (daysToPlann - 1));
+    // Set to end of day in local time -> UTC
+    const alignedWeekEndUTC = getEndOfDayUTC(timezone, alignedWeekEnd);
 
-    logger.log("Week boundaries calculated", { 
-        weekStart: weekStart.toISOString(), 
-        weekEnd: weekEnd.toISOString(),
-        weekStartLocal: weekStart.toString(),
-        weekEndLocal: weekEnd.toString()
+    logger.log("Week boundaries calculated (Timezone Aware)", { 
+        timezone,
+        weekStart: alignedWeekStart.toISOString(), 
+        weekEnd: alignedWeekEndUTC.toISOString(),
+        localStart: formatUserDate(alignedWeekStart, timezone),
+        localEnd: formatUserDate(alignedWeekEndUTC, timezone)
     });
     
     // Fetch user data
@@ -104,27 +143,21 @@ export const generateWeeklyPlanTask = task({
         orderBy: { dayOfWeek: 'asc' }
       }),
       workoutRepository.getForUser(userId, {
-        startDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // Last 14 days
-        endDate: start, // strictly less than start handled by lte in repo? Repo uses lte.
-        // We need 'lt' strictly speaking, but for daily granularity, using day before as endDate is safer or just accept overlaps?
-        // Let's use the date range as is, repo uses lte.
-        // Actually, start is set to 00:00:00 of the planning start date.
-        // So we want everything BEFORE that.
-        // Repo getForUser uses 'lte'. So if we pass 'start' it will include workouts on 'start' day at 00:00:00.
-        // We should pass 'new Date(start.getTime() - 1)' as endDate.
+        startDate: getStartOfDaysAgoUTC(timezone, 14), // Last 14 days relative to today
+        endDate: alignedWeekStart, // Up to the start of the plan
         limit: 10,
         orderBy: { date: 'desc' }
       }),
       wellnessRepository.getForUser(userId, {
-        startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-        endDate: start,
+        startDate: getStartOfDaysAgoUTC(timezone, 7), // Last 7 days
+        endDate: alignedWeekStart,
         limit: 7,
         orderBy: { date: 'desc' }
       }),
       prisma.weeklyTrainingPlan.findFirst({
         where: {
           userId,
-          weekStartDate: weekStart
+          weekStartDate: alignedWeekStart
         }
       }),
       
@@ -167,8 +200,8 @@ export const generateWeeklyPlanTask = task({
         where: {
           userId,
           date: {
-            gte: weekStart,
-            lte: weekEnd
+            gte: alignedWeekStart,
+            lte: alignedWeekEndUTC
           }
         },
         orderBy: { date: 'asc' },
@@ -240,11 +273,11 @@ export const generateWeeklyPlanTask = task({
       : 50;
     
     // Generate training context for load management
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const now = new Date();
-    const trainingContext = await generateTrainingContext(userId, thirtyDaysAgo, now, {
+    const thirtyDaysAgo = getStartOfDaysAgoUTC(timezone, 30);
+    const trainingContext = await generateTrainingContext(userId, thirtyDaysAgo, getEndOfDayUTC(timezone, new Date()), {
       includeZones: false,
-      includeBreakdown: true
+      includeBreakdown: true,
+      timezone
     });
 
     // Determine current training phase if a goal exists
@@ -400,14 +433,14 @@ ${userInstructions ? `"${userInstructions}"\n\nFollow these instructions above e
 CURRENT PLANNED WORKOUTS FOR THIS WEEK (For Context):
 ${existingPlannedWorkouts.length > 0 
   ? existingPlannedWorkouts.map(w => 
-      `- ${new Date(w.date).toLocaleDateString()}: ${w.title} (${w.type}, ${Math.round((w.durationSec || 0) / 60)}min)`
+      `- ${formatUserDate(w.date, timezone)}: ${w.title} (${w.type}, ${Math.round((w.durationSec || 0) / 60)}min)`
     ).join('\n')
   : 'None currently planned'
 }
 
 RECENT TRAINING (Last 14 days):
 ${recentWorkouts.slice(0, 3).map(w => 
-    `${new Date(w.date).toLocaleDateString()}: ${w.title} (TSS: ${w.tss || 'N/A'}, ${Math.round(w.durationSec / 60)}min)`
+    `${formatUserDate(w.date, timezone)}: ${w.title} (TSS: ${w.tss || 'N/A'}, ${Math.round(w.durationSec / 60)}min)`
   ).join(', ') || 'No recent workouts'}
 
 RECENT RECOVERY (Last 7 days):
@@ -416,8 +449,8 @@ RECENT RECOVERY (Last 7 days):
 - Latest resting HR: ${recentWellness[0]?.restingHr || 'N/A'} bpm
 
 PLANNING PERIOD:
-- Start: ${weekStart.toISOString().split('T')[0]} (YYYY-MM-DD)
-- End: ${weekEnd.toISOString().split('T')[0]} (YYYY-MM-DD)
+- Start: ${formatUserDate(alignedWeekStart, timezone)} (YYYY-MM-DD)
+- End: ${formatUserDate(alignedWeekEndUTC, timezone)} (YYYY-MM-DD)
 - Days to plan: ${daysToPlann}
 
 INSTRUCTIONS:
@@ -464,8 +497,8 @@ Create a structured, progressive plan for the next ${daysToPlann} days.`;
     // Save or update the plan
     const planData = {
       userId,
-      weekStartDate: weekStart,
-      weekEndDate: weekEnd,
+      weekStartDate: alignedWeekStart,
+      weekEndDate: alignedWeekEndUTC,
       daysPlanned: daysToPlann,
       status: 'ACTIVE',
       generatedBy: 'AI',
@@ -496,73 +529,61 @@ Create a structured, progressive plan for the next ${daysToPlann} days.`;
         where: {
           userId,
           date: {
-            gte: weekStart,
-            lte: weekEnd
+            gte: alignedWeekStart,
+            lte: alignedWeekEndUTC
           },
           completed: false
         }
       });
-      logger.log("Deleted existing planned workouts", { count: deleted.count, weekStart: weekStart.toISOString(), weekEnd: weekEnd.toISOString() });
+      logger.log("Deleted existing planned workouts", { count: deleted.count, weekStart: alignedWeekStart.toISOString(), weekEnd: alignedWeekEndUTC.toISOString() });
 
       // Insert new workouts from the generated plan
       const workoutsToCreate = (plan as any).days
-        // REMOVED filter: .filter((d: any) => d.workoutType !== 'Rest') 
-        // We want to create Rest days too if the UI expects them, or at least not filter them out if they have structure
-        // But usually Rest days are just gaps. 
-        // However, the issue might be that the AI generated "Rest" days for everything if it failed?
-        // Or date parsing issues.
         .filter((d: any) => d.workoutType !== 'Rest')
         .map((d: any) => {
           // Parse date strictly from the AI response
-          // AI returns 'YYYY-MM-DD'
-          // We need to treat this as the local date for the user, not UTC.
-          // weekStart and weekEnd are set to local 00:00:00 and 23:59:59 timestamps.
-          // If we parse 'YYYY-MM-DD' as UTC, it might be the previous day in local time.
+          // AI returns 'YYYY-MM-DD' which represents the user's local date.
+          // We need to convert this to the UTC timestamp that represents the start of that day in the user's timezone.
           
           const rawDate = d.date;
-          // Construct date object using local parts to avoid UTC shift
           const [y, m, day] = rawDate.split('-').map(Number);
-          const workoutDate = new Date(y, m - 1, day, 12, 0, 0); // Set to noon to be safe from DST shifts
+          // Create a "Local Date" object (using system/server time, but representing the abstract date)
+          const abstractDate = new Date(y, m - 1, day);
+          
+          // Get the UTC timestamp for the start of that day in the user's timezone
+          const workoutDate = getStartOfDayUTC(timezone, abstractDate);
           
           logger.log("Processing generated workout day", {
              rawDate: d.date,
              parsedDate: workoutDate.toISOString(),
              isValid: !isNaN(workoutDate.getTime()),
-             title: d.title
+             title: d.title,
+             timezone
           });
 
           // Ensure the date is valid
           if (isNaN(workoutDate.getTime())) {
              logger.error("Invalid date in generated plan", { date: d.date });
-             console.log("DEBUG: Invalid date", d.date);
              return null;
           }
 
           // Strict validation: Date MUST be within the planned week
-          // We compare timestamps to avoid timezone confusion, but add a buffer of 12 hours
-          // to handle potential "noon" vs "midnight" discrepancies
+          // We compare timestamps to avoid timezone confusion, but add a buffer
           const buffer = 12 * 60 * 60 * 1000;
-          if (workoutDate.getTime() < (weekStart.getTime() - buffer) || workoutDate.getTime() > (weekEnd.getTime() + buffer)) {
+          if (workoutDate.getTime() < (alignedWeekStart.getTime() - buffer) || workoutDate.getTime() > (alignedWeekEndUTC.getTime() + buffer)) {
              logger.error("Generated date out of range", { 
                date: d.date, 
                parsed: workoutDate.toISOString(),
-               weekStart: weekStart.toISOString(), 
-               weekEnd: weekEnd.toISOString() 
+               weekStart: alignedWeekStart.toISOString(), 
+               weekEnd: alignedWeekEndUTC.toISOString() 
              });
-             console.log("DEBUG: Date out of range", { 
-               date: d.date, 
-               parsed: workoutDate.toISOString(),
-               weekStart: weekStart.toISOString(), 
-               weekEnd: weekEnd.toISOString() 
-             });
-             // Try to fix it? Or skip?
              // Skipping is safer to avoid pollution
              return null;
           }
 
           return {
           userId,
-          date: workoutDate,
+          date: workoutDate, // Stored as UTC start of day for user
           title: d.title,
           description: d.description + (d.reasoning ? `\n\nReasoning: ${d.reasoning}` : ''),
           // Map AI "Gym" type to "WeightTraining" which is standard in Intervals/our DB
@@ -614,10 +635,10 @@ Create a structured, progressive plan for the next ${daysToPlann} days.`;
                         }
                     },
                     startDate: {
-                        lte: weekStart
+                        lte: alignedWeekStart
                     },
                     endDate: {
-                        gte: weekEnd
+                        gte: alignedWeekEndUTC
                     }
                 }
             });
@@ -641,10 +662,10 @@ Create a structured, progressive plan for the next ${daysToPlann} days.`;
                         }
                     },
                     startDate: {
-                        lte: weekEnd
+                        lte: alignedWeekEndUTC
                     },
                     endDate: {
-                        gte: weekStart
+                        gte: alignedWeekStart
                     }
                 }
              });
@@ -657,8 +678,8 @@ Create a structured, progressive plan for the next ${daysToPlann} days.`;
                  });
              } else {
                  logger.warn("No matching TrainingWeek found for these workouts - they will be unlinked from the structured plan", {
-                    weekStart: weekStart.toISOString(),
-                    weekEnd: weekEnd.toISOString()
+                    weekStart: alignedWeekStart.toISOString(),
+                    weekEnd: alignedWeekEndUTC.toISOString()
                  });
                  console.log("WARNING: No matching TrainingWeek found. Workouts will be unlinked.");
              }
@@ -681,8 +702,8 @@ Create a structured, progressive plan for the next ${daysToPlann} days.`;
       success: true,
       planId: savedPlan.id,
       userId,
-      weekStart: weekStart.toISOString(),
-      weekEnd: weekEnd.toISOString(),
+      weekStart: alignedWeekStart.toISOString(),
+      weekEnd: alignedWeekEndUTC.toISOString(),
       daysPlanned: daysToPlann,
       totalTSS: savedPlan.totalTSS,
       workoutCount: savedPlan.workoutCount

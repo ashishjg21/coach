@@ -3,6 +3,7 @@ import { generateStructuredAnalysis, buildWorkoutSummary } from "../server/utils
 import { prisma } from "../server/utils/db";
 import { workoutRepository } from "../server/utils/repositories/workoutRepository";
 import { wellnessRepository } from "../server/utils/repositories/wellnessRepository";
+import { getUserTimezone, getStartOfDaysAgoUTC, getStartOfDayUTC, formatUserDate } from "../server/utils/date";
 
 const adHocWorkoutSchema = {
   type: "object",
@@ -23,16 +24,18 @@ export const generateAdHocWorkoutTask = task({
   maxDuration: 300,
   run: async (payload: { userId: string; date: Date; preferences?: any }) => {
     const { userId, date, preferences } = payload;
-    const today = new Date(date);
-    today.setHours(0, 0, 0, 0);
     
-    logger.log("Generating ad-hoc workout", { userId, date: today, preferences });
+    const timezone = await getUserTimezone(userId);
+    const today = getStartOfDayUTC(timezone, new Date(date));
+    
+    logger.log("Generating ad-hoc workout", { userId, date: today, preferences, timezone });
     
     // Fetch Data
     const [todayMetric, recentWorkouts, user, athleteProfile, activeGoals] = await Promise.all([
       wellnessRepository.getByDate(userId, today),
       workoutRepository.getForUser(userId, {
-        startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        startDate: getStartOfDaysAgoUTC(timezone, 7),
+        limit: 10,
         orderBy: { date: 'desc' }
       }),
       prisma.user.findUnique({
@@ -100,6 +103,10 @@ export const generateAdHocWorkoutTask = task({
 
     const prompt = `Design a specific single workout for this athlete for TODAY.
     
+    LOCAL CONTEXT:
+    - Date: ${formatUserDate(today, timezone)}
+    - Timezone: ${timezone}
+
     CONTEXT:
     ${context}
     
@@ -120,15 +127,14 @@ export const generateAdHocWorkoutTask = task({
     const plannedWorkout = await prisma.plannedWorkout.create({
       data: {
         userId,
-        date: today,
+        date: today, // Correctly aligned to user's local day start (UTC)
         title: suggestion.title,
         description: `${suggestion.description}\n\nReasoning: ${suggestion.reasoning}`,
         type: suggestion.type,
         durationSec: suggestion.durationMinutes * 60,
         tss: suggestion.targetTss,
-        source: 'AI_ADHOC',
-        status: 'SYNCED', // Assuming local is synced
-        externalId: `adhoc-${Date.now()}` // Temporary external ID
+        syncStatus: 'LOCAL_ONLY', // Mark as local initially
+        externalId: `adhoc-${userId}-${Date.now()}` // Generate unique external ID
       }
     });
 

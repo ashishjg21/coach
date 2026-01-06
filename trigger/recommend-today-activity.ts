@@ -81,7 +81,7 @@ export const recommendTodayActivityTask = task({
       // User profile
       prisma.user.findUnique({
         where: { id: userId },
-        select: { ftp: true, weight: true, maxHr: true }
+        select: { ftp: true, weight: true, maxHr: true, timezone: true }
       }),
       
       // Latest athlete profile
@@ -120,6 +120,12 @@ export const recommendTodayActivityTask = task({
       hasAthleteProfile: !!athleteProfile,
       activeGoalsCount: activeGoals.length
     });
+
+    // Calculate local time context
+    const userTimezone = user?.timezone || 'UTC';
+    const now = new Date();
+    const localTime = now.toLocaleTimeString('en-US', { timeZone: userTimezone, hour: '2-digit', minute: '2-digit', hour12: false });
+    const localDate = now.toLocaleDateString('en-US', { timeZone: userTimezone, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     
     // Build athlete profile context
     let athleteContext = '';
@@ -179,6 +185,11 @@ ${activeGoals.map(g => {
     // Build comprehensive prompt
     const prompt = `You are an expert cycling coach analyzing today's training for your athlete.
 
+CURRENT CONTEXT:
+- Date: ${localDate}
+- Time: ${localTime}
+- Timezone: ${userTimezone}
+
 ${athleteContext}
 
 TODAY'S PLANNED WORKOUT:
@@ -219,6 +230,7 @@ DECISION CRITERIA:
 - Low HRV (< -15% from baseline): Caution on intensity
 - Poor sleep (< 6 hours): Reduce volume/intensity
 - High recent TSS (> 400 in 3 days): Consider recovery
+- If it is late in the day (e.g. after 20:00) and the workout is not done, consider suggesting Rest or a very short/easy version, unless the user explicitly asks to train late.
 
 Provide specific, actionable recommendations with clear reasoning.`;
 

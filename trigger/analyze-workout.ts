@@ -3,6 +3,7 @@ import { generateCoachAnalysis, generateStructuredAnalysis } from "../server/uti
 import { prisma } from "../server/utils/db";
 import { workoutRepository } from "../server/utils/repositories/workoutRepository";
 import { userAnalysisQueue } from "./queues";
+import { getUserTimezone, formatUserDate } from "../server/utils/date";
 
 // TypeScript interface for the structured analysis
 interface StructuredAnalysis {
@@ -255,11 +256,13 @@ export const analyzeWorkoutTask = task({
         date: workout.date
       });
       
+      const timezone = await getUserTimezone(workout.userId);
+
       // Build comprehensive workout data for analysis
       const workoutData = buildWorkoutAnalysisData(workout);
       
       // Generate the prompt
-      const prompt = buildWorkoutAnalysisPrompt(workoutData);
+      const prompt = buildWorkoutAnalysisPrompt(workoutData, timezone);
       
       logger.log("Generating structured analysis with Gemini Flash");
       
@@ -596,27 +599,12 @@ function getAnalysisSectionsGuidance(workoutType: string, isCardio: boolean, isS
 }
 
 
-function buildWorkoutAnalysisPrompt(workoutData: any): string {
+function buildWorkoutAnalysisPrompt(workoutData: any, timezone: string): string {
   const formatMetric = (value: any, decimals = 1) => {
     return value !== undefined && value !== null ? Number(value).toFixed(decimals) : 'N/A'
   }
   
-  // Format date properly to avoid timezone issues
-  const formatDate = (date: Date | string): string => {
-    if (typeof date === 'string' && date.includes('-')) {
-      const [year, month, day] = date.split('T')[0].split('-').map(Number)
-      return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-    }
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  }
+  const dateStr = formatUserDate(workoutData.date, timezone, 'yyyy-MM-dd');
   
   // Determine the workout type for context-aware analysis
   const workoutType = workoutData.type || 'Unknown'
@@ -642,7 +630,7 @@ function buildWorkoutAnalysisPrompt(workoutData: any): string {
 **IMPORTANT - Workout Type Context**: This is a **${workoutType}** workout. ${getWorkoutTypeGuidance(workoutType, isCardio, isStrength)}
 
 ## Workout Details
-- **Date**: ${formatDate(workoutData.date)}
+- **Date**: ${dateStr}
 - **Title**: ${workoutData.title}
 - **Type**: ${workoutType}
 - **Duration**: ${workoutData.duration_m} minutes (${workoutData.duration_s}s)

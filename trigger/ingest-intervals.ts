@@ -15,6 +15,7 @@ import { wellnessRepository } from "../server/utils/repositories/wellnessReposit
 import { eventRepository } from "../server/utils/repositories/eventRepository";
 import { normalizeTSS } from "../server/utils/normalize-tss";
 import { calculateWorkoutStress } from "../server/utils/calculate-workout-stress";
+import { getUserTimezone, getEndOfDayUTC } from "../server/utils/date";
 
 export const ingestIntervalsTask = task({
   id: "ingest-intervals",
@@ -49,15 +50,16 @@ export const ingestIntervalsTask = task({
     });
     
     try {
+      const timezone = await getUserTimezone(userId);
       const start = new Date(startDate);
       const end = new Date(endDate);
       
       // Calculate 'now' to cap historical data fetching
       const now = new Date();
-      // Cap at end of today to allow for timezone differences but prevent far future
-      now.setHours(23, 59, 59, 999);
+      // Cap at end of today in user's timezone to allow for timezone differences but prevent far future
+      const historicalEndLocal = getEndOfDayUTC(timezone, now);
       
-      const historicalEnd = end > now ? now : end;
+      const historicalEnd = end > historicalEndLocal ? historicalEndLocal : end;
       
       // Fetch and update athlete profile data first
       /* 
