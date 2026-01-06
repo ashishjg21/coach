@@ -46,11 +46,11 @@ const columns = [
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'PROCESSED': return 'green'
-    case 'PENDING': return 'yellow'
-    case 'FAILED': return 'red'
-    case 'IGNORED': return 'gray'
-    default: return 'gray'
+    case 'PROCESSED': return 'success'
+    case 'PENDING': return 'warning'
+    case 'FAILED': return 'error'
+    case 'IGNORED': return 'neutral'
+    default: return 'neutral'
   }
 }
 
@@ -76,10 +76,10 @@ useHead({
       <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Webhook Logs</h1>
       <UButton
         icon="i-heroicons-arrow-path"
-        color="gray"
+        color="neutral"
         variant="ghost"
         :loading="pending"
-        @click="refresh"
+        @click="() => refresh()"
       />
     </div>
 
@@ -101,7 +101,7 @@ useHead({
 
         <template #actions-cell="{ row }">
           <UButton
-            color="gray"
+            color="neutral"
             variant="ghost"
             icon="i-heroicons-eye"
             size="xs"
@@ -122,13 +122,13 @@ useHead({
 
     <UModal v-model:open="isDetailsOpen">
       <template #content>
-        <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+        <UCard>
           <template #header>
             <div class="flex items-center justify-between">
               <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
                 Webhook Details
               </h3>
-              <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1" @click="isDetailsOpen = false" />
+              <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1" @click="isDetailsOpen = false" />
             </div>
           </template>
 
