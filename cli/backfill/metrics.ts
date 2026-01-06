@@ -51,7 +51,8 @@ const backfillMetricsCommand = new Command('metrics')
           workAboveFtp: true,
           wBalDepletion: true,
           wPrime: true,
-          carbsUsed: true
+          carbsUsed: true,
+          tss: true // Added for comparison
         }
       });
 
@@ -71,6 +72,17 @@ const backfillMetricsCommand = new Command('metrics')
           if (raw.strain_score !== undefined && raw.strain_score !== null) {
              updates.strainScore = raw.strain_score;
           }
+
+          // TSS Mapping for Intervals
+          // Intervals 'Load' (icu_training_load) is their calculated TSS
+          // We prioritize icu_training_load as it's the main 'Load' field in Intervals
+          if (raw.icu_training_load !== undefined && raw.icu_training_load !== null) {
+            updates.tss = raw.icu_training_load;
+          } else if (raw.tss !== undefined && raw.tss !== null) {
+            updates.tss = raw.tss;
+          }
+
+          // HR Load
 
           // HR Load
           if (raw.hr_load !== undefined) updates.hrLoad = raw.hr_load;

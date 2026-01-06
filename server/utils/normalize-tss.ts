@@ -160,6 +160,23 @@ export async function normalizeTSS(
     }
   }
 
+  // 1b. Check if trainingLoad is available (common for Intervals.icu when TSS field is null)
+  // Intervals.icu 'Load' is equivalent to TSS
+  if (!force && workout.trainingLoad !== null && workout.trainingLoad > 0) {
+    // Save this as the TSS so we don't recalculate next time
+    await prisma.workout.update({
+      where: { id: workoutId },
+      data: { tss: workout.trainingLoad }
+    })
+    
+    return {
+      tss: workout.trainingLoad,
+      source: 'intervals',
+      confidence: 'high',
+      method: 'Mapped from Training Load (Intervals.icu)'
+    }
+  }
+
   // If force is true and source is intervals, we still keep it
   if (force && workout.source === 'intervals' && workout.tss !== null) {
     return {
