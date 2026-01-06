@@ -43,6 +43,9 @@ on:
       DATABASE_URL:
         description: Database URL for Prisma (can be dummy value for build)
         required: false
+      DISCORD_WEBHOOK:
+        description: Discord webhook URL for notifications
+        required: false
 
 jobs:
   deploy:
@@ -192,6 +195,18 @@ jobs:
           echo "  Project ref set: $([[ -n \"${TRIGGER_PROJECT_REF}\" ]] && echo yes || echo no)"
 
           echo "🎉 Trigger.dev deployment completed successfully!"
+
+      - name: Discord Notification
+        uses: sarisia/actions-status-discord@v1
+        if: always() && secrets.DISCORD_WEBHOOK != ''
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          title: "Deploy Status - ${{ github.repository }}"
+          description: |
+            **Deploy:** ${{ job.status }}
+            **Environment:** ${{ inputs.environment }}
+            **Trigger Env:** ${{ inputs.trigger-env || inputs.environment }}
+          color: ${{ job.status == 'success' && '0x28a745' || '0xdc3545' }}
 
       - name: Cleanup
         if: always()

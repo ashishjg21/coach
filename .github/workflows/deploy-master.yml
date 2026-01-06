@@ -36,15 +36,18 @@ jobs:
       - name: Build successful
         run: echo "✅ Application built successfully!"
 
-      - name: Discord Notification on Failure
-        if: failure()
-        run: |
-          curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"🚨 The build failed for ${{ github.repository }}!\"}" ${{ secrets.DISCORD_WEBHOOK }}
-
-      - name: Discord Notification on Success
-        if: success()
-        run: |
-          curl -H "Content-Type: application/json" -X POST -d "{\"content\": \"✅ Build passed successfully for ${{ github.repository }}!\"}" ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Discord Notification
+        uses: sarisia/actions-status-discord@v1
+        if: always()
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          title: "Build Status - ${{ github.repository }}"
+          description: |
+            **Build:** ${{ job.status }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** [${{ github.sha }}](${{ github.event.head_commit.url }})
+            **Author:** ${{ github.actor }}
+          color: ${{ job.status == 'success' && '0x28a745' || '0xdc3545' }}
 
   deploy:
     name: Deploy Trigger.dev to Staging
@@ -61,3 +64,4 @@ jobs:
       TRIGGER_API_URL: ${{ secrets.TRIGGER_API_URL }}
       TRIGGER_PROJECT_REF: ${{ secrets.TRIGGER_PROJECT_REF }}
       DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
