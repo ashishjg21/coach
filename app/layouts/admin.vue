@@ -21,6 +21,10 @@ const links = [
     icon: 'i-lucide-database',
     to: '/admin/database',
   }, {
+    label: 'Webhook Logs',
+    icon: 'i-lucide-webhook',
+    to: '/admin/webhooks',
+  }, {
     label: 'Back to Site',
     icon: 'i-lucide-arrow-left',
     to: '/dashboard',
