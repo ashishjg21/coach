@@ -61,6 +61,13 @@ const openDetails = (log: any) => {
   selectedLog.value = log
   isDetailsOpen.value = true
 }
+
+useHead({
+  title: 'Webhook Logs - Admin',
+  meta: [
+    { name: 'description', content: 'View and debug incoming webhooks from external providers.' }
+  ]
+})
 </script>
 
 <template>

@@ -40,6 +40,9 @@ const formatBytes = (bytes: number, decimals = 2) => {
 
 useHead({
   title: 'Database Health - Admin',
+  meta: [
+    { name: 'description', content: 'Coach Watts database statistics and health monitoring.' }
+  ]
 })
 </script>
 
