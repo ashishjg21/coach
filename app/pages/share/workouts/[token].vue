@@ -26,9 +26,8 @@
               <div class="flex-1">
                 <div class="flex items-center gap-3 mb-2">
                   <UAvatar
-                    v-if="workout.user?.image"
-                    :src="workout.user.image"
-                    :alt="workout.user.name || 'User'"
+                    :src="workout.user?.image || undefined"
+                    :alt="workout.user?.name || 'User'"
                     size="xs"
                   />
                   <span class="text-sm text-gray-500 dark:text-gray-400">
@@ -66,26 +65,38 @@
             <!-- Key Stats Grid -->
             <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div v-if="workout.trainingLoad" class="rounded-lg p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                <UTooltip :text="metricTooltips['Training Load']" :popper="{ placement: 'top' }">
+                <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
                   <div class="text-xs text-blue-600 dark:text-blue-400 mb-1 border-b border-dashed border-blue-300 dark:border-blue-700 inline-block cursor-help">Training Load</div>
+                  <template #content>
+                    <div class="text-left text-sm">{{ metricTooltips['Training Load'] }}</div>
+                  </template>
                 </UTooltip>
                 <div class="text-xl font-bold text-blue-900 dark:text-blue-100">{{ Math.round(workout.trainingLoad) }}</div>
               </div>
               <div v-if="workout.averageHr" class="rounded-lg p-3 bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800">
-                <UTooltip :text="metricTooltips['Avg HR']" :popper="{ placement: 'top' }">
+                <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
                   <div class="text-xs text-pink-600 dark:text-pink-400 mb-1 border-b border-dashed border-pink-300 dark:border-pink-700 inline-block cursor-help">Avg HR</div>
+                  <template #content>
+                    <div class="text-left text-sm">{{ metricTooltips['Avg HR'] }}</div>
+                  </template>
                 </UTooltip>
                 <div class="text-xl font-bold text-pink-900 dark:text-pink-100">{{ workout.averageHr }} <span class="text-sm">bpm</span></div>
               </div>
               <div v-if="workout.averageWatts" class="rounded-lg p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-                <UTooltip :text="metricTooltips['Avg Power']" :popper="{ placement: 'top' }">
+                <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
                   <div class="text-xs text-purple-600 dark:text-purple-400 mb-1 border-b border-dashed border-purple-300 dark:border-purple-700 inline-block cursor-help">Avg Power</div>
+                  <template #content>
+                    <div class="text-left text-sm">{{ metricTooltips['Avg Power'] }}</div>
+                  </template>
                 </UTooltip>
                 <div class="text-xl font-bold text-purple-900 dark:text-purple-100">{{ workout.averageWatts }}<span class="text-sm">W</span></div>
               </div>
               <div v-if="workout.normalizedPower" class="rounded-lg p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
-                <UTooltip :text="metricTooltips['Norm Power']" :popper="{ placement: 'top' }">
+                <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
                   <div class="text-xs text-indigo-600 dark:text-indigo-400 mb-1 border-b border-dashed border-indigo-300 dark:border-indigo-700 inline-block cursor-help">Norm Power</div>
+                  <template #content>
+                    <div class="text-left text-sm">{{ metricTooltips['Norm Power'] }}</div>
+                  </template>
                 </UTooltip>
                 <div class="text-xl font-bold text-indigo-900 dark:text-indigo-100">{{ workout.normalizedPower }}<span class="text-sm">W</span></div>
               </div>
@@ -124,8 +135,11 @@
           <!-- TSS -->
           <div class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
             <div class="flex items-center justify-between mb-2">
-              <UTooltip :text="metricTooltips['TSS (Load)']" :popper="{ placement: 'top' }">
+              <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
                 <span class="text-sm font-medium text-blue-700 dark:text-blue-300 border-b border-dashed border-blue-300 dark:border-blue-700 cursor-help">TSS (Load)</span>
+                <template #content>
+                  <div class="text-left text-sm">{{ metricTooltips['TSS (Load)'] }}</div>
+                </template>
               </UTooltip>
             </div>
             <div class="text-2xl font-bold text-blue-900 dark:text-blue-100">
@@ -136,8 +150,11 @@
           <!-- CTL (Fitness) -->
           <div class="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800">
             <div class="flex items-center justify-between mb-2">
-              <UTooltip :text="metricTooltips['Fitness (CTL)']" :popper="{ placement: 'top' }">
+              <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
                 <span class="text-sm font-medium text-green-700 dark:text-green-300 border-b border-dashed border-green-300 dark:border-green-700 cursor-help">Fitness (CTL)</span>
+                <template #content>
+                  <div class="text-left text-sm">{{ metricTooltips['Fitness (CTL)'] }}</div>
+                </template>
               </UTooltip>
             </div>
             <div class="text-2xl font-bold text-green-900 dark:text-green-100">
@@ -148,8 +165,11 @@
           <!-- ATL (Fatigue) -->
           <div class="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800">
             <div class="flex items-center justify-between mb-2">
-              <UTooltip :text="metricTooltips['Fatigue (ATL)']" :popper="{ placement: 'top' }">
+              <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
                 <span class="text-sm font-medium text-orange-700 dark:text-orange-300 border-b border-dashed border-orange-300 dark:border-orange-700 cursor-help">Fatigue (ATL)</span>
+                <template #content>
+                  <div class="text-left text-sm">{{ metricTooltips['Fatigue (ATL)'] }}</div>
+                </template>
               </UTooltip>
             </div>
             <div class="text-2xl font-bold text-orange-900 dark:text-orange-100">
@@ -160,8 +180,11 @@
           <!-- TSB (Form) -->
           <div class="p-4 rounded-lg" :class="getFormClass(calculateForm(workout))">
             <div class="flex items-center justify-between mb-2">
-              <UTooltip :text="metricTooltips['Form (TSB)']" :popper="{ placement: 'top' }">
+              <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
                 <span class="text-sm font-medium opacity-80 border-b border-dashed border-gray-400 cursor-help">Form (TSB)</span>
+                <template #content>
+                  <div class="text-left text-sm">{{ metricTooltips['Form (TSB)'] }}</div>
+                </template>
               </UTooltip>
             </div>
             <div class="text-2xl font-bold">
@@ -323,8 +346,11 @@
             :key="metric.key"
             class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700"
           >
-            <UTooltip :text="metricTooltips[metric.label]" :popper="{ placement: 'top' }">
+            <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
               <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">{{ metric.label }}</span>
+              <template #content>
+                <div class="text-left text-sm">{{ metricTooltips[metric.label] }}</div>
+              </template>
             </UTooltip>
             <span class="text-sm font-medium text-gray-900 dark:text-white">{{ metric.value }}</span>
           </div>

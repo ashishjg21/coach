@@ -9,8 +9,11 @@
       <!-- Variability Index -->
       <div v-if="metrics.variabilityIndex !== null && metrics.variabilityIndex !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <UTooltip :text="metricTooltips['Variability Index']" :popper="{ placement: 'top' }">
+          <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
             <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">Variability Index</span>
+            <template #content>
+              <div class="text-left text-sm">{{ metricTooltips['Variability Index'] }}</div>
+            </template>
           </UTooltip>
           <UBadge :color="getVIColor(metrics.variabilityIndex)" variant="subtle">
             {{ getVIRating(metrics.variabilityIndex) }}
@@ -27,8 +30,11 @@
       <!-- Efficiency Factor -->
       <div v-if="metrics.efficiencyFactor !== null && metrics.efficiencyFactor !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <UTooltip :text="metricTooltips['Efficiency Factor']" :popper="{ placement: 'top' }">
+          <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
             <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">Efficiency Factor</span>
+            <template #content>
+              <div class="text-left text-sm">{{ metricTooltips['Efficiency Factor'] }}</div>
+            </template>
           </UTooltip>
           <UBadge :color="getEFColor(metrics.efficiencyFactor)" variant="subtle">
             {{ getEFRating(metrics.efficiencyFactor) }}
@@ -45,8 +51,11 @@
       <!-- Decoupling -->
       <div v-if="metrics.decoupling !== null && metrics.decoupling !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <UTooltip :text="metricTooltips['Aerobic Decoupling']" :popper="{ placement: 'top' }">
+          <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
             <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">Aerobic Decoupling</span>
+            <template #content>
+              <div class="text-left text-sm">{{ metricTooltips['Aerobic Decoupling'] }}</div>
+            </template>
           </UTooltip>
           <UBadge :color="getDecouplingColor(metrics.decoupling)" variant="subtle">
             {{ getDecouplingRating(metrics.decoupling) }}
@@ -63,8 +72,11 @@
       <!-- Power/HR Ratio -->
       <div v-if="metrics.powerHrRatio !== null && metrics.powerHrRatio !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <UTooltip :text="metricTooltips['Power/HR Ratio']" :popper="{ placement: 'top' }">
+          <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
             <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">Power/HR Ratio</span>
+            <template #content>
+              <div class="text-left text-sm">{{ metricTooltips['Power/HR Ratio'] }}</div>
+            </template>
           </UTooltip>
         </div>
         <div class="text-2xl font-bold text-gray-900 dark:text-white">
@@ -78,8 +90,11 @@
       <!-- Polarization Index -->
       <div v-if="metrics.polarizationIndex !== null && metrics.polarizationIndex !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <UTooltip :text="metricTooltips['Polarization Index']" :popper="{ placement: 'top' }">
+          <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
             <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">Polarization Index</span>
+            <template #content>
+              <div class="text-left text-sm">{{ metricTooltips['Polarization Index'] }}</div>
+            </template>
           </UTooltip>
         </div>
         <div class="text-2xl font-bold text-gray-900 dark:text-white">
@@ -93,8 +108,11 @@
       <!-- L/R Balance -->
       <div v-if="metrics.lrBalance !== null && metrics.lrBalance !== undefined" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div class="flex items-center justify-between mb-2">
-          <UTooltip :text="metricTooltips['L/R Balance']" :popper="{ placement: 'top' }">
+          <UTooltip :popper="{ placement: 'top' }" :ui="{ content: 'w-[300px] h-auto whitespace-normal' }" arrow>
             <span class="text-sm text-gray-600 dark:text-gray-400 border-b border-dashed border-gray-300 dark:border-gray-600 cursor-help">L/R Balance</span>
+            <template #content>
+              <div class="text-left text-sm">{{ metricTooltips['L/R Balance'] }}</div>
+            </template>
           </UTooltip>
           <UBadge :color="getLRBalanceColor(metrics.lrBalance)" variant="subtle">
             {{ getLRBalanceRating(metrics.lrBalance) }}
