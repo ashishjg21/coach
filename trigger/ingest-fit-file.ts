@@ -4,6 +4,13 @@ import { prisma } from "../server/utils/db";
 import { workoutRepository } from "../server/utils/repositories/workoutRepository";
 import { parseFitFile, normalizeFitSession, extractFitStreams } from "../server/utils/fit";
 import { calculateWorkoutStress } from "../server/utils/calculate-workout-stress";
+import { 
+  calculateLapSplits, 
+  calculatePaceVariability, 
+  calculateAveragePace, 
+  analyzePacingStrategy, 
+  detectSurges 
+} from "../server/utils/pacing";
 
 export const ingestFitFile = task({
   id: "ingest-fit-file",
@@ -51,6 +58,48 @@ export const ingestFitFile = task({
         // For now, let's rely on calculateWorkoutStress to do the heavy lifting later
         logger.log('Normalized power missing from session, will be calculated from streams');
       }
+      
+      // Calculate pacing metrics
+      let lapSplits = null;
+      let paceVariability = null;
+      let avgPacePerKm = null;
+      let pacingStrategy = null;
+      let surges = null;
+
+      const timeData = streams.time || [];
+      const distanceData = streams.distance || [];
+      const velocityData = streams.velocity || [];
+
+      if (timeData.length > 0 && distanceData.length > 0) {
+        // Calculate lap splits (1km intervals)
+        lapSplits = calculateLapSplits(timeData, distanceData, 1000);
+        logger.log('Calculated lap splits', { laps: lapSplits.length });
+        
+        // Calculate pace variability
+        if (velocityData.length > 0) {
+          paceVariability = calculatePaceVariability(velocityData);
+          logger.log('Calculated pace variability', { variability: paceVariability });
+          
+          // Calculate average pace
+          avgPacePerKm = calculateAveragePace(
+            timeData[timeData.length - 1],
+            distanceData[distanceData.length - 1]
+          );
+          logger.log('Calculated average pace', { avgPacePerKm });
+        }
+        
+        // Analyze pacing strategy
+        if (lapSplits && lapSplits.length >= 2) {
+          pacingStrategy = analyzePacingStrategy(lapSplits);
+          logger.log('Analyzed pacing strategy', { strategy: pacingStrategy.strategy });
+        }
+        
+        // Detect surges
+        if (velocityData.length > 20 && timeData.length > 20) {
+          surges = detectSurges(velocityData, timeData);
+          logger.log('Detected surges', { count: surges.length });
+        }
+      }
 
       // Upsert workout
       const workout = await workoutRepository.upsert(
@@ -75,10 +124,20 @@ export const ingestFitFile = task({
         where: { workoutId: workout.id },
         create: {
           workoutId: workout.id,
-          ...streams
+          ...streams,
+          lapSplits,
+          paceVariability,
+          avgPacePerKm,
+          pacingStrategy,
+          surges
         },
         update: {
-          ...streams
+          ...streams,
+          lapSplits,
+          paceVariability,
+          avgPacePerKm,
+          pacingStrategy,
+          surges
         }
       });
       
