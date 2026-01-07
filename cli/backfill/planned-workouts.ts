@@ -1,9 +1,10 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma  } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import { normalizeIntervalsPlannedWorkout } from '../../server/utils/intervals';
+
 
 const backfillPlannedWorkoutsCommand = new Command('planned-workouts');
 
@@ -125,7 +126,5 @@ backfillPlannedWorkoutsCommand
         await pool.end();
     }
   });
-
-import { Prisma } from '@prisma/client';
 
 export default backfillPlannedWorkoutsCommand;

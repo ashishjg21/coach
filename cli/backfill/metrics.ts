@@ -105,7 +105,7 @@ const backfillMetricsCommand = new Command('metrics')
         // Check if update is needed
         let hasChanges = false;
         for (const [key, value] of Object.entries(updates)) {
-          // @ts-ignore
+          // @ts-expect-error - dynamic access
           // Use loose equality for float comparison safety or undefined vs null
           if (workout[key] != value) {
             hasChanges = true;

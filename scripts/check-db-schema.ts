@@ -56,7 +56,7 @@ async function main() {
     const integration = await prisma.integration.findFirst({
       select: {
         id: true,
-        // @ts-ignore
+        // @ts-expect-error - checking for new column
         initialSyncCompleted: true
       }
     })

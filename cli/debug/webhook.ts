@@ -160,7 +160,7 @@ async function analyzeIntervalsWebhook(prisma: PrismaClient, log: any, payload: 
         actionDescription = `Sync data from ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`;
         break;
 
-      case 'ACTIVITY_UPDATED':
+      case 'ACTIVITY_UPDATED': {
         const activityDateStr = event.activity?.start_date_local || event.activity?.start_date;
         if (activityDateStr) {
             const actDate = new Date(activityDateStr);
@@ -175,8 +175,9 @@ async function analyzeIntervalsWebhook(prisma: PrismaClient, log: any, payload: 
             actionDescription = `Sync fallback range (last 2 days)`;
         }
         break;
+      }
 
-      case 'FITNESS_UPDATED':
+      case 'FITNESS_UPDATED': {
         const records = event.records || [];
         if (records.length > 0) {
             const dates = records.map((r: any) => new Date(r.id).getTime());
@@ -191,8 +192,9 @@ async function analyzeIntervalsWebhook(prisma: PrismaClient, log: any, payload: 
             actionDescription = `Sync fallback range (last 2 days)`;
         }
         break;
+      }
 
-      case 'ACTIVITY_DELETED':
+      case 'ACTIVITY_DELETED': {
         const deletedActivityId = event.activity?.id || event.id;
         actionDescription = `Delete activity ${deletedActivityId} AND Sync data (1 day back)`;
         if (deletedActivityId) {
@@ -213,8 +215,9 @@ async function analyzeIntervalsWebhook(prisma: PrismaClient, log: any, payload: 
         startDate = new Date(log.createdAt);
         startDate.setDate(startDate.getDate() - 1);
         break;
+      }
       
-      case 'CALENDAR_UPDATED':
+      case 'CALENDAR_UPDATED': {
         const deletedEvents = event.deleted_events || [];
         actionDescription = `Sync calendar (last 3 days to +28 days). Deleted events: ${deletedEvents.length}`;
         if (deletedEvents.length > 0) {
@@ -236,6 +239,7 @@ async function analyzeIntervalsWebhook(prisma: PrismaClient, log: any, payload: 
         endDate = new Date(log.createdAt);
         endDate.setDate(endDate.getDate() + 28);
         break;
+      }
 
       default:
         actionDescription = chalk.yellow('Unhandled event type');

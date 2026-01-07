@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-// @ts-ignore
+// @ts-expect-error - fit-file-parser types are missing or incompatible
 import FitParser from 'fit-file-parser';
 
 const filename = process.argv[2];

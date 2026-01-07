@@ -105,7 +105,8 @@ async function main() {
   console.log('\n' + '='.repeat(100))
   
   // Check for missing activities
-  const activityIds = new Set(activities.map(a => a.id))
+  // const activityIds = activities.map(a => a.id)
+  // console.log(`Found ${activityIds.length} activities`)
   const workoutExternalIds = new Set(workoutResult.rows.map(w => w.externalId))
   
   const missingInDb = activities.filter(a => !workoutExternalIds.has(a.id))

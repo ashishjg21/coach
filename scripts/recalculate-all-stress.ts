@@ -198,7 +198,9 @@ async function main() {
     try {
         const { prisma } = await import('../server/utils/db')
         await (prisma as any).$disconnect()
-    } catch (e) {}
+    } catch (e) {
+      // ignore
+    }
   }
 }
 

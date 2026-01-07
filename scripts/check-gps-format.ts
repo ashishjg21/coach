@@ -1,6 +1,8 @@
 import 'dotenv/config'
 import { prisma } from '../server/utils/db'
 
+import { Prisma } from '@prisma/client'
+
 async function main() {
   console.log('Searching for workouts with GPS data...')
 
@@ -61,8 +63,6 @@ Workout: ${stream.workout.title} (${stream.workout.source})`)
     }
   }
 }
-
-import { Prisma } from '@prisma/client'
 
 main()
   .catch(e => {

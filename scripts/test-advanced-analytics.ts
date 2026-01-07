@@ -83,7 +83,7 @@ const steadyData = generateSteadyStateData(20, 200, 0.05); // 20 mins, 5% HR dri
 // HR1 avg ~ 141.25, HR2 avg ~ 145.75. Ratio ~ 3.1% drift.
 
 try {
-  // @ts-ignore - function not yet exported
+  // @ts-expect-error - function not yet exported
   const result = calculateAerobicDecoupling(steadyData.time, steadyData.power, steadyData.heartrate);
   console.log('Decoupling Result:', result);
 } catch (e) {
@@ -94,7 +94,7 @@ try {
 console.log('\n--- Testing Coasting Stats ---');
 const coastingData = generateCoastingData();
 try {
-  // @ts-ignore
+  // @ts-expect-error - function not yet exported
   const result = calculateCoastingStats(coastingData.time, coastingData.power, coastingData.cadence);
   console.log('Coasting Result:', result);
   // Expect ~300s coasting (50%)
@@ -106,7 +106,7 @@ try {
 console.log('\n--- Testing Surges/Matches ---');
 const surgeData = generateSurgeData();
 try {
-  // @ts-ignore
+  // @ts-expect-error - function not yet exported
   const result = detectSurgesAndFades(surgeData.time, surgeData.power, surgeData.ftp);
   console.log('Surges Result:', result);
   // Expect 1 surge, duration 30s, avg power 400W
