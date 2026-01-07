@@ -458,7 +458,7 @@ function formatDuration(seconds: number): string {
 
 // Fetch data
 async function fetchData() {
-  console.log('ZoneChart: fetchData called', { workoutId: props.workoutId })
+  if (!props.workoutId) return
   loading.value = true
   error.value = null
   

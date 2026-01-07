@@ -488,23 +488,17 @@ function formatValue(key: string | number, value: any) {
 }
 
 function startEdit(field: string) {
-  console.log('Starting edit for:', field)
-  console.log('Current value from props:', props.modelValue[field])
   editingField.value = field
   editValue.value = props.modelValue[field]
-  console.log('Edit value set to:', editValue.value)
 }
 
 // Watch for changes to editValue
-watch(editValue, (newVal) => {
-  console.log('editValue changed to:', newVal)
-})
+// watch(editValue, (newVal) => {
+//   console.log('editValue changed to:', newVal)
+// })
 
 function saveField() {
   if (editingField.value) {
-    console.log('Saving field:', editingField.value)
-    console.log('New value type:', typeof editValue.value)
-    console.log('New value:', editValue.value)
     
     const newValue = editValue.value === '' ? null : editValue.value
     

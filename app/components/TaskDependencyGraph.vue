@@ -446,7 +446,6 @@ function getTaskMetadata(taskId: string) {
 async function fetchTaskMetadata() {
   try {
     const response: any = await $fetch('/api/orchestrate/metadata')
-    console.log('Fetched metadata:', response)
     
     // Convert date strings to Date objects
     const metadata = response.metadata || {}
@@ -457,7 +456,6 @@ async function fetchTaskMetadata() {
     }
     
     taskMetadata.value = metadata
-    console.log('Processed metadata:', taskMetadata.value)
   } catch (error) {
     console.error('Error fetching task metadata:', error)
   }
