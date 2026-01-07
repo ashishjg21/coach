@@ -4,29 +4,15 @@
     title="Workout Overview"
     description="View detailed statistics for this workout"
   >
-    <!-- Custom Header with Delete Button -->
-    <template #header>
-      <div class="flex items-center justify-between w-full">
-        <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-          Workout Overview
-        </h3>
-        <div class="flex items-center gap-2">
-          <UButton
-            color="error"
-            variant="ghost"
-            icon="i-heroicons-trash"
-            size="sm"
-            @click="showDeleteConfirm = true"
-          />
-          <UButton
-            color="neutral"
-            variant="ghost"
-            icon="i-heroicons-x-mark"
-            size="sm"
-            @click="closeModal"
-          />
-        </div>
-      </div>
+    <template #actions>
+      <UButton
+        color="error"
+        variant="ghost"
+        icon="i-heroicons-trash"
+        size="sm"
+        @click="showDeleteConfirm = true"
+        aria-label="Delete workout"
+      />
     </template>
 
     <!-- Hidden trigger - modal is controlled programmatically -->

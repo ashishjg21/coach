@@ -1,6 +1,11 @@
 <template>
-  <UModal v-model:open="showConfigModal" title="Configure Custom Report" description="Create a customized analysis report with your specified filters and timeframe">
-    <template #content>
+  <UModal 
+    v-model:open="showConfigModal" 
+    title="Configure Custom Report" 
+    description="Create a customized analysis report with your specified filters and timeframe"
+    :ui="{ content: 'sm:max-w-2xl', body: 'p-0 sm:p-0' }"
+  >
+    <template #body>
       <ReportConfigModal
         @generate="handleCustomReport"
         @close="showConfigModal = false"

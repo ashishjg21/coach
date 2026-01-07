@@ -320,49 +320,43 @@
         </UCard>
       </div>
     </UCard>
-    <UModal v-model:open="advancedSyncModalOpen">
-      <template #content>
-        <UCard>
-          <template #header>
-            <h3 class="text-lg font-semibold">Advanced Sync</h3>
-          </template>
+    <UModal v-model:open="advancedSyncModalOpen" title="Advanced Sync">
+      <template #body>
+        <div class="space-y-4">
+          <p>
+            Select how many days of historical data you would like to sync from
+            Intervals.icu.
+          </p>
+          <USelectMenu
+            v-model="selectedDays"
+            :items="[30, 90, 180, 365]"
+            placeholder="Select days"
+          />
+        </div>
+      </template>
 
-          <div class="space-y-4">
-            <p>
-              Select how many days of historical data you would like to sync from
-              Intervals.icu.
-            </p>
-            <USelectMenu
-              v-model="selectedDays"
-              :items="[30, 90, 180, 365]"
-              placeholder="Select days"
-            />
-          </div>
-
-          <template #footer>
-            <div class="flex justify-end gap-2">
-              <UButton
-                color="neutral"
-                variant="outline"
-                @click="advancedSyncModalOpen = false"
-              >
-                Cancel
-              </UButton>
-              <UButton
-                color="primary"
-                :disabled="!selectedDays"
-                @click="
-                  () => {
-                    $emit('sync', 'intervals', selectedDays)
-                    advancedSyncModalOpen = false
-                  }
-                "
-              >
-                Sync
-              </UButton>
-            </div>
-          </template>
-        </UCard>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton
+            color="neutral"
+            variant="outline"
+            @click="advancedSyncModalOpen = false"
+          >
+            Cancel
+          </UButton>
+          <UButton
+            color="primary"
+            :disabled="!selectedDays"
+            @click="
+              () => {
+                $emit('sync', 'intervals', selectedDays)
+                advancedSyncModalOpen = false
+              }
+            "
+          >
+            Sync
+          </UButton>
+        </div>
       </template>
     </UModal>
   </div>

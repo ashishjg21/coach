@@ -40,13 +40,10 @@ onMounted(() => {
 
     <!-- Release Modal -->
     <UModal v-model:open="isReleaseModalOpen" :ui="{ content: 'sm:max-w-2xl' }">
-      <template #header>
-        <div class="flex items-center justify-between">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <UIcon name="i-heroicons-sparkles" class="w-6 h-6 text-primary-500" />
-                What's New
-            </h3>
-            <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1" @click="isReleaseModalOpen = false" />
+      <template #title>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-heroicons-sparkles" class="w-6 h-6 text-primary-500" />
+          What's New
         </div>
       </template>
 
