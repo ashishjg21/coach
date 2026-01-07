@@ -1,7 +1,7 @@
 <template>
   <UDashboardPanel id="fitness-detail">
     <template #header>
-      <UDashboardNavbar :title="wellness ? `Wellness: ${formatDate(wellness.date)}` : 'Wellness Details'">
+      <UDashboardNavbar>
         <template #leading>
           <UButton
             icon="i-heroicons-arrow-left"
@@ -9,7 +9,8 @@
             variant="ghost"
             to="/fitness"
           >
-            Back to Fitness
+            <span class="hidden sm:inline">Back to Fitness</span>
+            <span class="sm:hidden">Fitness</span>
           </UButton>
         </template>
 
