@@ -118,14 +118,16 @@ export default defineEventHandler(async (event) => {
       lastExecution = workoutOnDay.executionScore || lastExecution
       
       // Push a new object with the potentially backfilled scores
-      // limiting to the fields we need to avoid circular refs or massive payloads
+      // limiting to the fields we need to avoid circular refs or massive payloads (Fixes COACH-WATTS-6)
       filledWorkouts.push({
-        ...workoutOnDay,
+        id: workoutOnDay.id,
+        date: workoutOnDay.date,
         overallScore: lastOverall,
         technicalScore: lastTechnical,
         effortScore: lastEffort,
         pacingScore: lastPacing,
-        executionScore: lastExecution
+        executionScore: lastExecution,
+        isGhost: false
       })
     } else {
       // Create a "ghost" workout entry for charting continuity

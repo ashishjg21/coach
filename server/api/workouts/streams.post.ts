@@ -87,6 +87,35 @@ export default defineEventHandler(async (event) => {
     }
   })
   
-  // Map back to workout ID for easier consumption
-  return streams
+  // Downsample streams to prevent large payloads (Fixes COACH-WATTS-A)
+  const TARGET_POINTS = 2000
+  const streamKeys = ['time', 'watts', 'heartrate', 'cadence', 'velocity', 'altitude', 'distance', 'grade_smooth', 'latlng']
+  
+  return streams.map(stream => {
+    // If time stream is short enough, return as is
+    if (!stream.time || !Array.isArray(stream.time) || stream.time.length <= TARGET_POINTS) {
+      return stream
+    }
+    
+    const processedStream = { ...stream }
+    const step = stream.time.length / TARGET_POINTS
+    
+    streamKeys.forEach(key => {
+      // @ts-ignore - Dynamic access
+      const data = processedStream[key]
+      if (data && Array.isArray(data)) {
+        const sampled: any[] = []
+        for (let i = 0; i < TARGET_POINTS; i++) {
+          const index = Math.floor(i * step)
+          if (index < data.length) {
+            sampled.push(data[index])
+          }
+        }
+        // @ts-ignore
+        processedStream[key] = sampled
+      }
+    })
+    
+    return processedStream
+  })
 })
