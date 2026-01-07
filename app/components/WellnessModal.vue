@@ -143,9 +143,22 @@
             <div class="p-2.5 rounded-xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-primary-100 dark:ring-primary-900/30">
               <UIcon name="i-heroicons-sparkles" class="w-6 h-6 text-primary-600 dark:text-primary-400 flex-shrink-0" />
             </div>
-            <div class="space-y-1">
+            <div class="space-y-1 flex-1">
               <h4 class="font-bold text-sm text-primary-900 dark:text-primary-100">Coach Recommendation</h4>
               <p class="text-sm text-primary-800 dark:text-primary-200 leading-relaxed font-medium">{{ getTrainingRecommendation() }}</p>
+              
+              <div v-if="wellnessData.id" class="flex justify-end mt-2">
+                <UButton
+                  :to="`/fitness/${wellnessData.id}`"
+                  variant="ghost"
+                  color="primary"
+                  size="xs"
+                  icon="i-heroicons-arrow-right"
+                  trailing
+                >
+                  View Details
+                </UButton>
+              </div>
             </div>
           </div>
         </div>

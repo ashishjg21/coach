@@ -59,18 +59,36 @@
 
         <div v-else-if="wellness" class="space-y-6">
           <!-- Header Card -->
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div class="flex items-start justify-between mb-4">
-              <div class="flex-1">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-1">
+                   <UIcon name="i-heroicons-calendar" class="w-4 h-4" />
+                   {{ formatDate(wellness.date) }}
+                </div>
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white">
                   Daily Wellness
                 </h1>
-                <div class="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
-                  <div class="flex items-center gap-1">
-                    <span class="i-heroicons-calendar w-4 h-4"></span>
-                    {{ formatDate(wellness.date) }}
-                  </div>
-                </div>
+              </div>
+              
+              <!-- Quick Stats Summary -->
+              <div class="flex items-center gap-4 sm:gap-8 overflow-x-auto pb-1 sm:pb-0">
+                 <div v-if="wellness.recoveryScore" class="flex flex-col items-end">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Recovery</span>
+                    <span class="text-xl font-bold" :class="getScoreColor(wellness.recoveryScore)">{{ wellness.recoveryScore }}%</span>
+                 </div>
+                 <div v-if="wellness.readiness" class="flex flex-col items-end">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Readiness</span>
+                    <span class="text-xl font-bold text-blue-600 dark:text-blue-400">{{ wellness.readiness }}</span>
+                 </div>
+                 <div v-if="wellness.sleepHours" class="flex flex-col items-end">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Sleep</span>
+                    <span class="text-xl font-bold text-indigo-600 dark:text-indigo-400">{{ wellness.sleepHours.toFixed(1) }}h</span>
+                 </div>
+                 <div v-if="wellness.hrv" class="flex flex-col items-end">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">HRV</span>
+                    <span class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ Math.round(wellness.hrv) }}</span>
+                 </div>
               </div>
             </div>
           </div>
@@ -832,6 +850,12 @@ useHead(() => {
 onMounted(() => {
   fetchWellness()
 })
+
+function getScoreColor(score: number) {
+  if (score >= 67) return 'text-green-600 dark:text-green-400'
+  if (score >= 34) return 'text-amber-600 dark:text-amber-400'
+  return 'text-red-600 dark:text-red-400'
+}
 
 function getTrend(metric: string, inverse: boolean = false) {
   if (!wellness.value?.trends?.[metric]) return null
