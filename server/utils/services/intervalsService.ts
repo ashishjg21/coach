@@ -82,14 +82,15 @@ export class IntervalsService {
 
       // Trigger stream ingestion if applicable
       if (upsertedWorkout.type && pacingActivityTypes.includes(upsertedWorkout.type)) {
-         await tasks.trigger('ingest-intervals-streams', {
-            userId,
-            workoutId: upsertedWorkout.id,
-            activityId: activity.id
-          }, {
-            concurrencyKey: userId,
-            queue: userIngestionQueue.name
-          });
+         // await tasks.trigger('ingest-intervals-streams', {
+         //    userId,
+         //    workoutId: upsertedWorkout.id,
+         //    activityId: activity.id
+         //  }, {
+         //    concurrencyKey: userId,
+         //    queue: userIngestionQueue.name
+         //  });
+         console.log(`[IntervalsService] Stream ingestion temporarily disabled for ${activity.id}`);
       }
     }
 
