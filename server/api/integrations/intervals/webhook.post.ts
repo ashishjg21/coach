@@ -1,5 +1,5 @@
-import { tasks } from '@trigger.dev/sdk/v3'
 import { logWebhookRequest, updateWebhookStatus } from '../../../utils/webhook-logger'
+import { IntervalsService } from '../../../utils/services/intervalsService'
 
 defineRouteMeta({
   openAPI: {
@@ -88,16 +88,16 @@ export default defineEventHandler(async (event) => {
       // Determine sync range
       let startDate: Date
       let endDate: Date = new Date()
-      // Cap endDate at end of today
+      // Cap endDate at end of today (service will handle historical cap logic too)
       endDate.setHours(23, 59, 59, 999)
 
       switch (type) {
         case 'ACTIVITY_UPLOADED':
         case 'ACTIVITY_ANALYZED':
-        case 'WELLNESS_UPDATED':
-          // Sync last 2 days to be safe and catch the updated data
+          // Sync last 2 days
           startDate = new Date()
           startDate.setDate(startDate.getDate() - 2)
+          await IntervalsService.syncActivities(userId, startDate, endDate)
           break
 
         case 'ACTIVITY_UPDATED':
@@ -109,92 +109,63 @@ export default defineEventHandler(async (event) => {
             endDate = new Date(actDate)
             endDate.setDate(endDate.getDate() + 1)
           } else {
-            // Fallback
             startDate = new Date()
             startDate.setDate(startDate.getDate() - 2)
           }
+          await IntervalsService.syncActivities(userId, startDate, endDate)
+          break
+
+        case 'WELLNESS_UPDATED':
+          startDate = new Date()
+          startDate.setDate(startDate.getDate() - 2)
+          await IntervalsService.syncWellness(userId, startDate, endDate)
           break
 
         case 'FITNESS_UPDATED':
           const records = intervalEvent.records || []
           if (records.length > 0) {
-            // records have 'id' as 'YYYY-MM-DD'
             const dates = records.map((r: any) => new Date(r.id).getTime())
-            const minDate = new Date(Math.min(...dates))
-            const maxDate = new Date(Math.max(...dates))
-            
-            startDate = minDate
-            endDate = maxDate
+            startDate = new Date(Math.min(...dates))
+            endDate = new Date(Math.max(...dates))
           } else {
-            // Fallback
             startDate = new Date()
             startDate.setDate(startDate.getDate() - 2)
           }
+          await IntervalsService.syncWellness(userId, startDate, endDate)
           break
 
         case 'ACTIVITY_DELETED':
-          // Handle activity deletion explicitly since ingest-intervals only upserts
           const deletedActivityId = intervalEvent.activity?.id || intervalEvent.id
           if (deletedActivityId) {
-            await prisma.workout.deleteMany({
-              where: {
-                userId,
-                source: 'intervals',
-                externalId: deletedActivityId.toString()
-              }
-            })
-            console.log(`[Intervals Webhook] Deleted activity ${deletedActivityId} for user ${userId}`)
+            await IntervalsService.deleteActivity(userId, deletedActivityId.toString())
           }
-          // Also trigger a brief sync to ensure CTL/ATL etc are updated if they were impacted
+          // Sync a brief range to ensure metrics (CTL/ATL) are updated
           startDate = new Date()
           startDate.setDate(startDate.getDate() - 1)
+          await IntervalsService.syncActivities(userId, startDate, endDate)
           break
         
         case 'CALENDAR_UPDATED':
-          // Handle deleted calendar events explicitly
           const deletedEvents = intervalEvent.deleted_events || []
           if (deletedEvents.length > 0) {
             const deletedIds = deletedEvents.map((id: any) => id.toString())
-            await prisma.plannedWorkout.deleteMany({
-              where: {
-                userId,
-                externalId: { in: deletedIds }
-              }
-            })
-            console.log(`[Intervals Webhook] Deleted ${deletedEvents.length} planned workouts for user ${userId}`)
-            
-            // Also check if any racing events need to be deleted
-            await prisma.event.deleteMany({
-              where: {
-                userId,
-                source: 'intervals',
-                externalId: { in: deletedIds }
-              }
-            })
+            await IntervalsService.deletePlannedWorkouts(userId, deletedIds)
           }
 
-          // Sync a wider range for calendar updates (last 3 days to 4 weeks ahead)
-          // to catch new or modified events
+          // Sync wider range for calendar
           startDate = new Date()
           startDate.setDate(startDate.getDate() - 3)
           endDate = new Date()
           endDate.setDate(endDate.getDate() + 28)
+          await IntervalsService.syncPlannedWorkouts(userId, startDate, endDate)
           break
 
         default:
           console.log(`[Intervals Webhook] Unhandled event type: ${type}`)
           continue
       }
-
-      // await tasks.trigger('ingest-intervals', {
-      //   userId,
-      //   startDate: startDate.toISOString().split('T')[0],
-      //   endDate: endDate.toISOString().split('T')[0]
-      // }, {
-      //   concurrencyKey: userId
-      // })
-      // console.log(`[Intervals Webhook] Triggered ingest-intervals for user ${userId} (${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]})`)
-      console.log(`[Intervals Webhook] Skipped triggering ingest-intervals for user ${userId} (Disabled)`)
+      
+      console.log(`[Intervals Webhook] Processed ${type} for user ${userId} synchronously`)
     }
     
     if (log) await updateWebhookStatus(log.id, 'PROCESSED')
