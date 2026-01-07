@@ -765,7 +765,16 @@ export function normalizeIntervalsPlannedWorkout(event: IntervalsPlannedWorkout,
   // Intervals.icu sometimes uses different field names for planned metrics depending on the source/type
   const durationSec = event.duration ?? event.moving_time ?? event.workout_doc?.duration ?? null
   const tss = event.tss ?? event.icu_training_load ?? null
-  const workIntensity = event.work ?? event.icu_intensity ?? null
+  
+  // FIX: Prioritize icu_intensity and normalize to 0-1 scale
+  // event.work is Joules, which shouldn't be mapped to intensity
+  let workIntensity = event.icu_intensity ?? null
+  
+  // If intensity is > 5, assume it's a percentage (e.g. 75 for 0.75)
+  if (workIntensity !== null && workIntensity > 5) {
+    workIntensity = workIntensity / 100
+  }
+
   const distance = event.distance ?? event.icu_distance ?? null
   
   // Structured workout data
@@ -782,7 +791,7 @@ export function normalizeIntervalsPlannedWorkout(event: IntervalsPlannedWorkout,
     durationSec: durationSec ? Math.round(durationSec) : null,
     distanceMeters: distance ? Math.round(distance) : null,
     tss: tss ? Math.round(tss * 10) / 10 : null,
-    workIntensity: workIntensity ? Math.round(workIntensity * 10) / 10 : null,
+    workIntensity: workIntensity ? Math.round(workIntensity * 100) / 100 : null,
     structuredWorkout,
     completed: false,
     rawJson: event

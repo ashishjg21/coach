@@ -38,12 +38,15 @@ backfillPlannedWorkoutsCommand
     const prisma = new PrismaClient({ adapter });
 
     try {
-        console.log(chalk.gray('Fetching PlannedWorkouts with missing duration...'));
+        console.log(chalk.gray('Fetching PlannedWorkouts with missing duration or invalid intensity...'));
         
-        // Find workouts with missing duration
+        // Find workouts with missing duration OR invalid intensity
         const workouts = await prisma.plannedWorkout.findMany({
             where: {
-                durationSec: null,
+                OR: [
+                    { durationSec: null },
+                    { workIntensity: { gt: 2 } }
+                ],
                 category: 'WORKOUT',
                 rawJson: { not: Prisma.JsonNull }
             },
@@ -73,16 +76,20 @@ backfillPlannedWorkoutsCommand
             const normalized = normalizeIntervalsPlannedWorkout(raw, workout.userId);
             
             // Check if we actually found new data
-            const hasNewDuration = normalized.durationSec !== null && normalized.durationSec !== undefined;
-            const hasNewStructure = normalized.structuredWorkout !== null && normalized.structuredWorkout !== undefined;
-            const hasNewTss = normalized.tss !== null && normalized.tss !== undefined;
+            const hasNewDuration = normalized.durationSec !== null && normalized.durationSec !== undefined && (workout.durationSec === null || workout.durationSec === undefined);
+            const hasNewStructure = normalized.structuredWorkout !== null && normalized.structuredWorkout !== undefined && !workout.structuredWorkout;
+            const hasNewTss = normalized.tss !== null && normalized.tss !== undefined && (workout.tss === null || workout.tss === undefined);
             
-            if (hasNewDuration || hasNewStructure || hasNewTss) {
+            // Check for intensity fix (if DB has > 2 and normalized has <= 2)
+            const hasNewIntensity = normalized.workIntensity !== null && normalized.workIntensity <= 2 && (workout.workIntensity === null || workout.workIntensity > 2);
+            
+            if (hasNewDuration || hasNewStructure || hasNewTss || hasNewIntensity) {
                 if (isDryRun) {
                     console.log(chalk.green(`[DRY RUN] Would update workout "${workout.title}" (${workout.date.toISOString().split('T')[0]})`));
                     if (hasNewDuration) console.log(chalk.gray(`  Duration: ${workout.durationSec} -> ${normalized.durationSec}`));
                     if (hasNewTss) console.log(chalk.gray(`  TSS: ${workout.tss} -> ${normalized.tss}`));
-                    if (hasNewStructure && !workout.structuredWorkout) console.log(chalk.gray(`  Structure: Added`));
+                    if (hasNewIntensity) console.log(chalk.gray(`  Intensity: ${workout.workIntensity} -> ${normalized.workIntensity}`));
+                    if (hasNewStructure) console.log(chalk.gray(`  Structure: Added`));
                 } else {
                     await prisma.plannedWorkout.update({
                         where: { id: workout.id },
