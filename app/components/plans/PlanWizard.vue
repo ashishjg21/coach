@@ -6,15 +6,17 @@
       <!-- Progress Indicator -->
       <div v-if="step <= 2" class="flex items-center justify-center gap-2 mb-4">
         <div class="flex items-center">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
+          <div
+class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
             :class="step >= 1 ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-800 text-gray-500'">1</div>
           <div class="text-xs font-medium ml-2" :class="step >= 1 ? 'text-primary' : 'text-gray-500'">Goal</div>
         </div>
         <div class="w-12 h-1 bg-gray-200 dark:bg-gray-800 rounded-full mx-2 overflow-hidden">
-          <div class="h-full bg-primary transition-all duration-300" :style="{ width: step >= 2 ? '100%' : '0%' }"></div>
+          <div class="h-full bg-primary transition-all duration-300" :style="{ width: step >= 2 ? '100%' : '0%' }"/>
         </div>
         <div class="flex items-center">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
+          <div
+class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
             :class="step >= 2 ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-800 text-gray-500'">2</div>
           <div class="text-xs font-medium ml-2" :class="step >= 2 ? 'text-primary' : 'text-gray-500'">Strategy</div>
         </div>
@@ -31,8 +33,8 @@
         <div v-else class="space-y-4">
           <!-- Create New Goal Option -->
           <button 
-            @click="showCreateGoal = true"
             class="w-full p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-primary hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors flex items-center justify-center gap-2 text-muted hover:text-primary"
+            @click="showCreateGoal = true"
           >
             <UIcon name="i-heroicons-plus" class="w-5 h-5" />
             <span class="font-medium">Create New Goal</span>
@@ -43,9 +45,9 @@
             <div 
               v-for="goal in goals" 
               :key="goal.id"
-              @click="selectGoal(goal)"
               class="p-4 rounded-lg border-2 text-left transition-all cursor-pointer"
               :class="selectedGoal?.id === goal.id ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-gray-200 dark:border-gray-800 hover:border-primary/50'"
+              @click="selectGoal(goal)"
             >
               <div class="flex justify-between items-start">
                 <div>
@@ -77,11 +79,11 @@
               <div 
                 v-for="type in availableActivityTypes" 
                 :key="type.value"
-                @click="toggleActivityType(type.value)"
                 class="p-3 rounded-lg border-2 text-center cursor-pointer transition-all select-none"
                 :class="selectedActivityTypes.includes(type.value) 
                   ? 'border-primary bg-primary/5 dark:bg-primary/10 ring-1 ring-primary/50' 
                   : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 opacity-70'"
+                @click="toggleActivityType(type.value)"
               >
                 <UIcon :name="type.icon" class="w-6 h-6 mb-1" :class="selectedActivityTypes.includes(type.value) ? 'text-primary' : 'text-gray-400'" />
                 <div class="text-sm font-medium" :class="selectedActivityTypes.includes(type.value) ? 'text-gray-900 dark:text-white' : 'text-gray-500'">{{ type.label }}</div>
@@ -135,9 +137,9 @@
                <button 
                 v-for="strat in strategyOptions" 
                 :key="strat.value"
-                @click="strategy = strat.value"
                 class="relative p-4 rounded-lg border-2 text-left transition-all group overflow-hidden"
                 :class="strategy === strat.value ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-gray-200 dark:border-gray-800'"
+                @click="strategy = strat.value"
               >
                 <!-- Selection Indicator -->
                 <div v-if="strategy === strat.value" class="absolute top-2 right-2">
@@ -274,8 +276,8 @@
           v-if="selectedGoal" 
           size="xl" 
           color="primary" 
-          @click="step = 2" 
-          icon="i-heroicons-arrow-right"
+          icon="i-heroicons-arrow-right" 
+          @click="step = 2"
         >
           Next: Plan Strategy
         </UButton>
@@ -285,10 +287,10 @@
         <UButton 
           size="xl" 
           color="primary" 
-          @click="initializePlan" 
-          :loading="initializing"
+          :loading="initializing" 
           icon="i-heroicons-sparkles"
           :disabled="selectedActivityTypes.length === 0"
+          @click="initializePlan"
         >
           Generate Plan Preview
         </UButton>
@@ -299,9 +301,9 @@
         <UButton 
           size="xl" 
           color="success" 
+          :loading="activating"
+          icon="i-heroicons-check-circle" 
           @click="confirmPlan"
-          :loading="activating" 
-          icon="i-heroicons-check-circle"
         >
           Start Training
         </UButton>

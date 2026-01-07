@@ -1,5 +1,5 @@
 <template>
-  <UModal :open="modelValue" @update:open="$emit('update:modelValue', $event)" title="Plan Week with AI">
+  <UModal :open="modelValue" title="Plan Week with AI" @update:open="$emit('update:modelValue', $event)">
     <template #body>
       <div class="p-6 space-y-4">
         <div v-if="weekLabel" class="flex items-center gap-2 p-3 bg-primary/5 text-primary rounded-lg border border-primary/10">
@@ -26,7 +26,7 @@
         
         <div class="flex justify-end gap-2 mt-4">
           <UButton color="neutral" variant="ghost" @click="$emit('update:modelValue', false)">Cancel</UButton>
-          <UButton color="primary" :loading="loading" @click="generatePlan" icon="i-heroicons-sparkles">
+          <UButton color="primary" :loading="loading" icon="i-heroicons-sparkles" @click="generatePlan">
             Generate Plan
           </UButton>
         </div>

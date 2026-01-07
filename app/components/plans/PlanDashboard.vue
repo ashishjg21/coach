@@ -132,7 +132,7 @@
     <!-- Block Timeline -->
     <div class="relative pt-6 pb-2 overflow-x-auto w-full">
       <div class="min-w-[600px] relative px-2">
-        <div class="h-2 bg-gray-200 dark:bg-gray-800 rounded-full w-full absolute top-9 z-0"></div>
+        <div class="h-2 bg-gray-200 dark:bg-gray-800 rounded-full w-full absolute top-9 z-0"/>
         <div class="relative z-10 flex justify-between">
             <div 
             v-for="block in plan.blocks" 
@@ -143,7 +143,7 @@
             <div 
                 class="w-4 h-4 rounded-full border-2 transition-all mb-2 bg-white dark:bg-gray-900 z-10"
                 :class="getBlockStatusColor(block)"
-            ></div>
+            />
             <div class="text-xs font-semibold text-center px-1" :class="selectedBlockId === block.id ? 'text-primary' : 'text-muted'">
                 {{ block.name }}
             </div>
@@ -163,8 +163,8 @@
              color="primary"
              variant="soft"
              icon="i-heroicons-sparkles"
-             @click="showAIPlanModal = true"
              class="flex-1 sm:flex-none justify-center"
+             @click="showAIPlanModal = true"
            >
              Plan with AI
            </UButton>
@@ -174,8 +174,8 @@
                     :key="week.id"
                     size="xs"
                     :variant="selectedWeekId === week.id ? 'solid' : 'ghost'"
-                    @click="selectedWeekId = week.id"
                     class="whitespace-nowrap"
+                    @click="selectedWeekId = week.id"
                 >
                     Week {{ week.weekNumber }}
                 </UButton>
@@ -217,8 +217,8 @@
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-900 text-muted">
                 <tr>
-                    <th class="w-8"></th>
-                    <th class="px-4 py-2 text-left w-10"></th>
+                    <th class="w-8"/>
+                    <th class="px-4 py-2 text-left w-10"/>
                     <th class="px-4 py-2 text-left">Day</th>
                     <th class="px-4 py-2 text-left">Workout</th>
                     <th class="px-4 py-2 text-left">Targets</th>
@@ -238,7 +238,7 @@
                     </div>
                     </th>
                     <th class="px-4 py-2 text-right">Status</th>
-                    <th class="w-10 px-2 py-2"></th>
+                    <th class="w-10 px-2 py-2"/>
                 </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -247,11 +247,11 @@
                     :key="workout.id"
                     class="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors group"
                     draggable="true"
+                    :class="{ 'opacity-50': draggingId === workout.id }"
                     @dragstart="onDragStart($event, workout)"
                     @dragover.prevent
                     @drop="onDrop($event, workout)"
                     @click="navigateToWorkout(workout.id)"
-                    :class="{ 'opacity-50': draggingId === workout.id }"
                 >
                     <td class="pl-2 text-center cursor-move text-gray-300 group-hover:text-gray-500">
                     <UIcon name="i-heroicons-bars-2" class="w-4 h-4" />
@@ -289,8 +289,8 @@
                         variant="ghost"
                         icon="i-heroicons-sparkles"
                         :loading="generatingStructureForWorkoutId === workout.id"
-                        @click.stop="generateStructureForWorkout(workout.id)"
                         title="Generate Structured Workout"
+                        @click.stop="generateStructureForWorkout(workout.id)"
                         />
                     </div>
                     </td>
