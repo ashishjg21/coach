@@ -105,6 +105,18 @@ interface IntervalsWellness {
   ctl?: number
   atl?: number
   comments?: string
+  vo2max?: number
+  bodyFat?: number
+  abdomen?: number
+  injury?: string
+  lactate?: number
+  systolic?: number
+  diastolic?: number
+  hydration?: string
+  hydrationVolume?: number
+  respiration?: number
+  bloodGlucose?: number
+  menstrualPhase?: string
   [key: string]: any
 }
 
@@ -839,7 +851,25 @@ export function normalizeIntervalsWellness(wellness: IntervalsWellness, userId: 
     
     // Physical
     weight: wellness.weight || null,
+    bodyFat: wellness.bodyFat || null,
+    abdomen: wellness.abdomen || null,
+    vo2max: wellness.vo2max || null,
     spO2: wellness.spO2 || null,
+    
+    // Vitals
+    systolic: wellness.systolic || null,
+    diastolic: wellness.diastolic || null,
+    respiration: wellness.respiration || null,
+    bloodGlucose: wellness.bloodGlucose || null,
+    lactate: wellness.lactate || null,
+    
+    // Hydration & Health
+    hydration: wellness.hydration || null,
+    hydrationVolume: wellness.hydrationVolume || null,
+    injury: wellness.injury || null,
+    
+    // Cycle
+    menstrualPhase: wellness.menstrualPhase || null,
     
     // Training load
     ctl: wellness.ctl || null,
