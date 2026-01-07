@@ -103,7 +103,7 @@ export async function createPlannedWorkout(userId: string, args: any): Promise<a
   }
   
   // Parse time of day - default to 8am (morning) if not specified
-  let workoutDate = new Date(date)
+  const workoutDate = new Date(date)
   const timeOfDay = time_of_day || 'morning'
   
   // Handle different time formats

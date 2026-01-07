@@ -297,8 +297,6 @@ export async function fetchWhoopSleep(integration: Integration, sleepId: string)
   }
 }
 
-export async function fetchWhoopUser(accessToken: string): Promise<WhoopUser>
-export async function fetchWhoopUser(integration: Integration): Promise<WhoopUser>
 export async function fetchWhoopUser(tokenOrIntegration: string | Integration): Promise<WhoopUser> {
   let accessToken: string
   

@@ -31,8 +31,8 @@ interface WorkoutData {
   ftp?: number; // Optional, for calculating absolute watts if needed
 }
 
-export class WorkoutConverter {
-  static toZWO(workout: WorkoutData): string {
+export const WorkoutConverter = {
+  toZWO(workout: WorkoutData): string {
     const root = create({ version: '1.0', encoding: 'UTF-8' })
       .ele('workout_file')
         .ele('author').txt(workout.author || 'Coach Wattz').up()
@@ -91,9 +91,9 @@ export class WorkoutConverter {
     }
 
     return root.end({ prettyPrint: true });
-  }
+  },
 
-  static toFIT(workout: WorkoutData): Uint8Array {
+  toFIT(workout: WorkoutData): Uint8Array {
     const fitWriter = new FitWriter();
     
     // FIT Epoch: Dec 31, 1989 00:00:00 UTC
@@ -181,9 +181,9 @@ export class WorkoutConverter {
     const result = fitWriter.finish();
     // Convert DataView to Uint8Array to satisfy response requirements
     return new Uint8Array(result.buffer, result.byteOffset, result.byteLength);
-  }
+  },
 
-  static toMRC(workout: WorkoutData): string {
+  toMRC(workout: WorkoutData): string {
     const lines: string[] = [];
     lines.push('[COURSE HEADER]');
     lines.push('VERSION = 2');
@@ -225,9 +225,9 @@ export class WorkoutConverter {
 
     lines.push('[END COURSE DATA]');
     return lines.join('\r\n');
-  }
+  },
 
-  static toERG(workout: WorkoutData): string {
+  toERG(workout: WorkoutData): string {
     const lines: string[] = [];
     const ftp = workout.ftp || 250; // Fallback FTP
 
@@ -271,9 +271,9 @@ export class WorkoutConverter {
 
     lines.push('[END COURSE DATA]');
     return lines.join('\r\n');
-  }
+  },
 
-  static toIntervalsICU(workout: WorkoutData): string {
+  toIntervalsICU(workout: WorkoutData): string {
     const lines: string[] = [];
     
     // Group steps by type to create sections

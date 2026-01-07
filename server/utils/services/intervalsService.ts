@@ -24,11 +24,11 @@ import {
   detectSurges
 } from "../pacing";
 
-export class IntervalsService {
+export const IntervalsService = {
   /**
    * Sync activities for a user within a given date range.
    */
-  static async syncActivities(userId: string, startDate: Date, endDate: Date) {
+  async syncActivities(userId: string, startDate: Date, endDate: Date) {
     const integration = await prisma.integration.findUnique({
       where: {
         userId_provider: {
@@ -95,12 +95,12 @@ export class IntervalsService {
     }
 
     return upsertedCount;
-  }
+  },
 
   /**
    * Sync activity stream data including pacing metrics.
    */
-  static async syncActivityStream(userId: string, workoutId: string, activityId: string) {
+  async syncActivityStream(userId: string, workoutId: string, activityId: string) {
     // Get Intervals integration
     const integration = await prisma.integration.findFirst({
       where: {
@@ -214,12 +214,12 @@ export class IntervalsService {
     });
     
     return workoutStream;
-  }
+  },
 
   /**
    * Sync wellness data for a user within a given date range.
    */
-  static async syncWellness(userId: string, startDate: Date, endDate: Date) {
+  async syncWellness(userId: string, startDate: Date, endDate: Date) {
     const integration = await prisma.integration.findUnique({
       where: {
         userId_provider: {
@@ -255,12 +255,12 @@ export class IntervalsService {
     }
 
     return upsertedCount;
-  }
+  },
 
   /**
    * Sync planned workouts and events for a user within a given date range.
    */
-  static async syncPlannedWorkouts(userId: string, startDate: Date, endDate: Date) {
+  async syncPlannedWorkouts(userId: string, startDate: Date, endDate: Date) {
     const integration = await prisma.integration.findUnique({
       where: {
         userId_provider: {
@@ -327,12 +327,12 @@ export class IntervalsService {
     }
 
     return { plannedWorkouts: plannedUpserted, events: eventsUpserted };
-  }
+  },
 
   /**
    * Handle activity deletion.
    */
-  static async deleteActivity(userId: string, activityId: string) {
+  async deleteActivity(userId: string, activityId: string) {
     await prisma.workout.deleteMany({
       where: {
         userId,
@@ -340,12 +340,12 @@ export class IntervalsService {
         externalId: activityId
       }
     });
-  }
+  },
 
   /**
    * Handle planned workout/event deletion.
    */
-  static async deletePlannedWorkouts(userId: string, externalIds: string[]) {
+  async deletePlannedWorkouts(userId: string, externalIds: string[]) {
     
     await prisma.plannedWorkout.deleteMany({
       where: {

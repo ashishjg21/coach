@@ -181,7 +181,7 @@ export async function createIntervalsPlannedWorkout(
   const athleteId = getIntervalsAthleteId(integration)
   
   // Map workout types to Intervals.icu format
-  let category = 'WORKOUT'
+  const category = 'WORKOUT'
   let sport = data.type
   
   // Handle Gym workouts - use "WeightTraining" (no space) for Intervals.icu

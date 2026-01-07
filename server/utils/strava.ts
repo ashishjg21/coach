@@ -251,8 +251,6 @@ export async function fetchStravaActivityDetails(
 /**
  * Fetch the authenticated athlete's profile
  */
-export async function fetchStravaAthlete(accessToken: string): Promise<StravaAthlete>
-export async function fetchStravaAthlete(integration: Integration): Promise<StravaAthlete>
 export async function fetchStravaAthlete(tokenOrIntegration: string | Integration): Promise<StravaAthlete> {
   let accessToken: string
   
