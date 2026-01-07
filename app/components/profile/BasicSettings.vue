@@ -319,12 +319,37 @@
             <UIcon name="i-heroicons-pencil" class="w-3 h-3 text-muted hover:text-primary" />
           </button>
         </div>
-        <div v-if="editingField === 'country'" class="flex gap-2">
-          <UInput v-model="editValue" size="sm" class="w-full" autofocus @keyup.enter="saveField" @keyup.esc="cancelEdit" />
+        <div v-if="editingField === 'country'" class="flex gap-2 w-full relative z-50">
+           <USelectMenu
+            v-model="editValue"
+            :items="countries"
+            option-attribute="name"
+            value-attribute="code"
+            size="sm"
+            class="flex-1"
+            searchable
+            searchable-placeholder="Search country..."
+            autofocus
+          >
+            <template #label>
+              <span v-if="editValue" class="flex items-center gap-2">
+                <span>{{ countries.find(c => c.code === editValue)?.flag }}</span>
+                <span>{{ countries.find(c => c.code === editValue)?.name || editValue }}</span>
+              </span>
+              <span v-else>Select country</span>
+            </template>
+            <template #option="{ option }">
+               <span class="mr-2">{{ option.flag }}</span>
+               <span>{{ option.name }}</span>
+            </template>
+          </USelectMenu>
           <UButton size="xs" color="primary" variant="ghost" icon="i-heroicons-check" @click="saveField" />
           <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-x-mark" @click="cancelEdit" />
         </div>
-        <p v-else class="font-medium text-lg">{{ modelValue.country }}</p>
+        <p v-else class="font-medium text-lg flex items-center gap-2">
+           <span v-if="countries.find(c => c.code === modelValue.country)">{{ countries.find(c => c.code === modelValue.country)?.flag }}</span>
+           <span>{{ countries.find(c => c.code === modelValue.country)?.name || modelValue.country }}</span>
+        </p>
       </div>
         <!-- Timezone -->
       <div class="lg:col-span-2 group relative">
@@ -383,6 +408,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue', 'autodetect'])
 const { formatDate, formatUserDate, timezone } = useFormat()
+import { countries } from '~/utils/countries'
 
 const editingField = ref<string | null>(null)
 const editValue = ref<any>(null)

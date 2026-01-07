@@ -65,7 +65,12 @@
           
           <div class="mb-3">
             <div class="flex items-baseline gap-2">
-              <p class="font-bold text-lg text-gray-900 dark:text-white">{{ userStore.profile.name || 'Athlete' }}</p>
+              <div class="flex items-center gap-2">
+                <p class="font-bold text-lg text-gray-900 dark:text-white">{{ userStore.profile.name || 'Athlete' }}</p>
+                <span v-if="userStore.profile.country && countries.find(c => c.code === userStore.profile.country)" class="text-lg" :title="countries.find(c => c.code === userStore.profile.country)?.name">
+                  {{ countries.find(c => c.code === userStore.profile.country)?.flag }}
+                </span>
+              </div>
               <p v-if="userStore.profile.age" class="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest">
                 {{ userStore.profile.age }} yrs
               </p>
@@ -233,6 +238,8 @@
 </template>
 
 <script setup lang="ts">
+import { countries } from '~/utils/countries'
+
 const userStore = useUserStore()
 const integrationStore = useIntegrationStore()
 const { formatDate, getUserLocalDate } = useFormat()
