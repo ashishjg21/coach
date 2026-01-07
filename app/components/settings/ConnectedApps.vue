@@ -10,7 +10,7 @@
         <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-              <img src="/images/logos/intervals.png" alt="Intervals.icu Logo" class="w-8 h-8 object-contain" />
+              <img src="/images/logos/intervals.png" alt="Intervals.icu Logo" class="w-8 h-8 object-contain" >
             </div>
             <div>
               <h3 class="font-semibold">Intervals.icu</h3>
@@ -75,7 +75,7 @@
         <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-gray-200 dark:ring-gray-700">
-              <img src="/images/logos/whoop_square.svg" alt="WHOOP Logo" class="w-8 h-8 object-contain" />
+              <img src="/images/logos/whoop_square.svg" alt="WHOOP Logo" class="w-8 h-8 object-contain" >
             </div>
             <div>
               <h3 class="font-semibold">WHOOP</h3>
@@ -133,7 +133,7 @@
         <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-gray-200 dark:ring-gray-700">
-              <img src="/images/logos/withings.png" alt="Withings Logo" class="w-8 h-8 object-contain" />
+              <img src="/images/logos/withings.png" alt="Withings Logo" class="w-8 h-8 object-contain" >
             </div>
             <div>
               <h3 class="font-semibold">Withings</h3>
@@ -179,7 +179,7 @@
         <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-gray-200 dark:ring-gray-700">
-              <img src="/images/logos/yazio_square.webp" alt="Yazio Logo" class="w-8 h-8 object-contain" />
+              <img src="/images/logos/yazio_square.webp" alt="Yazio Logo" class="w-8 h-8 object-contain" >
             </div>
             <div>
               <h3 class="font-semibold">Yazio</h3>
@@ -225,7 +225,7 @@
         <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-gray-200 dark:ring-gray-700">
-              <img src="/images/logos/hevy-icon.png" alt="Hevy Logo" class="w-8 h-8 object-contain" />
+              <img src="/images/logos/hevy-icon.png" alt="Hevy Logo" class="w-8 h-8 object-contain" >
             </div>
             <div>
               <h3 class="font-semibold">Hevy</h3>
@@ -271,7 +271,7 @@
         <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
           <div class="flex items-start gap-4">
             <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-gray-200 dark:ring-gray-700">
-              <img src="/images/logos/strava.svg" alt="Strava Logo" class="w-8 h-8 object-contain" />
+              <img src="/images/logos/strava.svg" alt="Strava Logo" class="w-8 h-8 object-contain" >
             </div>
             <div>
               <h3 class="font-semibold">Strava</h3>

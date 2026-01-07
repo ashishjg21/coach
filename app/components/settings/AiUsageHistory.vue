@@ -9,8 +9,8 @@
         <UButton
           size="sm"
           variant="ghost"
-          @click="refresh"
           :loading="refreshing"
+          @click="refresh"
         >
           <UIcon name="i-heroicons-arrow-path" />
           Refresh
@@ -33,8 +33,8 @@
           variant="outline"
           size="sm"
           class="ml-auto"
-          @click="refresh"
           :loading="refreshing"
+          @click="refresh"
         >
           <UIcon name="i-heroicons-arrow-path" />
           Refresh
@@ -66,8 +66,8 @@
             variant="outline"
             color="neutral"
             :disabled="currentPage === 1"
-            @click="goToPage(currentPage - 1)"
             icon="i-heroicons-chevron-left"
+            @click="goToPage(currentPage - 1)"
           >
             Previous
           </UButton>
@@ -76,8 +76,8 @@
             variant="outline"
             color="neutral"
             :disabled="currentPage === data.pagination.totalPages"
-            @click="goToPage(currentPage + 1)"
             trailing-icon="i-heroicons-chevron-right"
+            @click="goToPage(currentPage + 1)"
           >
             Next
           </UButton>

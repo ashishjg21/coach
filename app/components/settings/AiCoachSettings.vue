@@ -40,7 +40,7 @@
               type="radio"
               :checked="localSettings.aiModelPreference === model.value"
               class="mt-1"
-            />
+            >
             <div class="flex-1">
               <div class="font-medium">{{ model.label }}</div>
               <div class="text-sm text-muted mt-1">{{ model.description }}</div>

@@ -10,8 +10,8 @@
           v-if="!loading && data"
           size="xs"
           variant="ghost"
-          @click="refresh"
           :loading="refreshing"
+          @click="refresh"
         >
           <UIcon name="i-heroicons-arrow-path" />
         </UButton>
