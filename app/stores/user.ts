@@ -13,7 +13,7 @@ export const useUserStore = defineStore('user', () => {
     loading.value = true
     try {
       const data = await $fetch('/api/profile/dashboard')
-      // @ts-ignore
+      // @ts-expect-error - data type is unknown
       profile.value = data?.profile || null
     } catch (error) {
       console.error('Error fetching profile:', error)
@@ -37,12 +37,12 @@ export const useUserStore = defineStore('user', () => {
       // Poll for completion
       poll(
         () => $fetch('/api/profile/dashboard'),
-        // @ts-ignore
+        // @ts-expect-error - data type is unknown
         (data) => data?.profile?.status === 'COMPLETED',
         {
-            // @ts-ignore
+            // @ts-expect-error - data type is unknown
           onSuccess: (data) => {
-            // @ts-ignore
+            // @ts-expect-error - data type is unknown
             profile.value = data.profile
             generating.value = false
             toast.add({

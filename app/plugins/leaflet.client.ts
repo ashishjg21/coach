@@ -1,5 +1,5 @@
 export default defineNuxtPlugin(async (nuxtApp) => {
-  if (process.server) return
+  if (import.meta.server) return
 
   const L = await import('leaflet')
   await import('leaflet/dist/leaflet.css')

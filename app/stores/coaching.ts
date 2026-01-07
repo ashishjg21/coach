@@ -5,7 +5,7 @@ export const useCoachingStore = defineStore('coaching', () => {
   const actingAsUserName = ref<string | null>(null)
 
   // Load from localStorage on init
-  if (process.client) {
+  if (import.meta.client) {
     const savedId = localStorage.getItem('coaching_act_as_id')
     const savedName = localStorage.getItem('coaching_act_as_name')
     if (savedId) {
@@ -19,7 +19,7 @@ export const useCoachingStore = defineStore('coaching', () => {
   function startActingAs(userId: string, userName: string) {
     actingAsUserId.value = userId
     actingAsUserName.value = userName
-    if (process.client) {
+    if (import.meta.client) {
       localStorage.setItem('coaching_act_as_id', userId)
       localStorage.setItem('coaching_act_as_name', userName)
     }
@@ -28,7 +28,7 @@ export const useCoachingStore = defineStore('coaching', () => {
   function stopActingAs() {
     actingAsUserId.value = null
     actingAsUserName.value = null
-    if (process.client) {
+    if (import.meta.client) {
       localStorage.removeItem('coaching_act_as_id')
       localStorage.removeItem('coaching_act_as_name')
     }
