@@ -755,7 +755,26 @@ model Wellness {
   
   // Physical Metrics
   weight            Float?   // Weight in kg
+  bodyFat           Float?   // Body fat percentage
+  abdomen           Float?   // Abdominal circumference (cm)
+  vo2max            Float?   // VO2 Max (ml/kg/min)
   spO2              Float?   // Blood oxygen saturation (%)
+  
+  // Vitals
+  systolic          Int?     // Systolic blood pressure (mmHg)
+  diastolic         Int?     // Diastolic blood pressure (mmHg)
+  respiration       Float?   // Respiration rate (breaths/min)
+  bloodGlucose      Float?   // Blood glucose (mmol/L or mg/dL)
+  lactate           Float?   // Blood lactate (mmol/L)
+  skinTemp          Float?   // Skin temperature (Celsius)
+  
+  // Hydration & Health Status
+  hydration         String?  // Hydration status description
+  hydrationVolume   Float?   // Water intake (liters/ml?)
+  injury            String?  // Injury/Sickness status
+  
+  // Cycle Tracking
+  menstrualPhase    String?  // Current menstrual phase
   
   // Training Load (from Intervals.icu)
   ctl               Float?   // Chronic Training Load (Fitness)
