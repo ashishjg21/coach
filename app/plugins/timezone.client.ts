@@ -22,8 +22,6 @@ export default defineNuxtPlugin((nuxtApp) => {
         const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
         
         if (detectedTimezone) {
-          console.log('[Timezone] Auto-detecting user timezone:', detectedTimezone)
-          
           // Call API to update profile
           await $fetch('/api/profile', {
             method: 'PATCH',
