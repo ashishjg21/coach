@@ -1,5 +1,5 @@
 <template>
-  <UCard class="lg:col-span-2 overflow-hidden">
+  <UCard class="lg:col-span-2 overflow-hidden flex flex-col h-full">
     <template #header>
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -7,7 +7,7 @@
           <h3 class="font-bold text-sm tracking-tight uppercase">Recent Activity</h3>
         </div>
         <UBadge v-if="activityStore.recentActivity && activityStore.recentActivity.items.length > 0" color="neutral" variant="subtle" size="xs" class="font-bold uppercase tracking-widest">
-          Active Period
+          Last 5 Days
         </UBadge>
       </div>
     </template>
@@ -26,39 +26,42 @@
       </p>
     </div>
     
-    <!-- Timeline -->
-    <UTimeline v-else :items="(activityStore.recentActivity.items as any[])" class="max-h-96 overflow-y-auto pr-2">
-      <template #default="{ item }">
-        <div 
-          class="relative flex items-start justify-between gap-3 group -mx-2 px-2 py-2 rounded-lg transition-all duration-200"
-          :class="item.link ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50' : ''"
-          @click="navigateActivity(item)"
-        >
-          <div class="flex-1 min-w-0">
-            <p 
-              class="font-bold text-sm text-gray-900 dark:text-white transition-colors"
-              :class="item.link ? 'group-hover:text-primary-500' : ''"
-            >
+    <!-- Activity Cards List -->
+    <div v-else class="space-y-3 max-h-[500px] overflow-y-auto pr-2 -mr-2 p-1">
+      <div 
+        v-for="item in (activityStore.recentActivity.items as any[])" 
+        :key="item.id"
+        class="group relative flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 ring-1 ring-inset ring-gray-200 dark:ring-gray-700 hover:ring-primary-500/50 hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+        @click="navigateActivity(item)"
+      >
+        <!-- Icon Box -->
+        <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full" :class="getIconBgClass(item)">
+          <UIcon :name="item.icon || 'i-heroicons-calendar'" class="w-5 h-5" :class="getIconColorClass(item)" />
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between mb-0.5">
+            <p class="font-bold text-sm text-gray-900 dark:text-white truncate pr-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
               {{ item.title }}
             </p>
-            
-            <p v-if="item.description" class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-              {{ item.description }}
-            </p>
-          </div>
-          <div class="flex flex-col items-end gap-1">
-            <time class="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap mt-1">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap bg-white dark:bg-gray-900 px-2 py-0.5 rounded-full ring-1 ring-gray-100 dark:ring-gray-800">
               {{ formatActivityDate(item.date) }}
-            </time>
-            <UIcon 
-              v-if="item.link" 
-              name="i-heroicons-chevron-right" 
-              class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-primary-500 transform group-hover:translate-x-0.5 transition-all" 
-            />
+            </span>
           </div>
+          
+          <p v-if="item.description" class="text-xs font-medium text-gray-500 dark:text-gray-400 leading-relaxed truncate">
+            {{ item.description }}
+          </p>
         </div>
-      </template>
-    </UTimeline>
+
+        <!-- Chevron -->
+        <UIcon 
+          name="i-heroicons-chevron-right" 
+          class="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-primary-500 transform group-hover:translate-x-0.5 transition-all flex-shrink-0" 
+        />
+      </div>
+    </div>
   </UCard>
 </template>
 
@@ -72,8 +75,38 @@ function navigateActivity(item: any) {
   }
 }
 
+function getIconBgClass(item: any) {
+  // Use color from API or default
+  const color = item.color || 'gray'
+  const map: Record<string, string> = {
+    primary: 'bg-primary-50 dark:bg-primary-900/20',
+    green: 'bg-green-50 dark:bg-green-900/20',
+    red: 'bg-red-50 dark:bg-red-900/20',
+    orange: 'bg-orange-50 dark:bg-orange-900/20',
+    blue: 'bg-blue-50 dark:bg-blue-900/20',
+    purple: 'bg-purple-50 dark:bg-purple-900/20',
+    gray: 'bg-gray-50 dark:bg-gray-800'
+  }
+  return map[color] || map.gray
+}
+
+function getIconColorClass(item: any) {
+  const color = item.color || 'gray'
+  const map: Record<string, string> = {
+    primary: 'text-primary-500',
+    green: 'text-green-500',
+    red: 'text-red-500',
+    orange: 'text-orange-500',
+    blue: 'text-blue-500',
+    purple: 'text-purple-500',
+    gray: 'text-gray-500'
+  }
+  return map[color] || map.gray
+}
+
 // Format date for timeline display
 function formatActivityDate(date: string | Date): string {
+  if (!date) return ''
   const activityDate = new Date(date)
   const today = getUserLocalDate()
   const yesterday = new Date(today)
@@ -89,11 +122,6 @@ function formatActivityDate(date: string | Date): string {
   } else if (activityDateStr === yesterdayStr) {
     return 'Yesterday'
   } else {
-    // Check if within last 7 days
-    const diffDays = Math.floor((today.getTime() - activityDate.getTime()) / (1000 * 60 * 60 * 24))
-    if (diffDays > 1 && diffDays < 7) {
-      return `${diffDays} days ago`
-    }
     return formatDate(activityDate, 'MMM d')
   }
 }
