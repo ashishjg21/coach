@@ -186,7 +186,7 @@
     </div>
 
     <div v-else class="text-center py-8">
-      <UIcon name="i-heroicons-chart-pie-slash" class="w-12 h-12 mx-auto mb-4 text-gray-400" />
+      <UIcon name="i-heroicons-chart-pie" class="w-12 h-12 mx-auto mb-4 text-gray-400" />
       <p class="text-gray-600 dark:text-gray-400">
         No efficiency metrics available for this workout
       </p>

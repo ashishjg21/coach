@@ -8,7 +8,7 @@
       v-else-if="!trendData || !trendData.trends || trendData.trends.length === 0"
       class="text-center py-12"
     >
-      <UIcon name="i-heroicons-chart-bar-slash" class="w-12 h-12 mx-auto mb-4 text-gray-400" />
+      <UIcon name="i-heroicons-chart-bar" class="w-12 h-12 mx-auto mb-4 text-gray-400" />
       <p class="text-gray-600 dark:text-gray-400">No efficiency data available for this period</p>
     </div>
 
