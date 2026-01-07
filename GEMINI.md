@@ -26,24 +26,23 @@ Welcome to the Coach Watts documentation. This comprehensive guide covers the sy
 When implementing modals using Nuxt UI, it is critical to follow best practices to ensure they function correctly. Incorrect implementation can lead to modals that are always visible, empty, or improperly positioned.
 
 **Key Guidelines:**
-1.  **Visibility Control:** Always use the `v-model:open` directive to control the modal's visibility state. This is the correct directive for managing the open/closed state of the modal.
+1.  **Visibility Control:** Always use the `v-model:open` directive to control the modal's visibility state.
     ```vue
-    <UModal v-model:open="isModalOpen">
+    <UModal v-model:open="isModalOpen" title="Accessible Title">
       ...
     </UModal>
     ```
-2.  **Content Placement:** Place all modal content inside the `#content` slot. This ensures that the content is correctly rendered within the modal's structure.
+2.  **Accessibility (Required):** Every modal MUST have a title for screen readers. Use the `title` prop or the `#title` slot. This renders the mandatory `DialogTitle` component. If you need to hide the title visually but keep it for screen readers, use a visually hidden component within the `#title` slot.
+3.  **Content Placement:** Prefer using the `#body` and `#footer` slots for standard layouts. Only use the `#content` slot if you need to override the entire modal internal structure (including header and close button). If you use `#content`, you are responsible for rendering a `DialogTitle` (or `UModalTitle`) for accessibility.
     ```vue
-    <UModal v-model:open="isModalOpen">
-      <template #content>
-        <UCard>
-          ...
-        </UCard>
+    <UModal v-model:open="isModalOpen" title="Modal Title">
+      <template #body>
+        <p>Modal content goes here...</p>
       </template>
     </UModal>
     ```
-3.  **Top-Level Placement:** Ensure the `<UModal>` component is a top-level element in your component's template. Do not nest it inside other components like `<UCard>`, as this can interfere with its positioning and visibility.
-4.  **Read the Documentation:** Before implementing a modal, use the `nuxt-ui-mcp` tool to read the official documentation for `UModal` and related components. This will provide the most up-to-date information on props, slots, and usage examples.
+4.  **Top-Level Placement:** Ensure the `<UModal>` component is a top-level element in your component's template. Do not nest it inside other components like `<UCard>`, as this can interfere with its positioning and visibility.
+5.  **Read the Documentation:** Before implementing a modal, use the `nuxt-ui-mcp` tool to read the official documentation for `UModal` and related components. This will provide the most up-to-date information on props, slots, and usage examples.
 
 By following these guidelines, you can avoid common pitfalls and ensure that modals are implemented correctly and consistently across the application.
     -   [Nuxt Server Patterns](./.roo/rules-code/nuxt-server-patterns.md)
