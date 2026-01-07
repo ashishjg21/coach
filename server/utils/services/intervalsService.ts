@@ -161,10 +161,11 @@ export class IntervalsService {
         paceVariability = calculatePaceVariability(velocityData);
         
         // Calculate average pace
-        avgPacePerKm = calculateAveragePace(
-          timeData[timeData.length - 1],
-          distanceData[distanceData.length - 1]
-        );
+        const lastTime = timeData[timeData.length - 1];
+        const lastDist = distanceData[distanceData.length - 1];
+        if (lastTime !== undefined && lastDist !== undefined) {
+          avgPacePerKm = calculateAveragePace(lastTime, lastDist);
+        }
       }
       
       // Analyze pacing strategy
@@ -190,14 +191,14 @@ export class IntervalsService {
         cadence: cadenceData,
         watts: wattsData,
         altitude: altitudeData,
-        latlng: latlngData,
+        latlng: latlngData as any,
         grade: gradeData,
         moving: movingData,
-        lapSplits,
+        lapSplits: lapSplits as any,
         paceVariability,
         avgPacePerKm,
-        pacingStrategy,
-        surges
+        pacingStrategy: pacingStrategy as any,
+        surges: surges as any
       },
       update: {
         time: timeData,
@@ -207,14 +208,14 @@ export class IntervalsService {
         cadence: cadenceData,
         watts: wattsData,
         altitude: altitudeData,
-        latlng: latlngData,
+        latlng: latlngData as any,
         grade: gradeData,
         moving: movingData,
-        lapSplits,
+        lapSplits: lapSplits as any,
         paceVariability,
         avgPacePerKm,
-        pacingStrategy,
-        surges,
+        pacingStrategy: pacingStrategy as any,
+        surges: surges as any,
         updatedAt: new Date()
       }
     });
@@ -325,8 +326,8 @@ export class IntervalsService {
           type: planned.type || 'Other',
           isVirtual: false,
           isPublic: false,
-          distance: planned.distance ? Math.round(planned.distance / 1000) : null,
-          expectedDuration: planned.duration ? parseFloat((planned.duration / 3600).toFixed(1)) : null,
+          distance: normalizedPlanned.distanceMeters ? Math.round(normalizedPlanned.distanceMeters / 1000) : null,
+          expectedDuration: normalizedPlanned.durationSec ? parseFloat((normalizedPlanned.durationSec / 3600).toFixed(1)) : null,
           location: planned.location || null
         };
 

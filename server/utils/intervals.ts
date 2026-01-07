@@ -762,6 +762,15 @@ export function normalizeIntervalsWorkout(activity: IntervalsActivity, userId: s
 }
 
 export function normalizeIntervalsPlannedWorkout(event: IntervalsPlannedWorkout, userId: string) {
+  // Intervals.icu sometimes uses different field names for planned metrics depending on the source/type
+  const durationSec = event.duration ?? event.moving_time ?? event.workout_doc?.duration ?? null
+  const tss = event.tss ?? event.icu_training_load ?? null
+  const workIntensity = event.work ?? event.icu_intensity ?? null
+  const distance = event.distance ?? event.icu_distance ?? null
+  
+  // Structured workout data
+  const structuredWorkout = event.workout_doc ?? (event.steps ? { steps: event.steps } : null)
+
   return {
     userId,
     externalId: String(event.id), // Convert to string
@@ -770,10 +779,11 @@ export function normalizeIntervalsPlannedWorkout(event: IntervalsPlannedWorkout,
     description: event.description || null,
     type: event.type || null,
     category: event.category || 'WORKOUT',
-    durationSec: event.duration || null,
-    distanceMeters: event.distance || null,
-    tss: event.tss || null,
-    workIntensity: event.work || null,
+    durationSec: durationSec ? Math.round(durationSec) : null,
+    distanceMeters: distance ? Math.round(distance) : null,
+    tss: tss ? Math.round(tss * 10) / 10 : null,
+    workIntensity: workIntensity ? Math.round(workIntensity * 10) / 10 : null,
+    structuredWorkout,
     completed: false,
     rawJson: event
   }
@@ -874,7 +884,11 @@ export async function fetchIntervalsActivityStreams(
       const lon = streams.lon.data as number[]
       const latlng: [number, number][] = []
       for (let i = 0; i < lat.length; i++) {
-        latlng.push([lat[i], lon[i]])
+        const la = lat[i]
+        const lo = lon[i]
+        if (la !== undefined && lo !== undefined) {
+          latlng.push([la, lo])
+        }
       }
       streams.latlng = { type: 'latlng', data: latlng }
     }
