@@ -56,6 +56,34 @@
       </div>
     </UCard>
 
+    <!-- AI Analysis Management -->
+    <UCard>
+      <template #header>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-warning" />
+          <h2 class="text-xl font-semibold">AI Analysis Data</h2>
+        </div>
+      </template>
+
+      <div class="space-y-4">
+        <div>
+          <h3 class="font-medium mb-1">Wipe AI Recommendations & Analysis</h3>
+          <p class="text-sm text-muted mb-3">
+            Remove all AI-generated workout analysis, recommendations, and reports. This will not
+            delete your actual workout data, only the AI insights.
+          </p>
+          <UButton
+            color="warning"
+            variant="soft"
+            :loading="wipingAnalysis"
+            @click="confirmWipeAnalysis"
+          >
+            Wipe AI Data
+          </UButton>
+        </div>
+      </div>
+    </UCard>
+
     <!-- Account Deletion -->
     <UCard>
       <template #header>
@@ -87,6 +115,7 @@
   const { signOut } = useAuth()
   const clearingSchedule = ref(false)
   const wipingProfiles = ref(false)
+  const wipingAnalysis = ref(false)
   const deletingAccount = ref(false)
 
   async function confirmClearSchedule() {
@@ -118,6 +147,38 @@
       })
     } finally {
       clearingSchedule.value = false
+    }
+  }
+
+  async function confirmWipeAnalysis() {
+    if (
+      !confirm(
+        'Are you sure? This will delete all AI-generated workout analyses, recommendations, and reports. You can regenerate them individually.'
+      )
+    ) {
+      return
+    }
+
+    wipingAnalysis.value = true
+    try {
+      const result: any = await $fetch('/api/profile/ai-analysis', {
+        method: 'DELETE'
+      })
+
+      toast.add({
+        title: 'AI Data Wiped',
+        description: `Cleared ${result.counts.workouts} analyses and ${result.counts.recommendations} recommendations.`,
+        color: 'success'
+      })
+    } catch (error) {
+      console.error('Failed to wipe AI data', error)
+      toast.add({
+        title: 'Action Failed',
+        description: 'Could not wipe AI analysis data.',
+        color: 'error'
+      })
+    } finally {
+      wipingAnalysis.value = false
     }
   }
 
