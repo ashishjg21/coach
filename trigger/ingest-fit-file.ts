@@ -2,7 +2,12 @@ import { logger, task } from '@trigger.dev/sdk/v3'
 import { userIngestionQueue } from './queues'
 import { prisma } from '../server/utils/db'
 import { workoutRepository } from '../server/utils/repositories/workoutRepository'
-import { parseFitFile, normalizeFitSession, extractFitStreams } from '../server/utils/fit'
+import {
+  parseFitFile,
+  normalizeFitSession,
+  extractFitStreams,
+  reconstructSessionFromRecords
+} from '../server/utils/fit'
 import { calculateWorkoutStress } from '../server/utils/calculate-workout-stress'
 import {
   calculateLapSplits,
@@ -35,9 +40,16 @@ export const ingestFitFile = task({
       const fitData = await parseFitFile(Buffer.from(fitFile.fileData))
 
       // Get main session
-      const session = fitData.sessions[0]
+      let session = fitData.sessions[0]
       if (!session) {
-        throw new Error('No session data found in FIT file')
+        if (fitData.records && fitData.records.length > 0) {
+          logger.log('No session data found in FIT file, attempting to reconstruct from records')
+          session = reconstructSessionFromRecords(fitData.records)
+        }
+      }
+
+      if (!session) {
+        throw new Error('No session data found in FIT file and could not reconstruct from records')
       }
 
       // Normalize to workout

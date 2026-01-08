@@ -202,3 +202,84 @@ function capitalize(s: string) {
   if (typeof s !== 'string') return ''
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
 }
+
+/**
+ * Reconstruct a session object from records if the main session message is missing
+ */
+export function reconstructSessionFromRecords(records: any[]) {
+  if (!records || records.length === 0) return null
+
+  // Sort records by timestamp just in case
+  const sortedRecords = [...records].sort((a, b) => {
+    const tA = a.timestamp ? new Date(a.timestamp).getTime() : 0
+    const tB = b.timestamp ? new Date(b.timestamp).getTime() : 0
+    return tA - tB
+  })
+
+  const firstRecord = sortedRecords[0]
+  const lastRecord = sortedRecords[sortedRecords.length - 1]
+
+  // Initialize accumulators
+  let totalPower = 0
+  let totalHr = 0
+  let totalCadence = 0
+  let totalSpeed = 0
+  let powerCount = 0
+  let hrCount = 0
+  let cadenceCount = 0
+  let speedCount = 0
+
+  let maxPower = 0
+  let maxHr = 0
+  let maxCadence = 0
+
+  sortedRecords.forEach((record) => {
+    if (record.power !== undefined) {
+      totalPower += record.power
+      powerCount++
+      if (record.power > maxPower) maxPower = record.power
+    }
+    if (record.heart_rate !== undefined) {
+      totalHr += record.heart_rate
+      hrCount++
+      if (record.heart_rate > maxHr) maxHr = record.heart_rate
+    }
+    if (record.cadence !== undefined) {
+      totalCadence += record.cadence
+      cadenceCount++
+      if (record.cadence > maxCadence) maxCadence = record.cadence
+    }
+    if (record.speed !== undefined) {
+      totalSpeed += record.speed
+      speedCount++
+    }
+  })
+
+  const startTime = firstRecord.timestamp ? new Date(firstRecord.timestamp) : new Date()
+
+  // Use elapsed_time from last record if available, otherwise calc diff
+  let totalTimerTime = lastRecord.elapsed_time || 0
+  if (!totalTimerTime && lastRecord.timestamp && firstRecord.timestamp) {
+    totalTimerTime =
+      (new Date(lastRecord.timestamp).getTime() - new Date(firstRecord.timestamp).getTime()) / 1000
+  }
+
+  const totalDistance = lastRecord.distance || 0
+
+  return {
+    start_time: startTime,
+    total_timer_time: totalTimerTime,
+    total_distance: totalDistance,
+    total_ascent: 0, // Hard to calc without complex logic from altitude stream
+    total_calories: 0,
+    avg_power: powerCount > 0 ? Math.round(totalPower / powerCount) : 0,
+    max_power: maxPower,
+    avg_heart_rate: hrCount > 0 ? Math.round(totalHr / hrCount) : 0,
+    max_heart_rate: maxHr,
+    avg_cadence: cadenceCount > 0 ? Math.round(totalCadence / cadenceCount) : 0,
+    max_cadence: maxCadence,
+    avg_speed: speedCount > 0 ? totalSpeed / speedCount : 0,
+    sport: 'Activity', // Generic default
+    reconstructed: true
+  }
+}
