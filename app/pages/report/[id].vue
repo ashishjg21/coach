@@ -745,7 +745,6 @@
 
 <script setup lang="ts">
   const route = useRoute()
-  const { signOut } = useAuth()
   const { formatDate: baseFormatDate, formatShortDate } = useFormat()
   const reportId = route.params.id as string
 

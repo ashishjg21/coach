@@ -297,11 +297,7 @@
             xMin: formatTime(interval.start_time),
             xMax: formatTime(interval.end_time),
             backgroundColor: isDark ? 'rgba(74, 222, 128, 0.1)' : 'rgba(74, 222, 128, 0.2)', // Green tint
-            borderWidth: 0,
-            label: {
-              content: 'WORK',
-              display: false
-            }
+            borderWidth: 0
           }
         }
       })

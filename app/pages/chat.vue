@@ -473,7 +473,7 @@
                       v-if="getTextFromMessage(message as any)"
                       class="prose prose-sm dark:prose-invert max-w-none"
                     >
-                      <MDC :value="getTextFromMessage(message as any)" :cache-key="message.id" />
+                      <MDC :value="getTextFromMessage(message as any)" />
                     </div>
 
                     <!-- Inline charts -->
