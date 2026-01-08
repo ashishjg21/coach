@@ -12,6 +12,9 @@ export default defineNuxtRouteMiddleware((to, from) => {
     // Allow access to the onboarding page itself
     if (to.path === '/onboarding') return
 
+    // Allow access to public legal pages
+    if (to.path === '/terms' || to.path === '/privacy') return
+
     // Allow sign out flow (if it uses a specific route, though usually it's a function call)
     // We'll allow anything under /auth just in case
     if (to.path.startsWith('/api/auth')) return
