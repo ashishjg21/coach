@@ -1,4 +1,4 @@
-import { prisma } from '~/server/utils/db'
+import { prisma } from '../utils/db'
 
 export default defineEventHandler(async (event) => {
   const start = performance.now()
