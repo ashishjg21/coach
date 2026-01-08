@@ -204,6 +204,7 @@
   }
 
   async function fetchZoneData() {
+    if (import.meta.server) return
     if (!props.weekData || props.weekData.workoutIds.length === 0) return
 
     loading.value = true

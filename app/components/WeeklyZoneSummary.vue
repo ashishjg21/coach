@@ -108,6 +108,7 @@
   })
 
   async function fetchData() {
+    if (import.meta.server) return
     if (!props.autoLoad && !props.streams) return
     if (props.workoutIds.length === 0 && (!props.streams || props.streams.length === 0)) return
 
