@@ -797,6 +797,8 @@
   watch(
     activities,
     async (newActivities) => {
+      if (import.meta.server) return
+
       if (!newActivities?.length) {
         streamsMap.value = {}
         return
