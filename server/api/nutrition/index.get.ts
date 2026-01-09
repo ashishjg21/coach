@@ -64,10 +64,39 @@ export default defineEventHandler(async (event) => {
       date: n.date.toISOString().split('T')[0] // YYYY-MM-DD format
     }))
 
+    // Fetch LLM usage for these nutrition records
+    const nutritionIds = nutrition.map((n) => n.id)
+    const llmUsages = await prisma.llmUsage.findMany({
+      where: {
+        entityId: { in: nutritionIds },
+        entityType: 'Nutrition'
+      },
+      select: {
+        id: true,
+        entityId: true,
+        feedback: true,
+        feedbackText: true
+      }
+    })
+
+    // Create a map for faster lookup
+    const usageMap = new Map(llmUsages.map((u) => [u.entityId, u]))
+
+    // Attach usage data to nutrition records
+    const finalNutrition = formattedNutrition.map((n) => {
+      const usage = usageMap.get(n.id)
+      return {
+        ...n,
+        llmUsageId: usage?.id,
+        feedback: usage?.feedback,
+        feedbackText: usage?.feedbackText
+      }
+    })
+
     return {
       success: true,
-      count: formattedNutrition.length,
-      nutrition: formattedNutrition
+      count: finalNutrition.length,
+      nutrition: finalNutrition
     }
   } catch (error) {
     console.error('Error fetching nutrition data:', error)

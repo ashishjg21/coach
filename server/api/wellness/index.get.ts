@@ -51,7 +51,34 @@ export default defineEventHandler(async (event) => {
       orderBy: { date: 'desc' }
     })
 
-    return wellness
+    // Fetch LLM usage for these wellness records
+    const wellnessIds = wellness.map((w) => w.id)
+    const llmUsages = await prisma.llmUsage.findMany({
+      where: {
+        entityId: { in: wellnessIds },
+        entityType: 'Wellness'
+      },
+      select: {
+        id: true,
+        entityId: true,
+        feedback: true,
+        feedbackText: true
+      }
+    })
+
+    // Create a map for faster lookup
+    const usageMap = new Map(llmUsages.map((u) => [u.entityId, u]))
+
+    // Attach usage data to wellness records
+    return wellness.map((w) => {
+      const usage = usageMap.get(w.id)
+      return {
+        ...w,
+        llmUsageId: usage?.id,
+        feedback: usage?.feedback,
+        feedbackText: usage?.feedbackText
+      }
+    })
   } catch (error) {
     throw createError({
       statusCode: 500,

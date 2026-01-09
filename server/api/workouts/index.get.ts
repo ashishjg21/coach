@@ -118,5 +118,32 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  return workouts
+  // Fetch LLM usage for these workouts
+  const workoutIds = workouts.map((w) => w.id)
+  const llmUsages = await prisma.llmUsage.findMany({
+    where: {
+      entityId: { in: workoutIds },
+      entityType: 'Workout'
+    },
+    select: {
+      id: true,
+      entityId: true,
+      feedback: true,
+      feedbackText: true
+    }
+  })
+
+  // Create a map for faster lookup
+  const usageMap = new Map(llmUsages.map((u) => [u.entityId, u]))
+
+  // Attach usage data to workouts
+  return workouts.map((workout) => {
+    const usage = usageMap.get(workout.id)
+    return {
+      ...workout,
+      llmUsageId: usage?.id,
+      feedback: usage?.feedback,
+      feedbackText: usage?.feedbackText
+    }
+  })
 })

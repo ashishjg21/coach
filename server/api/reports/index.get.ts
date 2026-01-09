@@ -102,5 +102,32 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  return reports
+  // Fetch LLM usage for these reports
+  const reportIds = reports.map((r) => r.id)
+  const llmUsages = await prisma.llmUsage.findMany({
+    where: {
+      entityId: { in: reportIds },
+      entityType: 'Report'
+    },
+    select: {
+      id: true,
+      entityId: true,
+      feedback: true,
+      feedbackText: true
+    }
+  })
+
+  // Create a map for faster lookup
+  const usageMap = new Map(llmUsages.map((u) => [u.entityId, u]))
+
+  // Attach usage data to reports
+  return reports.map((report) => {
+    const usage = usageMap.get(report.id)
+    return {
+      ...report,
+      llmUsageId: usage?.id,
+      feedback: usage?.feedback,
+      feedbackText: usage?.feedbackText
+    }
+  })
 })
