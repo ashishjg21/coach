@@ -270,6 +270,31 @@ ${activeGoals
 `
     }
 
+    // Build plan context
+    let planContext = ''
+    if (currentPlan) {
+      const plan = currentPlan.planJson as any
+      planContext = `
+CURRENT TRAINING PLAN:
+- Weekly Focus: ${plan.weekSummary || 'Not specified'}
+- Planned TSS: ${plan.totalTSS || 'Unknown'}
+`
+    }
+
+    // Build upcoming workouts summary
+    let upcomingContext = ''
+    if (futureWorkouts.length > 0) {
+      upcomingContext = `
+UPCOMING WORKOUTS (Next 3 Days):
+${futureWorkouts
+  .map(
+    (w) =>
+      `- ${formatUserDate(w.date, userTimezone, 'EEE')}: ${w.title} (${w.type}, TSS: ${w.tss || 'N/A'})`
+  )
+  .join('\n')}
+`
+    }
+
     // Build zone definitions
     let zoneDefinitions = ''
     if (user?.hrZones && Array.isArray(user.hrZones)) {
@@ -293,6 +318,7 @@ CURRENT CONTEXT:
 - Timezone: ${userTimezone}
 
 ${athleteContext}
+${planContext}
 
 TODAY'S PLANNED WORKOUT:
 ${
@@ -306,6 +332,8 @@ ${
 `
     : 'No workout planned for today'
 }
+
+${upcomingContext}
 
 TODAY'S RECOVERY METRICS:
 ${
