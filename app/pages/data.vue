@@ -501,6 +501,11 @@
                   >
                     SpO2
                   </th>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                  >
+                    AI Analysis
+                  </th>
                 </tr>
               </thead>
               <tbody
@@ -536,6 +541,19 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                     {{ data.spO2 ? data.spO2 + '%' : '-' }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <div class="flex items-center gap-2">
+                      <span :class="getAnalysisStatusBadgeClass(data.aiAnalysisStatus)">
+                        {{ getAnalysisStatusLabel(data.aiAnalysisStatus) }}
+                      </span>
+                      <AiFeedback
+                        v-if="data.llmUsageId"
+                        :llm-usage-id="data.llmUsageId"
+                        :initial-feedback="data.feedback"
+                        :initial-feedback-text="data.feedbackText"
+                      />
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -967,9 +985,17 @@
                     </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <span :class="getAnalysisStatusBadgeClass(workout.aiAnalysisStatus)">
-                      {{ getAnalysisStatusLabel(workout.aiAnalysisStatus) }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                      <span :class="getAnalysisStatusBadgeClass(workout.aiAnalysisStatus)">
+                        {{ getAnalysisStatusLabel(workout.aiAnalysisStatus) }}
+                      </span>
+                      <AiFeedback
+                        v-if="workout.llmUsageId"
+                        :llm-usage-id="workout.llmUsageId"
+                        :initial-feedback="workout.feedback"
+                        :initial-feedback-text="workout.feedbackText"
+                      />
+                    </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <span :class="getSourceBadgeClass(workout.source)">
@@ -1149,9 +1175,19 @@
                     <span v-else class="text-gray-400">-</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <span :class="getAnalysisStatusBadgeClass((nutrition as any).aiAnalysisStatus)">
-                      {{ getAnalysisStatusLabel((nutrition as any).aiAnalysisStatus) }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                      <span
+                        :class="getAnalysisStatusBadgeClass((nutrition as any).aiAnalysisStatus)"
+                      >
+                        {{ getAnalysisStatusLabel((nutrition as any).aiAnalysisStatus) }}
+                      </span>
+                      <AiFeedback
+                        v-if="(nutrition as any).llmUsageId"
+                        :llm-usage-id="(nutrition as any).llmUsageId"
+                        :initial-feedback="(nutrition as any).feedback"
+                        :initial-feedback-text="(nutrition as any).feedbackText"
+                      />
+                    </div>
                   </td>
                 </tr>
               </tbody>

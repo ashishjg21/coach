@@ -282,14 +282,22 @@
                     {{ formatDateTime(report.createdAt) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <UButton
-                      size="xs"
-                      color="primary"
-                      variant="outline"
-                      @click="navigateTo(`/report/${report.id}`)"
-                    >
-                      View Report
-                    </UButton>
+                    <div class="flex items-center gap-2">
+                      <UButton
+                        size="xs"
+                        color="primary"
+                        variant="outline"
+                        @click="navigateTo(`/report/${report.id}`)"
+                      >
+                        View Report
+                      </UButton>
+                      <AiFeedback
+                        v-if="report.llmUsageId"
+                        :llm-usage-id="report.llmUsageId"
+                        :initial-feedback="report.feedback"
+                        :initial-feedback-text="report.feedbackText"
+                      />
+                    </div>
                   </td>
                 </tr>
               </tbody>
