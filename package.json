@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@auth/core": "^0.34.3",
+    "@google-cloud/storage": "^7.18.0",
     "@google/generative-ai": "^0.24.1",
     "@internationalized/date": "^3.10.1",
     "@markw65/fit-file-writer": "^0.1.7",

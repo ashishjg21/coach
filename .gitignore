@@ -42,3 +42,4 @@ gha-creds-*.json
 
 # Public Content
 content/social/
+gcs-key.json
