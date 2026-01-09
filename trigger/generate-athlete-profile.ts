@@ -371,7 +371,8 @@ export const generateAthleteProfileTask = task({
         recentNutrition,
         recentReports,
         recentRecommendations,
-        activeGoals
+        activeGoals,
+        currentPlan
       ] = await Promise.all([
         prisma.user.findUnique({
           where: { id: userId },
@@ -457,27 +458,23 @@ export const generateAthleteProfileTask = task({
             analysisJson: true
           }
         }),
-        prisma.goal.findMany({
+        // Fetch current active plan
+        prisma.weeklyTrainingPlan.findFirst({
           where: {
             userId,
-            status: 'ACTIVE'
+            status: 'ACTIVE',
+            weekStartDate: {
+              lte: todayEnd
+            },
+            weekEndDate: {
+              gte: thirtyDaysAgo // Ensure overlap
+            }
           },
-          orderBy: { priority: 'desc' },
+          orderBy: { weekStartDate: 'desc' },
           select: {
-            id: true,
-            type: true,
-            title: true,
-            description: true,
-            metric: true,
-            currentValue: true,
-            targetValue: true,
-            startValue: true,
-            targetDate: true,
-            eventDate: true,
-            eventType: true,
-            priority: true,
-            aiContext: true,
-            createdAt: true
+            weekSummary: true,
+            totalTSS: true,
+            planJson: true
           }
         })
       ])
@@ -587,6 +584,16 @@ Recent sleep: ${recentWellness
               .join('\n\n')
           : 'No active goals set'
 
+      // Build current plan summary
+      let currentPlanSummary = 'No active weekly plan.'
+      if (currentPlan) {
+        const planData = currentPlan.planJson as any
+        currentPlanSummary = `
+Active Plan TSS Target: ${currentPlan.totalTSS || planData.totalTSS || 'N/A'}
+Plan Summary: ${planData.weekSummary || 'N/A'}
+`
+      }
+
       // Calculate training stats
       const totalTSS = recentWorkouts.reduce((sum, w) => sum + (w.tss || 0), 0)
       const avgWorkoutDuration =
@@ -608,7 +615,8 @@ Recent sleep: ${recentWellness
         totalTSS: trainingContext.summary.totalTSS,
         currentCTL: trainingContext.loadTrend.currentCTL,
         currentTSB: trainingContext.loadTrend.currentTSB,
-        hasZoneData: !!trainingContext.hrZoneDistribution
+        hasZoneData: !!trainingContext.hrZoneDistribution,
+        hasCurrentPlan: !!currentPlan
       })
 
       // Build comprehensive prompt
@@ -639,6 +647,9 @@ ${recommendationsSummary || 'No recent recommendations'}
 RECENT REPORTS & ANALYSIS:
 ${reportsSummary || 'No recent reports'}
 
+CURRENT TRAINING PLAN:
+${currentPlanSummary}
+
 CURRENT GOALS:
 ${goalsSummary}
 
@@ -656,6 +667,7 @@ Focus on:
 - Recent performance trends from workout analysis
 - Key themes from recent recommendations
 - **Current goals and their feasibility** given the athlete's current state
+- **Current Plan Adherence**: How well is the athlete following the current plan? Are they meeting TSS targets?
 - **Dual Intensity View**: Compare/contrast power vs HR distributions. Flag discrepancies (e.g., "74% Endurance power but only 60% Z2 HR -> HR drift in MTB")
 - **HR-Specific Patterns**: Analyze drift, recovery HR drops between intervals, run vs bike differences
 - **Zone Feasibility**: Assess if distributions support goals (e.g., "0% Z4 HR time blocks FTP progress")
