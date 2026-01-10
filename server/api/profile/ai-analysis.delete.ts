@@ -97,6 +97,11 @@ export default defineEventHandler(async (event) => {
     where: { userId }
   })
 
+  // 6. Delete General Recommendations
+  const recommendationsListDelete = await prisma.recommendation.deleteMany({
+    where: { userId }
+  })
+
   return {
     success: true,
     counts: {
@@ -104,7 +109,8 @@ export default defineEventHandler(async (event) => {
       recommendations: recommendationsDelete.count,
       planAdherence: planAdherenceDelete.count,
       reports: reportsDelete.count,
-      scoreTrends: scoreTrendsDelete.count
+      scoreTrends: scoreTrendsDelete.count,
+      recommendationsList: recommendationsListDelete.count
     }
   }
 })

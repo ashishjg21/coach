@@ -1240,6 +1240,12 @@ model Recommendation {
   description String   @db.Text
   priority    String   // "high", "medium", "low"
   
+  // Versioning & History
+  history     Json?    // Array of previous versions for tracking updates
+  
+  // Implementation Guide (AI-generated structured advice)
+  implementationGuide Json? // { strategy_summary, key_actions, tips_and_tricks, common_pitfalls }
+  
   // Metadata
   generatedAt DateTime @default(now())
   
