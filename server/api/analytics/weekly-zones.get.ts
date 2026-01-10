@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
   if (!session?.user?.id) {
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }
-  const userId = session.user.id
+  const userId = (session.user as any).id
 
   const query = getQuery(event)
   const weeks = parseInt(query.weeks as string) || 12

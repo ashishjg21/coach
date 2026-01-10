@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const userId = session.user.id
+  const userId = (session.user as any).id
 
   // Get date range for the past 5 days
   const endDate = new Date()

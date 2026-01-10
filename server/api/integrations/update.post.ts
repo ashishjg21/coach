@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
   const integration = await prisma.integration.update({
     where: {
       userId_provider: {
-        userId: session.user.id,
+        userId: (session.user as any).id,
         provider
       }
     },

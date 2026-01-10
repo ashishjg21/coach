@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
 
   const keys = await prisma.apiKey.findMany({
     where: {
-      userId: session.user.id
+      userId: (session.user as any).id
     },
     select: {
       id: true,

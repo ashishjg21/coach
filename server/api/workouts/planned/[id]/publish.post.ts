@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Missing workout ID' })
   }
 
-  const userId = session.user.id
+  const userId = (session.user as any).id
 
   // Fetch the workout
   const workout = await prisma.plannedWorkout.findUnique({

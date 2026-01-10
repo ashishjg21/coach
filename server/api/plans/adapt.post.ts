@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const plan = await prisma.trainingPlan.findFirst({
     where: {
       id: planId,
-      userId: session.user.id
+      userId: (session.user as any).id
     }
   })
 
@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const handle = await tasks.trigger('adapt-training-plan', {
-    userId: session.user.id,
+    userId: (session.user as any).id,
     planId: planId,
     adaptationType
   })

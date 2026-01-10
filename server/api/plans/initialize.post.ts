@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
     strategy,
     preferredActivityTypes
   } = validation.data
-  const userId = session.user.id
+  const userId = (session.user as any).id
 
   // 1. Fetch Goal to get target date
   const goal = await prisma.goal.findUnique({

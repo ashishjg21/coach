@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   const block = await prisma.trainingBlock.findFirst({
     where: {
       id: blockId,
-      plan: { userId: session.user.id }
+      plan: { userId: (session.user as any).id }
     }
   })
 
@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
 
   // Use a trigger.dev task to regenerate the week
   const handle = await tasks.trigger('generate-weekly-plan', {
-    userId: session.user.id,
+    userId: (session.user as any).id,
     startDate: week.startDate,
     daysToPlann: 7, // Always plan the full week
     userInstructions: instructions, // Pass the new instructions

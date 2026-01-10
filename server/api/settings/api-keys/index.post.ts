@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
 
   const apiKey = await prisma.apiKey.create({
     data: {
-      userId: session.user.id,
+      userId: (session.user as any).id,
       name: body.name,
       key: hashedKey,
       prefix

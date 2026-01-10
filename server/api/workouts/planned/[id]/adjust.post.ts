@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   const workout = await prisma.plannedWorkout.findFirst({
     where: {
       id: workoutId,
-      userId: session.user.id
+      userId: (session.user as any).id
     }
   })
 

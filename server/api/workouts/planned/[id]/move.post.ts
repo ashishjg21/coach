@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const targetDate = new Date(validation.data.targetDate)
-  const userId = session.user.id
+  const userId = (session.user as any).id
 
   // 1. Fetch Source Workout
   const sourceWorkout = await prisma.plannedWorkout.findUnique({

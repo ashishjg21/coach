@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }
 
-  const userId = session.user.id
+  const userId = (session.user as any).id
   const planId = event.context.params?.id
   const body = await readBody(event)
   const { name, description } = body

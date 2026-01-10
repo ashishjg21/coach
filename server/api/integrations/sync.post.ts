@@ -67,7 +67,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const userId = session.user.id
+  const userId = (session.user as any).id
 
   const body = await readBody(event)
   const { provider, days } = body

@@ -37,7 +37,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Invalid input', data: result.error.issues })
   }
 
-  const userId = session.user.id
+  const userId = (session.user as any).id
 
   try {
     const updatedEvent = await eventRepository.update(id, userId, {

@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
   const apiKey = await prisma.apiKey.findFirst({
     where: {
       id,
-      userId: session.user.id
+      userId: (session.user as any).id
     }
   })
 

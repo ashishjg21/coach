@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const workout = await prisma.plannedWorkout.findUnique({
-    where: { id, userId: session.user.id },
+    where: { id, userId: (session.user as any).id },
     include: {
       user: { select: { ftp: true, name: true } }
     }
