@@ -220,8 +220,23 @@ export const recommendTodayActivityTask = task({
       minute: '2-digit',
       hour12: false
     })
-    const localDate = now.toLocaleDateString('en-US', {
-      timeZone: userTimezone,
+
+    // Use target date string for the prompt to ensure alignment with "Today"
+    // If today is UTC midnight (from DB or payload), formatUserDate might shift it to previous day in EST
+    // But since 'today' comes from payload/DB date which is MEANT to be "Start of Day User TZ",
+    // we should trust the input date DATE part if it was passed as string,
+    // OR if we are processing "Today", we want the User's Current Date.
+
+    // However, if the system is designed where 'date' payload is UTC Midnight representing the day,
+    // then 'formatUserDate' WILL shift it.
+    // We want the literal date string "YYYY-MM-DD" that matches the user's intent.
+    // If today is 2026-01-10T00:00:00Z, we want "2026-01-10".
+    const targetDateStr = today.toISOString().split('T')[0] // Force UTC Date string (Naive)
+
+    // Format for display (Friday, January 10, 2026)
+    // We manually construct it to avoid timezone shift
+    const targetDateObj = new Date(targetDateStr + 'T12:00:00') // Noon Local
+    const localDate = targetDateObj.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -229,7 +244,7 @@ export const recommendTodayActivityTask = task({
     })
 
     // Split workouts into "Today's" and "Past"
-    const targetDateStr = formatUserDate(today, userTimezone, 'yyyy-MM-dd')
+    // Use the same naive split for comparison to match DB @db.Date behavior
     const todaysWorkouts = recentWorkouts.filter(
       (w) => formatUserDate(w.date, userTimezone, 'yyyy-MM-dd') === targetDateStr
     )

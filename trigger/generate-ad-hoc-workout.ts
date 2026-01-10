@@ -31,10 +31,18 @@ export const generateAdHocWorkoutTask = task({
     const timezone = await getUserTimezone(userId)
     // Calculate today based on user's timezone date string forced to UTC midnight
     // This ensures it matches @db.Date columns (e.g. 2026-01-09T00:00:00Z) even if the real start of day is previous UTC day
-    const dateStr = formatUserDate(new Date(date), timezone, 'yyyy-MM-dd')
+    const dateObj = new Date(date)
+    const dateStr = formatUserDate(dateObj, timezone, 'yyyy-MM-dd')
+    const localTime = formatUserDate(dateObj, timezone, 'HH:mm')
     const today = new Date(`${dateStr}T00:00:00Z`)
 
-    logger.log('Generating ad-hoc workout', { userId, date: today, preferences, timezone })
+    logger.log('Generating ad-hoc workout', {
+      userId,
+      date: today,
+      preferences,
+      timezone,
+      localTime
+    })
 
     // Fetch Data
     const [todayMetric, recentWorkouts, user, athleteProfile, activeGoals] = await Promise.all([
@@ -112,10 +120,11 @@ export const generateAdHocWorkoutTask = task({
       - If recovery is good, prescribe a workout that fits the current focus or maintains fitness.`
     }
 
-    const prompt = `Design a specific single workout for this athlete for TODAY.
+    const prompt = `Design a specific specific single workout for this athlete for TODAY.
     
     LOCAL CONTEXT:
-    - Date: ${formatUserDate(today, timezone)}
+    - Date: ${dateStr}
+    - Time: ${localTime}
     - Timezone: ${timezone}
 
     CONTEXT:
