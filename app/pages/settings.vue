@@ -62,7 +62,7 @@
     </template>
 
     <template #body>
-      <div class="p-4 sm:p-6" :class="isFullWidth ? 'max-w-full' : 'max-w-4xl mx-auto'">
+      <div class="w-full p-4 sm:p-6" :class="isFullWidth ? 'max-w-full' : 'max-w-4xl mx-auto'">
         <NuxtPage />
       </div>
     </template>
