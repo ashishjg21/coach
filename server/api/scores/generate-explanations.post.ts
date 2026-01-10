@@ -54,7 +54,10 @@ export default defineEventHandler(async (event) => {
     const handle = await tasks.trigger(
       'generate-score-explanations',
       { userId: user.id, force: true },
-      { concurrencyKey: user.id }
+      {
+        concurrencyKey: user.id,
+        tags: [`user:${user.id}`]
+      }
     )
 
     return {

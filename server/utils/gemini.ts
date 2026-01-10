@@ -356,6 +356,7 @@ export async function generateCoachAnalysis(
 
       return model.generateContent(prompt)
     },
+    `generateCoachAnalysis(${modelType})`,
     trackingContext
       ? {
           ...trackingContext,
@@ -470,6 +471,29 @@ export function buildWorkoutSummary(workouts: any[]): string {
 
       // Description
       if (w.description) lines.push(`\n**Description**: ${w.description}`)
+
+      // AI Analysis Summary (if available)
+      if (w.aiAnalysisJson) {
+        const analysis = w.aiAnalysisJson as any
+        lines.push(`\n**AI Analysis Insights**:`)
+
+        if (analysis.strengths && analysis.strengths.length > 0) {
+          lines.push(`- **Strengths**: ${analysis.strengths.join(', ')}`)
+        }
+
+        if (analysis.weaknesses && analysis.weaknesses.length > 0) {
+          lines.push(`- **Areas for Improvement**: ${analysis.weaknesses.join(', ')}`)
+        }
+
+        if (analysis.recommendations && analysis.recommendations.length > 0) {
+          lines.push(`- **Previous Recommendations**:`)
+          analysis.recommendations.slice(0, 3).forEach((rec: any) => {
+            const title = typeof rec === 'string' ? rec : rec.title
+            const desc = typeof rec === 'object' ? `: ${rec.description}` : ''
+            lines.push(`  * ${title}${desc}`)
+          })
+        }
+      }
 
       return lines.join('\n')
     })

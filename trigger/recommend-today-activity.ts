@@ -427,7 +427,9 @@ ${zoneDefinitions}
 When suggesting modifications (e.g. "Ride in Zone 2"), target ONLY the user's defined Z2 range. Never use generic percentages - always reference the user's custom zones first.
 
 TASK:
-Analyze whether the athlete should proceed with today's planned workout or modify it based on their current recovery state, recent training load, AND FUTURE PLANS.
+Analyze whether the athlete should proceed with today's planned workout or modify it based on their current recovery state, recent training load, AND FUTURE PLANS. 
+
+**IMPORTANT**: Pay close attention to the "AI Analysis Insights" in the RECENT TRAINING section. If recent workouts highlight persistent technical weaknesses, fatigue-related pacing issues, or specific improvement recommendations, incorporate those insights into today's guidance.
 
 DECISION CRITERIA:
 1. **Recovery Status**:
