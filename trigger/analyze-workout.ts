@@ -763,7 +763,7 @@ function buildWorkoutAnalysisPrompt(workoutData: any, timezone: string): string 
   if (workoutData.training_load)
     prompt += `- Training Load: ${formatMetric(workoutData.training_load, 1)}\n`
   if (workoutData.kilojoules)
-    prompt += `- Kilojoules: ${formatMetric(workoutData.kilojoules / 1000, 1)}k\n`
+    prompt += `- Kilojoules: ${formatMetric(workoutData.kilojoules, 1)} kJ\n`
 
   if (workoutData.ctl || workoutData.atl) {
     prompt += '\n## Fitness Status\n'

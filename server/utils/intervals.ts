@@ -778,7 +778,7 @@ export function normalizeIntervalsWorkout(activity: IntervalsActivity, userId: s
       return val ? Math.round(val * 10000) / 10000 : null
     })(),
 
-    kilojoules: activity.icu_joules || null,
+    kilojoules: activity.icu_joules ? Math.round(activity.icu_joules / 1000) : null,
     trimp: activity.trimp || null,
 
     // Performance metrics
