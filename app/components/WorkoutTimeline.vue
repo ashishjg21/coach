@@ -310,7 +310,6 @@
           const validIndex = Math.max(0, Math.min(Math.round(index), xAxis.max))
 
           if (hoverIndex.value !== validIndex) {
-            console.log('Updating hover index:', validIndex)
             hoverIndex.value = validIndex
 
             chartRefs.value.forEach((ref) => {

@@ -110,7 +110,6 @@
   })
 
   async function handleProfileUpdate(newProfile: any) {
-    console.log('Profile update received:', newProfile)
     // Use Object.assign to update the existing reactive object
     Object.assign(profile.value, newProfile)
 
@@ -119,8 +118,6 @@
         method: 'PATCH',
         body: newProfile
       })) as any
-
-      console.log('Profile update response:', response)
 
       // Check if zones were updated via autodetect logic (which might merge into profile)
       if (response.profile && response.profile.hrZones) {

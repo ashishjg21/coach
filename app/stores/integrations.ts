@@ -58,7 +58,6 @@ export const useIntegrationStore = defineStore('integration', () => {
     syncingData.value = true
 
     try {
-      console.log('Triggering batch sync...')
       await $fetch('/api/integrations/sync', {
         method: 'POST',
         body: { provider: 'all' }
