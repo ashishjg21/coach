@@ -87,12 +87,25 @@
         <!-- History Section -->
         <section v-if="historyRecs?.length > 0 || historyPending">
           <div
-            class="flex items-center gap-2 mb-4 pt-4 border-t border-gray-100 dark:border-gray-800"
+            class="flex items-center justify-between gap-2 mb-4 pt-4 border-t border-gray-100 dark:border-gray-800 cursor-pointer select-none"
+            @click="isHistoryOpen = !isHistoryOpen"
           >
-            <UIcon name="i-heroicons-clock" class="w-5 h-5 text-gray-400" />
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">History</h2>
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-clock" class="w-5 h-5 text-gray-400" />
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">History</h2>
+              <UBadge v-if="historyRecs?.length > 0" color="neutral" variant="subtle" size="sm">
+                {{ historyRecs.length }}
+              </UBadge>
+            </div>
+            <UButton
+              color="neutral"
+              variant="ghost"
+              :icon="isHistoryOpen ? 'i-heroicons-chevron-up' : 'i-heroicons-chevron-down'"
+              size="sm"
+            />
           </div>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+          <div v-if="isHistoryOpen" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div v-if="historyPending" class="col-span-full py-8 flex justify-center">
               <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-gray-400" />
             </div>
@@ -167,6 +180,7 @@
   const toast = useToast()
 
   // State
+  const isHistoryOpen = ref(false)
   const refreshingAdvice = ref(false) // For Refresh Advice
   const clearing = ref(false)
   const isPolling = ref(false)

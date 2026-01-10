@@ -72,20 +72,24 @@
                 </div>
 
                 <template #footer>
-                  <div class="flex items-center justify-between w-full">
-                    <UButton
+                  <div class="flex flex-wrap items-center justify-between w-full gap-y-3">
+                    <div
                       v-if="!rec.implementationGuide"
-                      icon="i-heroicons-sparkles"
-                      color="primary"
-                      variant="soft"
-                      :loading="generatingGuide"
-                      @click="generateGuide"
+                      class="w-full sm:w-auto flex justify-center sm:justify-start"
                     >
-                      Generate Action Plan
-                    </UButton>
-                    <div v-else class="flex-1"></div>
+                      <UButton
+                        icon="i-heroicons-sparkles"
+                        color="primary"
+                        variant="soft"
+                        :loading="generatingGuide"
+                        @click="generateGuide"
+                      >
+                        Generate Action Plan
+                      </UButton>
+                    </div>
+                    <div v-else class="hidden sm:block flex-1"></div>
 
-                    <div class="flex items-center justify-end gap-3">
+                    <div class="flex items-center justify-end gap-3 w-full sm:w-auto">
                       <UButton
                         v-if="rec.status === 'ACTIVE'"
                         color="neutral"
@@ -256,7 +260,7 @@
                   Evolution History
                 </h3>
                 <div
-                  class="relative pl-6 border-l-2 border-gray-200 dark:border-gray-700 space-y-8"
+                  class="relative ml-4 pl-6 border-l-2 border-gray-200 dark:border-gray-700 space-y-8"
                 >
                   <div v-for="(item, idx) in sortedHistory" :key="idx" class="relative">
                     <div
