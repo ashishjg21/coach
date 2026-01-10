@@ -40,7 +40,7 @@
     <template #body>
       <div class="p-4 sm:p-6 space-y-8">
         <!-- Pinned / Focus Section -->
-        <section v-if="pinnedRecs?.length > 0">
+        <section v-if="pinnedRecs && pinnedRecs.length > 0">
           <div class="flex items-center gap-2 mb-4">
             <UIcon name="i-heroicons-paper-clip" class="w-5 h-5 text-primary-500" />
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">Focus Area</h2>
@@ -111,14 +111,14 @@
         <!-- Clear Confirmation Modal -->
         <UModal v-model:open="showClearModal">
           <template #content>
-            <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+            <UCard :ui="{ root: 'divide-y divide-gray-100 dark:divide-gray-800' }">
               <template #header>
                 <div class="flex items-center justify-between">
                   <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
                     Clear All Recommendations?
                   </h3>
                   <UButton
-                    color="gray"
+                    color="neutral"
                     variant="ghost"
                     icon="i-heroicons-x-mark-20-solid"
                     class="-my-1"
@@ -136,10 +136,14 @@
 
               <template #footer>
                 <div class="flex justify-end gap-3">
-                  <UButton color="gray" variant="ghost" @click="showClearModal = false"
+                  <UButton color="neutral" variant="ghost" @click="showClearModal = false"
                     >Cancel</UButton
                   >
-                  <UButton color="red" variant="solid" :loading="clearing" @click="confirmClearAll"
+                  <UButton
+                    color="error"
+                    variant="solid"
+                    :loading="clearing"
+                    @click="confirmClearAll"
                     >Yes, Clear All</UButton
                   >
                 </div>

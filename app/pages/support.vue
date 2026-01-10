@@ -57,7 +57,7 @@
             <UButton
               to="https://github.com/newpush/coach/issues"
               target="_blank"
-              color="gray"
+              color="neutral"
               variant="solid"
               block
               icon="i-simple-icons-github"
@@ -84,7 +84,7 @@
           <template #footer>
             <UButton
               to="mailto:support@newpush.com"
-              color="gray"
+              color="neutral"
               variant="solid"
               block
               icon="i-heroicons-envelope"

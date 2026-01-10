@@ -158,7 +158,7 @@
                           :key="i"
                           class="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300"
                         >
-                          <span class="font-bold text-primary-500">{{ i + 1 }}.</span>
+                          <span class="font-bold text-primary-500">{{ Number(i) + 1 }}.</span>
                           <span>{{ action }}</span>
                         </li>
                       </ul>
@@ -358,13 +358,13 @@
   const priorityColor = computed(() => {
     switch (rec.value?.priority) {
       case 'high':
-        return 'red'
+        return 'error'
       case 'medium':
-        return 'orange'
+        return 'warning'
       case 'low':
-        return 'blue'
+        return 'primary'
       default:
-        return 'gray'
+        return 'neutral'
     }
   })
 

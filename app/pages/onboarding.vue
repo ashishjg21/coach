@@ -99,12 +99,11 @@
         type="submit"
         block
         size="xl"
-        :color="isValid ? 'primary' : 'gray'"
+        :color="isValid ? 'primary' : 'neutral'"
         :variant="isValid ? 'solid' : 'soft'"
         :disabled="!isValid"
         :loading="loading"
-        class="shadow-sm transition-all py-4 font-bold"
-        :ui="{ rounded: 'rounded-xl' }"
+        class="shadow-sm transition-all py-4 font-bold rounded-xl"
       >
         {{ isValid ? "Let's Go! 🚀" : 'Accept & Continue' }}
       </UButton>
