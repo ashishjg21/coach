@@ -127,7 +127,7 @@
             <!-- Description -->
             <div v-if="workout.description" class="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <div class="text-sm text-muted mb-1">Description</div>
-              <p class="text-sm break-words">{{ workout.description }}</p>
+              <p class="text-sm break-words whitespace-pre-wrap">{{ workout.description }}</p>
             </div>
 
             <!-- Training Context -->
