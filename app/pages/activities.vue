@@ -742,6 +742,7 @@
   })
 
   const integrationStore = useIntegrationStore()
+  const { formatDate, formatDateTime } = useFormat()
 
   // Modal state
   const showPlannedWorkoutModal = ref(false)
@@ -875,9 +876,10 @@
     let currentWeek = []
 
     for (const day of days) {
+      const dayStr = format(day, 'yyyy-MM-dd')
       const dayActivities = (activities.value || []).filter((a) => {
-        // Simple date string match (YYYY-MM-DD)
-        return a.date.split('T')[0] === format(day, 'yyyy-MM-dd')
+        // Use user timezone date for comparison
+        return formatDate(a.date, 'yyyy-MM-dd') === dayStr
       })
 
       currentWeek.push({
@@ -1289,20 +1291,11 @@
   })
 
   function formatDateForList(dateStr: string) {
-    try {
-      const date = new Date(dateStr)
-      return format(date, 'MMM dd, yyyy HH:mm')
-    } catch {
-      return dateStr
-    }
+    return formatDateTime(dateStr, 'MMM dd, yyyy HH:mm')
   }
 
   function formatDateSafe(dateStr: string) {
-    try {
-      return format(new Date(dateStr), 'EEE dd MMM yyyy h:mm a')
-    } catch {
-      return dateStr
-    }
+    return formatDateTime(dateStr, 'EEE dd MMM yyyy h:mm a')
   }
 
   function formatDurationCompact(seconds: number): string {

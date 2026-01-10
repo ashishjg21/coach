@@ -253,18 +253,20 @@ export default defineEventHandler(async (event) => {
   // Process Planned Workouts
   for (const p of plannedWorkouts) {
     // Skip planned workouts that are already completed and linked to an actual workout
-    // The user said: "we should not hide the 'planned workout' but 'link' them together"
-    // However, if we show BOTH as top-level items, it might be cluttered.
-    // If we nest them, we should keep the skip here but ensure the nested data is used.
     if (completedPlannedIds.has(p.id)) continue
 
     // Determine status
     let status = 'planned'
     if (p.completed) status = 'completed_plan'
 
+    // Shift Planned Workout date to Noon UTC to avoid timezone shift issues on frontend
+    // Planned Workouts are "Date Only" (Midnight UTC), so converting to local time often shifts to previous day
+    // By setting to Noon UTC, it stays on the correct day for almost all timezones
+    const safeDate = new Date(p.date)
+    safeDate.setUTCHours(12)
+
     // Check if missed (in past and not completed)
     const planDate = new Date(p.date)
-    const now = new Date()
     // Reset times for comparison
     planDate.setHours(0, 0, 0, 0)
     const today = new Date()
@@ -281,7 +283,7 @@ export default defineEventHandler(async (event) => {
     activitiesByDate.get(dateKey).push({
       id: p.id,
       title: p.title,
-      date: p.date.toISOString(),
+      date: safeDate.toISOString(),
       type: p.type || 'Workout',
       source: 'planned',
       status: status,
