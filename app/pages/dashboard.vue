@@ -188,7 +188,7 @@
               size="xs"
               class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             >
-              v{{ config.public.version }}
+              v{{ config.public.version }}+{{ config.public.commitHash }}
             </UButton>
           </div>
         </div>

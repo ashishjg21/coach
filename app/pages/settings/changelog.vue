@@ -5,7 +5,7 @@
         <div>
           <h2 class="text-xl font-bold uppercase tracking-tight">Version History</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            Current version: v{{ config.public.version }}
+            Current version: v{{ config.public.version }}+{{ config.public.commitHash }}
           </p>
         </div>
       </div>
