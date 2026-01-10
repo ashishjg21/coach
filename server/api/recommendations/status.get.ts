@@ -1,12 +1,20 @@
 import { getServerSession } from '../../utils/session'
 import { prisma } from '../../utils/db'
-import { isTaskRunning } from '../../utils/trigger-check'
+import { isTaskRunning, isRunIdRunning } from '../../utils/trigger-check'
 
 defineRouteMeta({
   openAPI: {
     tags: ['Recommendations'],
     summary: 'Get recommendation generation status',
     description: 'Checks if recommendation generation tasks are currently running.',
+    parameters: [
+      {
+        in: 'query',
+        name: 'jobId',
+        schema: { type: 'string' },
+        description: 'Specific Job ID to check'
+      }
+    ],
     responses: {
       200: {
         description: 'Success',
@@ -35,6 +43,17 @@ export default defineEventHandler(async (event) => {
       statusCode: 401,
       message: 'Unauthorized'
     })
+  }
+
+  const query = getQuery(event)
+  const jobId = query.jobId as string
+
+  if (jobId) {
+    const isRunning = await isRunIdRunning(jobId)
+    return {
+      isRunning,
+      task: isRunning ? 'recommendation' : null
+    }
   }
 
   const user = await prisma.user.findUnique({
