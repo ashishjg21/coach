@@ -458,6 +458,13 @@ export const generateAthleteProfileTask = task({
             analysisJson: true
           }
         }),
+        // Fetch active goals
+        prisma.goal.findMany({
+          where: {
+            userId,
+            status: 'ACTIVE'
+          }
+        }),
         // Fetch current active plan
         prisma.weeklyTrainingPlan.findFirst({
           where: {
