@@ -343,7 +343,7 @@ export const WorkoutConverter = {
         if (power.range) {
           const start = Math.round(power.range.start * 100)
           const end = Math.round(power.range.end * 100)
-          intensityStr = `${start}-${end}%`
+          intensityStr = `ramp ${start}-${end}%`
         } else {
           const val = Math.round((power.value || 0) * 100)
           intensityStr = `${val}%`
