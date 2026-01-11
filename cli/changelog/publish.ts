@@ -114,20 +114,21 @@ export const publishCommand = new Command('publish')
     // Discord limits message size to 2000 chars. Split content into chunks.
     const chunks: string[] = []
     let remainingContent = content
+    const MAX_LENGTH = 1900
 
     while (remainingContent.length > 0) {
-      if (remainingContent.length <= 2000) {
+      if (remainingContent.length <= MAX_LENGTH) {
         chunks.push(remainingContent)
         break
       }
 
       // Find a good place to split (newline or space)
-      let splitIndex = remainingContent.lastIndexOf('\n', 2000)
+      let splitIndex = remainingContent.lastIndexOf('\n', MAX_LENGTH)
       if (splitIndex <= 0) {
-        splitIndex = remainingContent.lastIndexOf(' ', 2000)
+        splitIndex = remainingContent.lastIndexOf(' ', MAX_LENGTH)
       }
       if (splitIndex <= 0) {
-        splitIndex = 2000
+        splitIndex = MAX_LENGTH
       }
 
       chunks.push(remainingContent.substring(0, splitIndex))
@@ -158,6 +159,10 @@ export const publishCommand = new Command('publish')
             `✓ Successfully published chunk ${index + 1}/${chunks.length} to Discord (${type} channel)`
           )
         )
+
+        if (index < chunks.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 500))
+        }
       }
     } catch (error) {
       console.error(chalk.red('Error sending to Discord:'), error)
