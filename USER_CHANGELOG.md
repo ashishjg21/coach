@@ -1,3 +1,40 @@
+# 🚀 Watts App Release Notes: v0.5.10 is Here!
+
+We've just pushed a significant update focused on making your recovery insights clearer, your data faster, and your coaching recommendations smarter. Time to dive into the key improvements!
+
+---
+
+## 🧠 Smarter Recovery & Training Load
+
+Understanding your body's readiness is crucial for maximizing performance. We've introduced a suite of new tools to give you unparalleled insight:
+
+- **Integrated Readiness Scores:** Your wellness checks now include a dedicated Readiness section! We pull these insights directly into the app so you know exactly when to push or rest. 🚦
+- **New Training Load Insight Modal:** Quickly review your acute and chronic training load (ATL/CTL) trends right from your dashboard cards. This modal gives you a deeper dive into how your training is trending.
+- **Data Freshness Alerts:** Never worry about using outdated metrics again! Your dashboard now features **stale data warnings** and prompts to auto-update, ensuring your coaching advice is always based on the latest activities. 🔄
+
+## ✨ Performance & Reliability Upgrades
+
+We've optimized several key areas of the app for speed and stability:
+
+- **Lightning-Fast Workout Lists:** We've refactored how we load your training history. Workouts lists now use server-side pagination, meaning they load significantly faster, especially for long-term users. 💨
+- **Better Data Handling:** We’ve resolved a few backend issues to ensure absolute consistency:
+  - Timezone handling is now rock-solid, ensuring your workout calendar dates are always correct regardless of where you are.
+  - We fixed an issue with how Kilojoules (energy expenditure) were stored, ensuring 100% accurate training data metrics.
+- **Automatic Error Recovery:** If you experience a rare loading hiccup, the app is now smarter and will attempt an automatic page reload, keeping your workflow smooth.
+
+## 🎯 Enhanced Coaching Intelligence
+
+Our AI Coach is getting smarter, offering more tailored and impactful advice:
+
+- **Deeper Athlete Profile:** We now include metrics like your **Heart Rate/Power Alignment Score** and your **Active Goals** when generating your profile analysis. This means the AI better understands your physiological tendencies and long-term targets.
+- **Prioritized Current Metrics:** The coaching model now prioritizes your most recent and important metrics, ensuring recommendations are highly relevant to your _current_ fitness state.
+- **Improved Recommendation View:** We've polished the layout for workout recommendations and added a convenient history toggle so you can easily review past suggestions.
+
+## 🎨 UI Polish & Clarity
+
+- **Garmin Data Attribution:** We have implemented clear branding and attribution across the app. You'll see explicit indicators confirming when data has been synchronized and processed from providers like Garmin. Trust and clarity are paramount! ✅
+- **Clean Layouts:** Fixed several layout issues on the Settings page and ensured planned workout descriptions preserve line breaks, making them much easier to read.
+
 ## 🎉 Coach Watts v0.5.9 Release: The Smart Coach Upgrade!
 
 We are thrilled to announce our latest release, v0.5.9, which focuses heavily on introducing a brand-new, highly intelligent **Recommendation System** and making our AI Coach smarter, faster, and more transparent.

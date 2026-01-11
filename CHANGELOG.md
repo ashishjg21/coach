@@ -1,5 +1,62 @@
 # Changelog
 
+## [0.5.10](https://github.com/newpush/coach/compare/v0.5.9...v0.5.10) (2026-01-11)
+
+### Bug Fixes
+
+- **admin:** resolve typecheck errors in admin pages ([18e8c39](https://github.com/newpush/coach/commit/18e8c39c2cb3b22223268be7bae0f2e75aa4b566))
+- **api:** update session user id access and file upload validation ([23ca465](https://github.com/newpush/coach/commit/23ca465decc657dc018a3271fb74b9888f4c2f00))
+- **calendar:** adjust date handling for timezone consistency ([d2539b2](https://github.com/newpush/coach/commit/d2539b2b0265bb02fcc61eb5ae1b16d6abae7b32))
+- **data:** correct kilojoules storage and handling from intervals.icu ([dd3e3f1](https://github.com/newpush/coach/commit/dd3e3f1db07042e55aee60355edd03a86e3c8336))
+- **frontend:** handle chunk loading errors with automatic page reload ([363f74b](https://github.com/newpush/coach/commit/363f74bed500e3a9bfed46ac8d2891f7ab56d49b))
+- **frontend:** resolve mdc rendering crash in chat and reports ([3bccbe4](https://github.com/newpush/coach/commit/3bccbe41fc3aa7761d17b2eed5777010980341a1))
+- **pages:** ensure full width container for settings page ([7c2d4f8](https://github.com/newpush/coach/commit/7c2d4f8775a291b94ca99d9b76a841114b1ae7aa))
+- **pages:** improve recommendations layout and add history toggle ([f4dfbc5](https://github.com/newpush/coach/commit/f4dfbc5f86b2908d31a449a95fe20f71951f2627))
+- **trigger:** enforce integer cadence in structured workout generation ([0b2ccad](https://github.com/newpush/coach/commit/0b2ccad592d6b1d62d0dcfa416d985f33528d5c9))
+- **trigger:** improve error handling and imports in analysis tasks ([160766c](https://github.com/newpush/coach/commit/160766c2ecea0a2440ad666b43957450b9818f9b))
+- **trigger:** increase ingest-intervals max duration timeout ([e2b96f8](https://github.com/newpush/coach/commit/e2b96f819fc8f9cbfa49f03ceadb2de9e37d5eda))
+- **triggers:** prioritize current metrics in llm prompts ([856c953](https://github.com/newpush/coach/commit/856c9534b652f6df819d4b9b713c72262bef09bf))
+- **trigger:** update date and time context for workout generation ([7124ded](https://github.com/newpush/coach/commit/7124dedec8ab6742f97e5d294729578395c90cfc))
+
+### Features
+
+- **api:** add oauth and developer portal api endpoints ([af858a4](https://github.com/newpush/coach/commit/af858a46e85d28b88ecd2a7a0613860f2e38ecbd))
+- **api:** add oauth repositories, middleware, and audit utilities ([e59645d](https://github.com/newpush/coach/commit/e59645d166312fce9feaf0ab4c8aa01e5c35f7a1))
+- **api:** include readiness score in wellness trend data ([8980fb9](https://github.com/newpush/coach/commit/8980fb9e57dc6ce61cb9e56cdfe8d32d54f7093d))
+- **api:** update status endpoints to support specific job id polling ([c9f1b29](https://github.com/newpush/coach/commit/c9f1b29eaeee3c7cddef3eb05f064de5ae027e85))
+- **auth:** implement oauth token validation and session handling ([e301257](https://github.com/newpush/coach/commit/e301257e74bf87307623fe678fa76d2482528d96))
+- **cli:** add and update debug tools for athlete and stream analysis ([21ada93](https://github.com/newpush/coach/commit/21ada93356abc705ed05086a6a050a96087da03c))
+- **cli:** add oauth management commands ([3a83043](https://github.com/newpush/coach/commit/3a830432465f826d529f016882306a6bd054b74c))
+- **cli:** add stats command ([f5aa965](https://github.com/newpush/coach/commit/f5aa9653bda2311b448a7f6b15eceedecafa59c8))
+- **cli:** add user-stats debug command ([71e917f](https://github.com/newpush/coach/commit/71e917f3d8c72d5e27aa534827b27fe8eebb7fb2))
+- **components:** add new training load modal component ([12c8cb6](https://github.com/newpush/coach/commit/12c8cb66c0a43cbfbc70ab709b3792a98177cd41))
+- **components:** add readiness section to wellness modal ([fd81749](https://github.com/newpush/coach/commit/fd81749e43a445f28a6a21b2c57f0ffe926d2181))
+- **components:** integrate training load modal into dashboard cards ([d702145](https://github.com/newpush/coach/commit/d702145a3f0f3f2d3f49560a453fb4ea2c0f74d2))
+- **composables:** add data status composable for freshness checks ([6f5545a](https://github.com/newpush/coach/commit/6f5545a8d9f281b8a6656ae87a7eb0c5921796b3))
+- **config:** configure commit hash detection and sentry release versioning ([b1e65d9](https://github.com/newpush/coach/commit/b1e65d98602f1a6461551e1d2e49285a90ab57a2))
+- **dashboard:** add stale data warnings and auto-update prompts ([0765ef2](https://github.com/newpush/coach/commit/0765ef251702579100259ed35ba3e06620214bf1))
+- **db:** add hr/power alignment score to user profile ([cfbeda9](https://github.com/newpush/coach/commit/cfbeda91d2370d628aee08e2ca3f4696316a4459))
+- **db:** add oauth and audit migration ([1143164](https://github.com/newpush/coach/commit/114316457b49b64685b08dc1ae7c228eccc5cb2d))
+- **db:** add oauth provider and audit log models ([7709b57](https://github.com/newpush/coach/commit/7709b57f282c1872b82626e9b88c6f1e8a6cfa64))
+- **examples:** add oauth demo client ([d65ca7b](https://github.com/newpush/coach/commit/d65ca7b889baa839416d9ab6c58e67cecf1fe9a3))
+- **infrastructure:** add sentry dependencies and environment variables ([429abd7](https://github.com/newpush/coach/commit/429abd7a90e112c69eeb0c5e02f8f754cde6efd3))
+- **pages:** add visualization charts to admin dashboard ([7d68b37](https://github.com/newpush/coach/commit/7d68b373e94f7e23b63b30bb4c93c4110a0f9577))
+- **pages:** integrate training load modal into dashboard ([8cb99b0](https://github.com/newpush/coach/commit/8cb99b07d77dcbeb0290db98ab3954b14f8bbc22))
+- **stores:** add whoop connection status to integration store ([b6db7a9](https://github.com/newpush/coach/commit/b6db7a9e8b647469eae2d1eed8bca4f6379722bd))
+- **trigger:** configure sentry integration and error tracking ([0b65b21](https://github.com/newpush/coach/commit/0b65b21703e933e5ad772523e4d6c11ada0f5843))
+- **trigger:** include active goals in athlete profile analysis ([d3d41eb](https://github.com/newpush/coach/commit/d3d41ebf9bdd2c4fa1f899797f418b898fbacf49))
+- **trigger:** include hr/power alignment in athlete profile generation ([4bc0054](https://github.com/newpush/coach/commit/4bc0054f3b49bf5e4924b42a46cdfc05346599b7))
+- **ui:** add generalized data attribution component and rules ([64789d1](https://github.com/newpush/coach/commit/64789d1dbfa6927cc9d661f462f545ee3eeabfee))
+- **ui:** add oauth authorization pages and developer portal ([7d10732](https://github.com/newpush/coach/commit/7d107328ec05b655d8304f4eba9e4e2e4b71c0c1))
+- **ui:** add oauth developer portal links and settings updates ([bc633c3](https://github.com/newpush/coach/commit/bc633c355646810a98aca8d3fd0ae6e3c905906c))
+- **ui:** display build commit hash in dashboard and changelog ([09ce118](https://github.com/newpush/coach/commit/09ce118569e75efe1dd570990661a32d3ed8cff6))
+- **ui:** implement garmin branding and generalized attribution across app ([7d7b90f](https://github.com/newpush/coach/commit/7d7b90f7584e43f14d222104c4cf362a56a46223))
+
+### Performance Improvements
+
+- **api:** optimize workout list payload and add count endpoint ([897341e](https://github.com/newpush/coach/commit/897341e809a56a48402f12c7d1ee9246a6a613bd))
+- **pages:** implement server-side pagination for workouts list ([ff8d441](https://github.com/newpush/coach/commit/ff8d4412ec143748d7f7b8bae63bc5a216fcb430))
+
 ## [0.5.9](https://github.com/newpush/coach/compare/v0.5.8...v0.5.9) (2026-01-10)
 
 ### Bug Fixes
