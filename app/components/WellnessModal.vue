@@ -123,6 +123,32 @@
               </span>
             </div>
           </div>
+
+          <!-- Readiness -->
+          <div
+            v-if="wellnessData.readiness != null"
+            class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl ring-1 ring-inset ring-blue-500/10"
+          >
+            <div class="flex items-center gap-2 mb-2">
+              <UIcon name="i-heroicons-bolt" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span
+                class="text-xs font-bold text-blue-900 dark:text-blue-100 uppercase tracking-tight"
+                >Readiness</span
+              >
+            </div>
+            <div class="text-2xl font-bold text-blue-900 dark:text-blue-50">
+              {{ wellnessData.readiness }}{{ wellnessData.readiness > 10 ? '%' : '/10' }}
+            </div>
+            <div v-if="trendData.length > 0" class="mt-2">
+              <TrendIndicator
+                :current="wellnessData.readiness"
+                :previous="trendData.map((d) => d.readiness).filter((v) => v != null)"
+                type="higher-is-better"
+                compact
+                show-value
+              />
+            </div>
+          </div>
         </div>
 
         <!-- Metric Explanations -->
