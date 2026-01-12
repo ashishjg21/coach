@@ -165,9 +165,14 @@
     yesterday.setDate(yesterday.getDate() - 1)
 
     // Create day-only strings for comparison
+    // activityDate is a timestamp -> convert to User Timezone date string
     const activityDateStr = formatDate(activityDate, 'yyyy-MM-dd')
-    const todayStr = formatDate(today, 'yyyy-MM-dd')
-    const yesterdayStr = formatDate(yesterday, 'yyyy-MM-dd')
+
+    // today/yesterday are already "User Local Dates" stored as UTC midnight
+    // e.g. "2023-10-27T00:00:00Z" means it is Oct 27th for the user.
+    // So we just take the ISO date part (UTC) to compare.
+    const todayStr = today.toISOString().split('T')[0]
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
 
     if (activityDateStr === todayStr) {
       return 'Today'

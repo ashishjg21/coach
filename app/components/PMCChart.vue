@@ -177,7 +177,11 @@
 
     const data = pmcData.value.data
     const labels = data.map((d: any) =>
-      new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      new Date(d.date).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'UTC'
+      })
     )
 
     return {
