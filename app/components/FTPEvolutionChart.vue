@@ -131,7 +131,7 @@
   )
 
   const props = defineProps<{
-    months?: number
+    months?: number | string
   }>()
 
   const loading = ref(true)

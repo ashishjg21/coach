@@ -4,7 +4,7 @@
       <h2 class="text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">
         Workout Performance
       </h2>
-      <USelect v-model="period" :items="periodOptions" size="sm" />
+      <USelect v-model="period" :items="periodOptions" size="sm" class="w-32 sm:w-36" />
     </div>
 
     <div v-if="loading" class="flex justify-center py-12">
@@ -109,7 +109,7 @@
   const props = defineProps<{
     trendsData: any
     loading: boolean
-    modelValue: number
+    modelValue: number | string
   }>()
 
   const emit = defineEmits(['update:modelValue', 'open-modal'])
@@ -123,6 +123,7 @@
     { label: '7 Days', value: 7 },
     { label: '14 Days', value: 14 },
     { label: '30 Days', value: 30 },
-    { label: '90 Days', value: 90 }
+    { label: '90 Days', value: 90 },
+    { label: 'Year to Date', value: 'YTD' }
   ]
 </script>

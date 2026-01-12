@@ -84,7 +84,7 @@
 
 <script setup lang="ts">
   const props = defineProps<{
-    period: number
+    period: number | string
   }>()
 
   const { data, refresh } = await useFetch('/api/activity/highlights', {

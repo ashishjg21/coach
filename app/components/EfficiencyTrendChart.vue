@@ -78,7 +78,7 @@
   )
 
   const props = defineProps<{
-    days?: number
+    days?: number | string
   }>()
 
   const loading = ref(true)

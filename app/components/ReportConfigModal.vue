@@ -11,6 +11,7 @@
         placeholder="Select data type"
         value-key="value"
         :ui="{ content: 'min-w-fit' }"
+        class="w-full"
       />
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
         {{ selectedDataTypeDescription }}
@@ -90,6 +91,7 @@
         placeholder="All workout types"
         value-key="value"
         :ui="{ content: 'min-w-fit' }"
+        class="w-full"
       />
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
         Leave empty to include all workout types
@@ -107,6 +109,7 @@
         placeholder="General Analysis"
         value-key="value"
         :ui="{ content: 'min-w-fit' }"
+        class="w-full"
       />
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
         {{ selectedFocusDescription }}
@@ -138,7 +141,7 @@
 
   interface ReportConfig {
     dataType: 'workouts' | 'nutrition' | 'both'
-    timeframeType: 'days' | 'count' | 'range'
+    timeframeType: 'days' | 'count' | 'range' | 'ytd'
     days?: number
     count?: number
     startDate?: string
@@ -192,7 +195,8 @@
   const timeframeTypeOptions = [
     { value: 'days', label: 'Last N Days' },
     { value: 'count', label: 'Last N Items' },
-    { value: 'range', label: 'Date Range' }
+    { value: 'range', label: 'Date Range' },
+    { value: 'ytd', label: 'Year to Date' }
   ]
 
   const workoutTypeOptions = [
@@ -265,6 +269,8 @@
     // Timeframe
     if (config.value.timeframeType === 'days' && config.value.days) {
       summary += `from the last ${config.value.days} days`
+    } else if (config.value.timeframeType === 'ytd') {
+      summary += `from the beginning of the year`
     } else if (config.value.timeframeType === 'count' && config.value.count) {
       summary += `for the last ${config.value.count} ${config.value.dataType === 'workouts' ? 'workouts' : 'nutrition days'}`
     } else if (
@@ -286,6 +292,8 @@
   const isConfigValid = computed(() => {
     if (config.value.timeframeType === 'days') {
       return config.value.days && config.value.days > 0 && config.value.days <= 90
+    } else if (config.value.timeframeType === 'ytd') {
+      return true
     } else if (config.value.timeframeType === 'count') {
       return config.value.count && config.value.count > 0 && config.value.count <= 50
     } else if (config.value.timeframeType === 'range') {

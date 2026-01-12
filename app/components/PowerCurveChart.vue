@@ -68,7 +68,7 @@
     publicToken?: string
 
     // If provided, fetches aggregate data for a period (Performance Page mode)
-    days?: number
+    days?: number | string
   }>()
 
   const loading = ref(true)

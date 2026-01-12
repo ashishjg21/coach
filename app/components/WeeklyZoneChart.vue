@@ -65,7 +65,7 @@
   ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
   const props = defineProps<{
-    weeks?: number
+    weeks?: number | string
   }>()
 
   const selectedType = ref<'power' | 'hr'>('power')
