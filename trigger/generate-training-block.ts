@@ -123,6 +123,9 @@ export const generateTrainingBlockTask = task({
     const allowedTypes = (block.plan as any).activityTypes || ['Ride'] // Default to Ride if missing
     const allowedTypesString = Array.isArray(allowedTypes) ? allowedTypes.join(', ') : 'Ride'
 
+    // NEW: Get custom instructions from plan
+    const customInstructions = (block.plan as any).customInstructions || ''
+
     const prompt = `You are an expert endurance coach designing a specific mesocycle (training block) for an athlete.
 
 ATHLETE PROFILE:
@@ -131,6 +134,14 @@ ATHLETE PROFILE:
 - Coach Persona: ${user?.aiPersona || 'Supportive'}
 - Allowed Workout Types: ${allowedTypesString} (ONLY schedule these types + Rest/Recovery)
 
+${
+  customInstructions
+    ? `ATHLETE CUSTOM INSTRUCTIONS & CONSTRAINTS (IMPORTANT):
+${customInstructions}
+NOTE: These instructions take precedence over "Allowed Workout Types" or standard scheduling rules. If the athlete asks for a specific workout type not listed above, include it.
+`
+    : ''
+}
 TRAINING GOAL:
 - Goal Title: ${block.plan.goal.title}
 - Events:
@@ -152,7 +163,7 @@ ${scheduleContext || 'No specific constraints, assume standard training week (Mo
 INSTRUCTIONS:
 Generate a detailed daily training plan for each week in this block (${block.durationWeeks} weeks).
 - Adhere strictly to the Schedule Constraints (do not schedule workouts on unavailable days).
-- ONLY use the "Allowed Workout Types" listed above. Do not schedule a Swim if only "Ride" is allowed.
+- ONLY use the "Allowed Workout Types" listed above, UNLESS the athlete's custom instructions explicitly request otherwise (Custom Instructions take precedence).
 - Ensure progressive overload from week 1 to ${block.durationWeeks - 1}.
 - Ensure the recovery week (if applicable) has significantly reduced volume and intensity.
 - For "Ride" workouts, provide realistic TSS estimates based on duration and intensity.

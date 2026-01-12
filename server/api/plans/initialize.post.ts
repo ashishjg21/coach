@@ -10,7 +10,8 @@ const initializePlanSchema = z.object({
   volumePreference: z.enum(['LOW', 'MID', 'HIGH']).default('MID'),
   volumeHours: z.number().optional(),
   strategy: z.enum(['LINEAR', 'UNDULATING', 'BLOCK', 'POLARIZED']).default('LINEAR'),
-  preferredActivityTypes: z.array(z.string()).default(['Ride'])
+  preferredActivityTypes: z.array(z.string()).default(['Ride']),
+  customInstructions: z.string().optional()
 })
 
 export default defineEventHandler(async (event) => {
@@ -33,7 +34,8 @@ export default defineEventHandler(async (event) => {
     volumePreference,
     volumeHours,
     strategy,
-    preferredActivityTypes
+    preferredActivityTypes,
+    customInstructions
   } = validation.data
   const userId = (session.user as any).id
 
@@ -78,6 +80,7 @@ export default defineEventHandler(async (event) => {
       strategy,
       status: 'DRAFT',
       activityTypes: preferredActivityTypes,
+      customInstructions,
       blocks: {
         create: blocks.map((block) => ({
           order: block.order,
