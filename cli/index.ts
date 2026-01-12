@@ -10,6 +10,7 @@ import changelogCommand from './changelog'
 import backfillCommand from './backfill'
 import oauthCommand from './oauth'
 import statsCommand from './stats'
+import usersCommand from './users'
 
 const program = new Command()
 
@@ -23,6 +24,7 @@ program.addCommand(changelogCommand)
 program.addCommand(backfillCommand)
 program.addCommand(oauthCommand)
 program.addCommand(statsCommand)
+program.addCommand(usersCommand)
 
 program.parse(process.argv)
 
