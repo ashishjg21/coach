@@ -532,7 +532,7 @@ ${
 
 RECENT RECOVERY (Last 7 days):
 - Average recovery score: ${avgRecovery.toFixed(0)}%
-- Latest HRV: ${recentWellness[0]?.hrv || 'N/A'} ms
+- Latest HRV (rMSSD): ${recentWellness[0]?.hrv || 'N/A'} ms
 - Latest resting HR: ${recentWellness[0]?.restingHr || 'N/A'} bpm
 
 PLANNING PERIOD:

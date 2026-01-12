@@ -346,7 +346,7 @@ RECENT TRAINING (Last 30 days):
 
 RECOVERY TRENDS:
 - Average Recovery Score: ${avgRecovery ? avgRecovery.toFixed(0) + '%' : 'N/A'}
-- Recent HRV trend: ${recentWellness
+- Recent HRV (rMSSD) trend: ${recentWellness
         .slice(0, 7)
         .map((w) => w.hrv || 'N/A')
         .join(', ')}

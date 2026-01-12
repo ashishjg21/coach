@@ -58,7 +58,7 @@
                 <USkeleton v-if="loading" class="h-9 w-12 mx-auto" />
                 <template v-else>{{ avgHRV !== null ? avgHRV.toFixed(0) : '-' }}</template>
               </div>
-              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Avg HRV (ms)</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Avg HRV (rMSSD)</div>
             </div>
           </div>
         </div>
@@ -184,7 +184,7 @@
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                   >
-                    HRV
+                    HRV (rMSSD)
                   </th>
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
@@ -613,7 +613,7 @@
       labels,
       datasets: [
         {
-          label: 'HRV (ms)',
+          label: 'HRV (rMSSD)',
           data: recentWellness.map((w) => w.hrv),
           borderColor: 'rgb(168, 85, 247)',
           backgroundColor: 'rgba(168, 85, 247, 0.1)',

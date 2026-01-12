@@ -94,7 +94,7 @@
           <div class="text-3xl font-bold text-purple-900 dark:text-purple-100">
             {{ Math.round(wellness.hrv) }}
           </div>
-          <div class="text-sm text-purple-700 dark:text-purple-300 mt-1">HRV (ms)</div>
+          <div class="text-sm text-purple-700 dark:text-purple-300 mt-1">HRV (rMSSD)</div>
         </div>
       </div>
 

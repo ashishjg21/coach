@@ -96,7 +96,7 @@
                 </div>
                 <div v-if="wellness.hrv" class="flex flex-col items-end">
                   <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest"
-                    >HRV</span
+                    >HRV (rMSSD)</span
                   >
                   <span class="text-xl font-bold text-purple-600 dark:text-purple-400">{{
                     Math.round(wellness.hrv)
@@ -229,7 +229,7 @@
               <div class="text-3xl font-bold text-purple-900 dark:text-purple-100">
                 {{ Math.round(wellness.hrv) }}
               </div>
-              <div class="text-sm text-purple-700 dark:text-purple-300 mt-1">HRV (ms)</div>
+              <div class="text-sm text-purple-700 dark:text-purple-300 mt-1">HRV (rMSSD)</div>
               <!-- Mini Chart -->
               <div
                 v-if="wellness.trends?.hrv?.history"

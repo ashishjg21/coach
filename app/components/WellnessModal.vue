@@ -22,7 +22,7 @@
               <UIcon name="i-heroicons-heart" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span
                 class="text-xs font-bold text-blue-900 dark:text-blue-100 uppercase tracking-tight"
-                >HRV</span
+                >HRV (rMSSD)</span
               >
             </div>
             <div class="text-2xl font-bold text-blue-900 dark:text-blue-50">

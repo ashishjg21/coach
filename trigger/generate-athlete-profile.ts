@@ -548,7 +548,7 @@ export const generateAthleteProfileTask = task({
           : null
 
       const wellnessSummary = `Average Recovery: ${avgRecovery ? avgRecovery.toFixed(0) + '%' : 'N/A'}
-Average HRV: ${avgHRV ? avgHRV.toFixed(0) + ' ms' : 'N/A'}
+Average HRV (rMSSD): ${avgHRV ? avgHRV.toFixed(0) + ' ms' : 'N/A'}
 Recent sleep: ${recentWellness
         .slice(0, 7)
         .map((w) => `${w.sleepHours?.toFixed(1) || 'N/A'}h`)
@@ -693,7 +693,7 @@ Focus on:
 
 Finally, provide **Athlete Profile Scores** (1-10 scale for tracking long-term development):
 - **Current Fitness**: Overall fitness level based on recent training, FTP, and performance
-- **Recovery Capacity**: How well they recover from training stress (HRV, sleep, subjective metrics)
+- **Recovery Capacity**: How well they recover from training stress (HRV rMSSD, sleep, subjective metrics)
 - **Nutrition Compliance**: Overall nutrition quality and adherence (if nutrition data available)
 - **Training Consistency**: Adherence to training plans and consistency over time
 - **HR/Power Alignment**: How well do power and HR zones match? (Critical for mixed-sport athletes).
