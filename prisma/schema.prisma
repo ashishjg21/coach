@@ -1179,6 +1179,7 @@ model TrainingPlan {
   // Metadata for the overall strategy
   strategy    String   @default("LINEAR") // LINEAR, UNDULATING, BLOCK, POLARIZED
   activityTypes Json?  // Preferred workout types: ["Ride", "Run", "Gym", "Swim"]
+  customInstructions String? @db.Text
   status      String   @default("ACTIVE") // DRAFT, ACTIVE, COMPLETED, ARCHIVED, ABANDONED
   
   currentBlockId String? // Shortcut to current block for quick UI access
