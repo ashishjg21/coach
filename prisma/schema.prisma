@@ -1363,6 +1363,7 @@ model Recommendation {
   
   // Context
   sourceType  String   // "nutrition" or "workout"
+  category    String?  // e.g., "Cycling", "Running", "Recovery", "Diet" - Dynamic category
   metric      String   // "overall", "technical", etc.
   period      Int      // 7, 14, 30, 90
   

@@ -132,7 +132,7 @@ export const generateRecommendationsTask = task({
       orderBy: { date: 'desc' }
     })
 
-    // 4. Fetch Active Recommendations
+    // 4. Fetch Active Recommendations & Categories
     const activeRecommendations = await prisma.recommendation.findMany({
       where: { userId, status: 'ACTIVE' },
       select: {
@@ -141,11 +141,16 @@ export const generateRecommendationsTask = task({
         description: true,
         priority: true,
         sourceType: true,
+        category: true,
         metric: true,
         history: true,
         generatedAt: true
       }
     })
+
+    const existingCategories = [
+      ...new Set(activeRecommendations.map((r) => r.category).filter(Boolean))
+    ]
 
     // Format Contexts
     const goalsContext =
@@ -175,7 +180,7 @@ export const generateRecommendationsTask = task({
         ? activeRecommendations
             .map(
               (r) =>
-                `- ID: "${r.id}" | [${r.priority}] ${r.title} (Generated: ${r.generatedAt.toISOString().split('T')[0]})\n  Current: ${r.description}\n  Context: ${r.sourceType}/${r.metric}`
+                `- ID: "${r.id}" | [${r.priority}] ${r.title} (Generated: ${r.generatedAt.toISOString().split('T')[0]})\n  Current: ${r.description}\n  Category: ${r.category || 'General'}\n  Context: ${r.sourceType}/${r.metric}`
             )
             .join('\n')
         : 'None'
@@ -191,6 +196,9 @@ ${goalsContext}
 
 EXISTING ACTIVE RECOMMENDATIONS (Reference these by ID to update):
 ${existingRecsContext}
+
+EXISTING CATEGORIES (Reuse if fitting, otherwise create new):
+${existingCategories.length > 0 ? existingCategories.join(', ') : 'None yet (e.g. Cycling, Running, Recovery, Nutrition, Sleep, Strength)'}
 
 RECENT TRENDS (Score Explanations):
 ${trends
@@ -221,7 +229,12 @@ INSTRUCTIONS:
    - If a new issue is detected, use the 'new_recommendations' array.
 3. Formulate specific, actionable advice.
 4. Assign priority (high/medium/low).
-5. LABEL FORMATTING (CRITICAL):
+5. ASSIGN CATEGORY:
+   - Assign a concise 'category' to each recommendation (e.g. "Cycling", "Running", "Recovery", "Nutrition", "Sleep", "Strength", "General Wellness").
+   - Reuse existing categories if they fit perfectly.
+   - Create a new category only if necessary.
+   - Keep categories high-level (Sport or Domain).
+6. LABEL FORMATTING (CRITICAL):
    - The 'metric' field must be a clean, human-readable label.
    - DO NOT include the source type in the label (e.g. "Run Volume", NOT "workout/Run Volume").
    - DO NOT use slashes or technical prefixes.
@@ -243,10 +256,19 @@ JSON object with 'new_recommendations', 'updated_recommendations', 'completed_re
               description: { type: 'string' },
               priority: { type: 'string', enum: ['high', 'medium', 'low'] },
               sourceType: { type: 'string', enum: ['nutrition', 'workout'] },
+              category: { type: 'string' },
               metric: { type: 'string' },
               period: { type: 'number' }
             },
-            required: ['title', 'description', 'priority', 'sourceType', 'metric', 'period']
+            required: [
+              'title',
+              'description',
+              'priority',
+              'sourceType',
+              'category',
+              'metric',
+              'period'
+            ]
           }
         },
         updated_recommendations: {
@@ -308,6 +330,7 @@ JSON object with 'new_recommendations', 'updated_recommendations', 'completed_re
         id: uuidv4(),
         userId,
         sourceType: rec.sourceType,
+        category: rec.category,
         metric: rec.metric,
         period: rec.period,
         title: rec.title,
@@ -379,6 +402,81 @@ JSON object with 'new_recommendations', 'updated_recommendations', 'completed_re
         }
       })
       logger.log(`🚫 Marked ${dismissedIds.length} as DISMISSED`)
+    }
+
+    // 9. DEDUPLICATION STEP
+    logger.log('🕵️ Running Deduplication Check')
+
+    // Fetch fresh active recommendations (including newly created ones)
+    const freshActiveRecs = await prisma.recommendation.findMany({
+      where: { userId, status: 'ACTIVE' },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        sourceType: true,
+        category: true,
+        metric: true,
+        isPinned: true
+      }
+    })
+
+    if (freshActiveRecs.length > 1) {
+      const dedupPrompt = `You are a data cleaner. Review the following list of active recommendations and identify DUPLICATES or CONFLICTING items.
+
+ACTIVE RECOMMENDATIONS:
+${freshActiveRecs.map((r) => `- ID: "${r.id}" | ${r.title} (${r.description}) [Category: ${r.category}, Metric: ${r.metric}] ${r.isPinned ? '(PINNED/PROTECTED)' : ''}`).join('\n')}
+
+INSTRUCTIONS:
+1. Look for recommendations that give the SAME advice or address the SAME specific issue, even if worded differently.
+2. If duplicates are found, select the BEST one to keep (most clear/actionable).
+3. **CRITICAL**: If one of the duplicates is PINNED/PROTECTED, you MUST keep it. Never dismiss a pinned item.
+4. Mark the other redundant items for dismissal.
+5. If two recommendations contradict each other, prefer the pinned one if applicable, otherwise select the more specific or plausible one.
+
+OUTPUT SCHEMA:
+JSON object with 'ids_to_dismiss' array (string IDs). If no duplicates or only pinned items, return empty array.`
+
+      const dedupSchema = {
+        type: 'object',
+        properties: {
+          ids_to_dismiss: {
+            type: 'array',
+            items: { type: 'string' }
+          }
+        },
+        required: ['ids_to_dismiss']
+      }
+
+      const dedupResponse = await generateStructuredAnalysis<{ ids_to_dismiss: string[] }>(
+        dedupPrompt,
+        dedupSchema,
+        'flash',
+        {
+          userId,
+          operation: 'deduplicate_recommendations',
+          entityType: 'RecommendationBatch'
+        }
+      )
+
+      let { ids_to_dismiss } = dedupResponse
+
+      // Safety: filter out any pinned items from dismissal, just in case AI missed instructions
+      const pinnedIds = new Set(freshActiveRecs.filter((r) => r.isPinned).map((r) => r.id))
+      ids_to_dismiss = ids_to_dismiss.filter((id) => !pinnedIds.has(id))
+
+      if (ids_to_dismiss && ids_to_dismiss.length > 0) {
+        await prisma.recommendation.updateMany({
+          where: { id: { in: ids_to_dismiss }, userId },
+          data: {
+            status: 'DISMISSED',
+            completedAt: new Date()
+          }
+        })
+        logger.log(`Sweep completed: Dismissed ${ids_to_dismiss.length} redundant recommendations`)
+      } else {
+        logger.log('✨ No redundant items found (or all kept due to focus)')
+      }
     }
 
     return {
