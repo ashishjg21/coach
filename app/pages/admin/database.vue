@@ -51,46 +51,50 @@
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto">
-    <!-- Header -->
-    <div
-      class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center"
-    >
-      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Database Health</h1>
-      <UButton
-        icon="i-heroicons-arrow-path"
-        color="neutral"
-        variant="solid"
-        :loading="pending"
-        @click="() => refresh()"
-      >
-        Refresh
-      </UButton>
-    </div>
-
-    <!-- Body -->
-    <div class="p-6">
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-              Table Statistics
-            </h3>
-            <p class="text-sm text-gray-500">
-              Overview of database tables, record counts, and storage usage.
-            </p>
-          </div>
+  <UDashboardPanel>
+    <template #header>
+      <UDashboardNavbar title="Database Health">
+        <template #leading>
+          <UDashboardSidebarCollapse />
         </template>
+        <template #right>
+          <UButton
+            icon="i-heroicons-arrow-path"
+            color="neutral"
+            variant="solid"
+            :loading="pending"
+            @click="() => refresh()"
+          >
+            Refresh
+          </UButton>
+        </template>
+      </UDashboardNavbar>
+    </template>
 
-        <UTable :columns="columns" :data="stats || []" :loading="pending">
-          <template #row_count-cell="{ row }">
-            {{ row.original.row_count.toLocaleString() }}
+    <template #body>
+      <div class="p-6">
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+                Table Statistics
+              </h3>
+              <p class="text-sm text-gray-500">
+                Overview of database tables, record counts, and storage usage.
+              </p>
+            </div>
           </template>
-          <template #total_size_bytes-cell="{ row }">
-            {{ formatBytes(row.original.total_size_bytes) }}
-          </template>
-        </UTable>
-      </UCard>
-    </div>
-  </div>
+
+          <UTable :columns="columns" :data="stats || []" :loading="pending">
+            <template #row_count-cell="{ row }">
+              {{ row.original.row_count.toLocaleString() }}
+            </template>
+            <template #total_size_bytes-cell="{ row }">
+              {{ formatBytes(row.original.total_size_bytes) }}
+            </template>
+          </UTable>
+        </UCard>
+      </div>
+    </template>
+  </UDashboardPanel>
 </template>

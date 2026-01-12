@@ -90,7 +90,7 @@
                   <span class="text-gray-500">{{ item.count }}</span>
                 </div>
                 <UProgress
-                  :value="item.count"
+                  :model-value="item.count"
                   :max="stats?.eventsByDay.reduce((a, b) => a + b.count, 0)"
                   :color="
                     item.status === 'PROCESSED'

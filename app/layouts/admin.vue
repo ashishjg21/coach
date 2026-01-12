@@ -3,109 +3,221 @@
   const user = computed(() => data.value?.user)
   const route = useRoute()
 
-  defineEmits(['open-sidebar'])
+  const isOpen = ref(false)
 
-  const links = [
+  const links = computed(() => [
     {
       label: 'Admin Home',
       icon: 'i-lucide-layout-dashboard',
-      to: '/admin'
+      to: '/admin',
+      onSelect: () => {
+        isOpen.value = false
+      }
     },
     {
       label: 'Users Management',
       icon: 'i-lucide-users',
-      to: '/admin/users'
+      to: '/admin/users',
+      onSelect: () => {
+        isOpen.value = false
+      }
     },
     {
       label: 'Application Stats',
       icon: 'i-lucide-bar-chart-3',
-      to: '/admin/stats'
+      to: '/admin/stats',
+      defaultOpen: route.path.includes('stats'),
+      onSelect: () => {
+        isOpen.value = false
+      },
+      children: [
+        {
+          label: 'Users',
+          icon: 'i-lucide-users',
+          to: '/admin/stats/users',
+          onSelect: () => {
+            isOpen.value = false
+          }
+        },
+        {
+          label: 'Workouts',
+          icon: 'i-lucide-activity',
+          to: '/admin/stats/workouts',
+          onSelect: () => {
+            isOpen.value = false
+          }
+        },
+        {
+          label: 'LLM Intelligence',
+          icon: 'i-lucide-brain',
+          to: '/admin/stats/llm',
+          onSelect: () => {
+            isOpen.value = false
+          }
+        },
+        {
+          label: 'Webhooks',
+          icon: 'i-lucide-webhook',
+          to: '/admin/stats/webhooks',
+          onSelect: () => {
+            isOpen.value = false
+          }
+        },
+        {
+          label: 'Developers',
+          icon: 'i-lucide-code',
+          to: '/admin/stats/developers',
+          onSelect: () => {
+            isOpen.value = false
+          }
+        }
+      ]
     },
     {
       label: 'Database Health',
       icon: 'i-lucide-database',
-      to: '/admin/database'
+      to: '/admin/database',
+      onSelect: () => {
+        isOpen.value = false
+      }
     },
     {
       label: 'Webhook Logs',
       icon: 'i-lucide-webhook',
-      to: '/admin/webhooks'
+      to: '/admin/webhooks',
+      onSelect: () => {
+        isOpen.value = false
+      }
     },
     {
       label: 'Back to Site',
       icon: 'i-lucide-arrow-left',
-      to: '/dashboard'
+      to: '/dashboard',
+      onSelect: () => {
+        isOpen.value = false
+      }
     }
-  ]
+  ])
 </script>
 
 <template>
-  <div class="fixed inset-0 flex overflow-hidden bg-gray-50 dark:bg-gray-950">
-    <!-- Sidebar -->
-    <div
-      class="hidden md:flex md:w-64 md:flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+  <UDashboardGroup unit="rem">
+    <UDashboardSidebar
+      id="admin"
+      v-model:open="isOpen"
+      collapsible
+      resizable
+      class="bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800"
+      :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
-      <!-- Header -->
-      <div
-        class="flex h-16 shrink-0 items-center px-4 border-b border-gray-200 dark:border-gray-800"
-      >
-        <span class="text-lg font-bold text-gray-900 dark:text-white">Admin Panel</span>
-      </div>
+      <template #header="{ collapsed }">
+        <NuxtLink
+          to="/admin"
+          class="flex items-center w-full overflow-hidden shrink-0"
+          :class="collapsed ? 'p-1 justify-center' : 'p-4 justify-start lg:justify-center'"
+        >
+          <img
+            v-if="!collapsed"
+            src="/media/coach_watts_text_cropped.webp"
+            alt="Coach Watts"
+            class="h-8 lg:h-10 w-auto object-contain"
+          />
+          <img v-else src="/media/logo.webp" alt="Coach Watts" class="size-12 object-contain" />
+        </NuxtLink>
+      </template>
 
-      <!-- Navigation -->
-      <nav class="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-        <div v-for="link in links" :key="link.to">
-          <NuxtLink
-            :to="link.to"
-            class="group flex items-center gap-x-3 rounded-md p-2 text-sm font-semibold leading-6"
-            :class="[
-              route.path === link.to
-                ? 'bg-gray-50 text-indigo-600 dark:bg-gray-800 dark:text-white'
-                : 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white'
-            ]"
-          >
-            <UIcon :name="link.icon" class="h-6 w-6 shrink-0" aria-hidden="true" />
-            {{ link.label }}
-          </NuxtLink>
-        </div>
-      </nav>
+      <template #default="{ collapsed }">
+        <UNavigationMenu
+          orientation="vertical"
+          :items="links"
+          :collapsed="collapsed"
+          class="px-2"
+        />
+      </template>
 
-      <!-- User -->
-      <div class="border-t border-gray-200 dark:border-gray-800 p-4">
-        <div class="flex items-center gap-3">
-          <UAvatar :src="user?.image || undefined" :alt="user?.name || ''" size="sm" />
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
-              {{ user?.name }}
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-              {{ user?.email }}
-            </p>
+      <template #footer="{ collapsed }">
+        <div class="w-full">
+          <div v-if="!collapsed" class="px-4 pb-2">
+            <div class="flex items-center justify-center gap-4 mb-4">
+              <NuxtLink
+                to="https://www.strava.com"
+                target="_blank"
+                class="hover:opacity-100 transition-opacity"
+              >
+                <img
+                  src="/images/logos/strava_powered_by.png"
+                  alt="Powered by Strava"
+                  class="h-6 w-auto opacity-75 hover:opacity-100"
+                />
+              </NuxtLink>
+              <NuxtLink
+                to="https://www.garmin.com"
+                target="_blank"
+                class="hover:opacity-100 transition-opacity"
+              >
+                <img
+                  src="/images/logos/WorksWithGarmin-Black.svg"
+                  alt="Works with Garmin"
+                  class="h-6 w-auto opacity-75 hover:opacity-100 dark:hidden"
+                />
+                <img
+                  src="/images/logos/WorksWithGarmin-White.svg"
+                  alt="Works with Garmin"
+                  class="h-6 w-auto opacity-75 hover:opacity-100 hidden dark:block"
+                />
+              </NuxtLink>
+            </div>
+            <USeparator class="mb-4" />
+            <div class="flex items-center justify-center gap-2">
+              <UButton
+                to="https://discord.gg/dPYkzg49T9"
+                target="_blank"
+                color="neutral"
+                variant="ghost"
+                icon="i-simple-icons-discord"
+                size="xs"
+                class="flex-1 justify-center"
+              >
+                Discord
+              </UButton>
+              <USeparator orientation="vertical" class="h-4" />
+              <UButton
+                to="https://github.com/newpush/coach"
+                target="_blank"
+                color="neutral"
+                variant="ghost"
+                icon="i-simple-icons-github"
+                size="xs"
+                class="flex-1 justify-center"
+              >
+                GitHub
+              </UButton>
+            </div>
+            <USeparator class="my-2" />
+          </div>
+
+          <div class="p-4 flex items-center gap-3" :class="{ 'justify-center': collapsed }">
+            <UAvatar v-if="user" :alt="user.email || ''" size="md" />
+            <div v-if="!collapsed" class="flex-1 min-w-0 flex flex-col items-start gap-0.5">
+              <p class="text-sm font-medium truncate text-gray-900 dark:text-white">
+                {{ user?.name || user?.email }}
+              </p>
+              <UButton
+                variant="link"
+                color="neutral"
+                size="xs"
+                :padded="false"
+                class="p-0 h-auto font-normal text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                @click="signOut({ callbackUrl: '/login' })"
+              >
+                Sign out
+              </UButton>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </UDashboardSidebar>
 
-    <!-- Main Content -->
-    <div class="flex flex-1 flex-col overflow-hidden">
-      <!-- Header Mobile -->
-      <div
-        class="md:hidden flex h-16 items-center border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4"
-      >
-        <UButton
-          icon="i-heroicons-bars-3"
-          color="neutral"
-          variant="ghost"
-          class="-ml-2"
-          @click="$emit('open-sidebar')"
-        />
-        <span class="ml-2 text-lg font-bold text-gray-900 dark:text-white">Admin Panel</span>
-      </div>
-
-      <!-- Page Content -->
-      <main class="flex-1 overflow-y-auto p-4 md:p-8">
-        <slot />
-      </main>
-    </div>
-  </div>
+    <slot />
+  </UDashboardGroup>
 </template>
