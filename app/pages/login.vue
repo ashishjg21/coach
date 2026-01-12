@@ -165,12 +165,12 @@
       'Unlock your potential with AI-powered endurance coaching. Personalized training plans, recovery analytics, and daily insights for cyclists and runners.',
     ogDescription:
       'Unlock your potential with AI-powered endurance coaching. Personalized training plans, recovery analytics, and daily insights for cyclists and runners.',
-    ogImage: '/images/screenshots/todays_training.png',
+    ogImage: '/images/og-image.png',
     twitterCard: 'summary_large_image',
     twitterTitle: 'Coach Watts - AI Endurance Coaching',
     twitterDescription:
       'Unlock your potential with AI-powered endurance coaching. Personalized training plans, recovery analytics, and daily insights for cyclists and runners.',
-    twitterImage: '/images/screenshots/todays_training.png'
+    twitterImage: '/images/og-image.png'
   })
 
   const loading = ref(false)

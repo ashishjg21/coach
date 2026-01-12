@@ -183,15 +183,19 @@
     auth: false
   })
 
-  useHead({
-    title: 'Join Coach Watts',
-    meta: [
-      {
-        name: 'description',
-        content:
-          'Create your Coach Watts account and start training smarter with your AI digital twin.'
-      }
-    ]
+  useSeoMeta({
+    title: 'Initialize Your Digital Twin',
+    ogTitle: 'Join Coach Watts - AI Endurance Coaching',
+    description:
+      'Start your evolution today. Create your Coach Watts account and access personalized AI training, recovery analytics, and daily coaching insights.',
+    ogDescription:
+      'Start your evolution today. Create your Coach Watts account and access personalized AI training, recovery analytics, and daily coaching insights.',
+    ogImage: '/images/og-image.png',
+    twitterCard: 'summary_large_image',
+    twitterTitle: 'Join Coach Watts - AI Endurance Coaching',
+    twitterDescription:
+      'Start your evolution today. Create your Coach Watts account and access personalized AI training, recovery analytics, and daily coaching insights.',
+    twitterImage: '/images/og-image.png'
   })
 
   const loading = ref(false)

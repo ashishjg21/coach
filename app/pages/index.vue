@@ -76,12 +76,12 @@
       'Coach Watts is your AI-powered endurance coach. Optimize your training, recovery, and nutrition with personalized insights.',
     ogDescription:
       'Coach Watts is your AI-powered endurance coach. Optimize your training, recovery, and nutrition with personalized insights.',
-    ogImage: '/images/screenshots/todays_training.png',
+    ogImage: '/images/og-image.png',
     twitterCard: 'summary_large_image',
     twitterTitle: 'Coach Watts - AI Endurance Coaching',
     twitterDescription:
       'Coach Watts is your AI-powered endurance coach. Optimize your training, recovery, and nutrition with personalized insights.',
-    twitterImage: '/images/screenshots/todays_training.png'
+    twitterImage: '/images/og-image.png'
   })
 
   // Only redirect if authenticated, otherwise stay on landing page
