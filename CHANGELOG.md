@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.5.11](https://github.com/newpush/coach/compare/v0.5.10...v0.5.11) (2026-01-12)
+
+### Bug Fixes
+
+- **db:** improve wellness upsert logic and schema comments ([faf1822](https://github.com/newpush/coach/commit/faf1822ab254f8e22f68533735150cd2c97b2cd8))
+- **infrastructure:** improve chunk error handling with cache-bypassing reloads ([61e63d5](https://github.com/newpush/coach/commit/61e63d5136bd39b3886e42c8caf301d19167c3bb))
+- **pages:** handle undefined data in recommendations sorting logic ([bd725ab](https://github.com/newpush/coach/commit/bd725abd5d831f3d04d1053e619d76ebeb8a8d5a))
+- **pages:** resolve type errors in admin dashboard stats ([7b6e995](https://github.com/newpush/coach/commit/7b6e9953f9d9c384e5fdcb38c9771e5156fd7bed))
+- **ui:** correct date formatting in dashboard and performance charts ([a3a603d](https://github.com/newpush/coach/commit/a3a603dcc5ffe60a026f94b526c18153ec842291))
+
+### Features
+
+- **admin:** add tool usage statistics to llm stats dashboard ([d0bb926](https://github.com/newpush/coach/commit/d0bb9265974ac23d7f4dd8928976f1517cbeac77))
+- **admin:** add webhook hourly volume comparison chart and stats logic ([8015c93](https://github.com/newpush/coach/commit/8015c93d479962d76550960d8e70c1151afab947))
+- **api:** add categories endpoint and filtering support ([925b462](https://github.com/newpush/coach/commit/925b4625a97a1ea9f2b308f7449df3cf6aca62eb))
+- **api:** support ytd filtering across performance and score endpoints ([b841813](https://github.com/newpush/coach/commit/b841813945268d858f7323b4a1e877338588c019))
+- **app:** add build timestamp to version display ([cd1dd37](https://github.com/newpush/coach/commit/cd1dd375d956f496e095e8d9bc63c9a29c94d863))
+- **cli:** add debug command for recommendations module ([26a22f3](https://github.com/newpush/coach/commit/26a22f38f156293deb509a433c9f6fe5b4e303a5))
+- **cli:** add users command group ([dd6f844](https://github.com/newpush/coach/commit/dd6f84497f47dc13f429c7d3a6a81d61f4ad26c3))
+- **cli:** add webhook statistics command ([7c1b169](https://github.com/newpush/coach/commit/7c1b169a891a09cb02688b4edccbcddbd73ea596))
+- **cli:** add wellness debug command ([36a0733](https://github.com/newpush/coach/commit/36a073329a8ee3fda1d2dd6470aa94b068d894e5))
+- **components:** enable ytd option in charts and config modals ([ec6f652](https://github.com/newpush/coach/commit/ec6f65268fc474507dba49346ebe4e2305d86f51))
+- **components:** update wellness modal with ai analysis polling and sleep details ([024dbf9](https://github.com/newpush/coach/commit/024dbf9f17694d84e2eaf5101bbb4808d3dcba6c))
+- **config:** configure analytics-mcp and ignore credentials ([b84dca9](https://github.com/newpush/coach/commit/b84dca9a6820c155d7e84f0b7b509f76cedf2fa6))
+- **core:** add category support and deduplication to recommendations engine ([94f374f](https://github.com/newpush/coach/commit/94f374fa58079f3d39d9b8637437d3ce1888a75c))
+- **pages:** enhance recommendations dashboard with categories, sorting, and optimistic updates ([0d50f3f](https://github.com/newpush/coach/commit/0d50f3f4082d8b2322e6b00f039f8f321c107f34))
+- **pages:** integrate ytd filtering in performance and nutrition dashboards ([6963331](https://github.com/newpush/coach/commit/69633314b9f10cbf4770e3c8e95287af72907c71))
+- **pages:** update fitness and dashboard pages with hrv sdnn and ai status ([80142b0](https://github.com/newpush/coach/commit/80142b0e5350d81bfa99ab4f65f938ced233479c))
+- **seo:** improve seo metadata for login and home pages ([6fc9057](https://github.com/newpush/coach/commit/6fc90578d4a18be86c9d69c3426dbea2bffe0ecb))
+- **trigger:** add hrv sdnn metric to ai context and profile generation ([27d6fdb](https://github.com/newpush/coach/commit/27d6fdb650f3a4394d2275376beea876fe909e1f))
+- **trigger:** integrate wellness analysis into recommendation and profile tasks ([f07f535](https://github.com/newpush/coach/commit/f07f5358db75fa54ad95a1dae75e330b64fe2c3f))
+- **utils:** add helper to get start of year in utc ([04ea9a7](https://github.com/newpush/coach/commit/04ea9a7697cee8200678caa195c1d5e9121f7be9))
+
 ## [0.5.10](https://github.com/newpush/coach/compare/v0.5.9...v0.5.10) (2026-01-11)
 
 ### Bug Fixes
