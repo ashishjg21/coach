@@ -8,6 +8,7 @@ Strict adherence to these guidelines prevents common type errors and ensures lon
 
 - **Always Check Existence**: Never assume an optional property exists.
 - **Use Optional Chaining (`?.`)**: Safely access nested properties.
+
   ```typescript
   // BAD
   const score = activity.wellness.recoveryScore
@@ -15,7 +16,9 @@ Strict adherence to these guidelines prevents common type errors and ensures lon
   // GOOD
   const score = activity.wellness?.recoveryScore
   ```
+
 - **Provide Fallbacks (`??`)**: Use nullish coalescing for numeric calculations or display.
+
   ```typescript
   // BAD
   const total = activity.tss + activity.duration
@@ -27,6 +30,7 @@ Strict adherence to these guidelines prevents common type errors and ensures lon
 ### Array Access
 
 - **Check Bounds/Undefined**: When accessing array elements by index, handle the `undefined` case.
+
   ```typescript
   // BAD
   const val = times[i] - times[startIndex]

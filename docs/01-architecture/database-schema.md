@@ -406,6 +406,7 @@ PENDING → PROCESSING → COMPLETED
    - Most common query pattern: "workouts in last 30 days"
 
 2. **Unique Constraints:**
+
    ```prisma
    @@unique([userId, source, externalId])
    @@unique([userId, date])
