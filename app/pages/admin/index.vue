@@ -65,7 +65,7 @@
                 v-for="(day, idx) in stats.usersByDay"
                 :key="idx"
                 class="flex-1 bg-blue-500 rounded-t-sm transition-all duration-300"
-                :style="{ height: getBarHeight(day.count, maxUsers) }"
+                :style="{ height: getBarHeight(day.count ?? 0, maxUsers) }"
                 :title="`${day.date}: ${day.count} users`"
               />
             </div>
@@ -93,7 +93,7 @@
                 v-for="(day, idx) in stats.workoutsByDay"
                 :key="idx"
                 class="flex-1 bg-green-500 rounded-t-sm transition-all duration-300"
-                :style="{ height: getBarHeight(day.count, maxWorkouts) }"
+                :style="{ height: getBarHeight(day.count ?? 0, maxWorkouts) }"
                 :title="`${day.date}: ${day.count} workouts`"
               />
             </div>
@@ -121,8 +121,8 @@
                 v-for="(day, idx) in stats.aiCostHistory"
                 :key="idx"
                 class="flex-1 bg-purple-500 rounded-t-sm transition-all duration-300"
-                :style="{ height: getBarHeight(day.cost, maxAiCost) }"
-                :title="`${day.date}: $${day.cost.toFixed(4)}`"
+                :style="{ height: getBarHeight(day.cost ?? 0, maxAiCost) }"
+                :title="`${day.date}: $${(day.cost ?? 0).toFixed(4)}`"
               />
             </div>
           </UCard>
