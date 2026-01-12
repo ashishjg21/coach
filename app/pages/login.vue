@@ -158,14 +158,19 @@
     auth: false
   })
 
-  useHead({
-    title: 'Login',
-    meta: [
-      {
-        name: 'description',
-        content: 'Login to your Coach Watts account to access your personalized training dashboard.'
-      }
-    ]
+  useSeoMeta({
+    title: 'AI Endurance Coaching',
+    ogTitle: 'Coach Watts - AI Endurance Coaching',
+    description:
+      'Unlock your potential with AI-powered endurance coaching. Personalized training plans, recovery analytics, and daily insights for cyclists and runners.',
+    ogDescription:
+      'Unlock your potential with AI-powered endurance coaching. Personalized training plans, recovery analytics, and daily insights for cyclists and runners.',
+    ogImage: '/images/screenshots/todays_training.png',
+    twitterCard: 'summary_large_image',
+    twitterTitle: 'Coach Watts - AI Endurance Coaching',
+    twitterDescription:
+      'Unlock your potential with AI-powered endurance coaching. Personalized training plans, recovery analytics, and daily insights for cyclists and runners.',
+    twitterImage: '/images/screenshots/todays_training.png'
   })
 
   const loading = ref(false)
