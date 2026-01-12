@@ -20,6 +20,9 @@ const getGitCommitHash = () => {
 }
 
 const commitHash = getGitCommitHash()
+const date = new Date()
+const buildDate = date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+
 const sentryRelease = `${pkg.name}@${pkg.version}+${commitHash}`
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
@@ -139,6 +142,7 @@ export default defineNuxtConfig({
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3099',
       version: pkg.version,
       commitHash,
+      buildDate,
       sentryRelease,
       authBypassEnabled: !!process.env.AUTH_BYPASS_USER,
       authBypassUser: process.env.AUTH_BYPASS_USER || '',
