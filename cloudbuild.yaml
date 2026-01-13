@@ -32,9 +32,11 @@ steps:
       $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
     entrypoint: launcher # Uses the Buildpack launcher to run the command
     args:
-      - 'npm'
-      - 'run'
-      - 'db:deploy'
+      - 'npx'
+      - '--yes'
+      - 'prisma'
+      - 'migrate'
+      - 'deploy'
     env:
       - DATABASE_URL=$_DATABASE_URL
       - NPM_CONFIG_CACHE=/tmp/npm-cache
