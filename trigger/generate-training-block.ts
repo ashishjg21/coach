@@ -6,7 +6,8 @@ import {
   getUserTimezone,
   getStartOfDaysAgoUTC,
   getStartOfDayUTC,
-  formatUserDate
+  formatUserDate,
+  getUserLocalDate
 } from '../server/utils/date'
 import { getCurrentFitnessSummary } from '../server/utils/training-stress'
 import { getUserAiSettings } from '../server/utils/ai-settings'
@@ -81,6 +82,7 @@ export const generateTrainingBlockTask = task({
     const aiSettings = await getUserAiSettings(userId)
     const now = new Date()
     const localDate = formatUserDate(now, timezone)
+    const userLocalToday = getUserLocalDate(timezone)
 
     // 1. Fetch Context
     const block = await prisma.trainingBlock.findUnique({
@@ -179,23 +181,68 @@ ${profile.planning_context?.opportunities?.length ? `Opportunities: ${profile.pl
       )
       .join('\n')
 
-    // Calculate Explicit Calendar for Prompt
-    // This prevents the AI from generating extra days or misaligning weeks
+    // Calculate Explicit Calendar with strict constraints
+    const weekSchedules: {
+      weekNumber: number
+      startDate: Date
+      endDate: Date
+      validDays: Date[]
+    }[] = []
+    let currentCursor = new Date(block.startDate)
     let calendarContext = ''
-    for (let i = 0; i < block.durationWeeks; i++) {
-      const weekStart = new Date(block.startDate)
-      weekStart.setDate(weekStart.getDate() + i * 7)
 
-      const daysInWeek = []
-      for (let j = 0; j < 7; j++) {
-        const dayDate = new Date(weekStart)
-        dayDate.setDate(dayDate.getDate() + j)
-        const dayName = dayDate.toLocaleDateString('en-US', { weekday: 'long', timeZone: timezone })
-        const dateStr = formatUserDate(dayDate, timezone)
-        daysInWeek.push(`${dayName} (${dateStr})`)
+    for (let i = 0; i < block.durationWeeks; i++) {
+      const weekStart = new Date(currentCursor)
+
+      // Find next Sunday (0)
+      // If current is Sunday(0), it ends today.
+      const currentDay = weekStart.getDay()
+      const daysToSunday = currentDay === 0 ? 0 : 7 - currentDay
+
+      const weekEnd = new Date(weekStart)
+      weekEnd.setDate(weekEnd.getDate() + daysToSunday)
+
+      // Generate valid days
+      const validDays = []
+      const loopDate = new Date(weekStart)
+
+      // We iterate through the days of this "calendar week" segment
+      // and filter out any that are strictly BEFORE "Today" in the user's timezone.
+      // We use string comparison of YYYY-MM-DD to be safe and simple.
+      const todayStr = formatUserDate(userLocalToday, timezone)
+
+      // Helper to avoid infinite loop safety, max 7 days
+      for (let d = 0; d <= daysToSunday; d++) {
+        const dateStr = formatUserDate(loopDate, timezone)
+
+        // Allow today and future
+        if (dateStr >= todayStr) {
+          validDays.push(new Date(loopDate))
+        }
+        loopDate.setDate(loopDate.getDate() + 1)
       }
 
-      calendarContext += `Week ${i + 1}: ${daysInWeek.join(', ')}\n`
+      weekSchedules.push({
+        weekNumber: i + 1,
+        startDate: weekStart,
+        endDate: weekEnd,
+        validDays
+      })
+
+      // Format for Prompt
+      const daysText = validDays
+        .map((d) => {
+          const dayName = d.toLocaleDateString('en-US', { weekday: 'long', timeZone: timezone })
+          const dStr = formatUserDate(d, timezone)
+          return `${dayName} (${dStr})`
+        })
+        .join(', ')
+
+      calendarContext += `Week ${i + 1}: ${daysText || 'No valid training days remaining in this week (Skipped)'}\n`
+
+      // Next week starts next day (Monday)
+      currentCursor = new Date(weekEnd)
+      currentCursor.setDate(currentCursor.getDate() + 1)
     }
 
     // 3. Build Prompt
@@ -269,7 +316,7 @@ ${volumeTargets}
 
 WEEKLY SCHEDULE CONSTRAINTS (Explicit Dates):
 ${calendarContext}
-*Strictly follow this schedule. Only generate workouts for the days listed above for each week.*
+*Strictly follow this schedule. Only generate workouts for the days listed above for each week. If a week has "No valid training days", generate an empty week or rest.*
 
 INSTRUCTIONS:
 Generate a detailed daily training plan for each week in this block (${block.durationWeeks} weeks).
@@ -329,19 +376,23 @@ Return valid JSON matching the schema provided.`
         }
 
         for (const weekData of result.weeks) {
-          // Calculate dates
-          const weekStartDate = new Date(block.startDate)
-          weekStartDate.setDate(weekStartDate.getDate() + (weekData.weekNumber - 1) * 7)
-          const weekEndDate = new Date(weekStartDate)
-          weekEndDate.setDate(weekEndDate.getDate() + 6)
+          const scheduleIndex = weekData.weekNumber - 1
+          const schedule = weekSchedules[scheduleIndex]
+
+          if (!schedule) {
+            logger.warn('AI generated extra week not in schedule', {
+              weekNumber: weekData.weekNumber
+            })
+            continue
+          }
 
           // Create Week
           const createdWeek = await tx.trainingWeek.create({
             data: {
               blockId,
               weekNumber: weekData.weekNumber,
-              startDate: weekStartDate,
-              endDate: weekEndDate,
+              startDate: schedule.startDate,
+              endDate: schedule.endDate,
               focus: weekData.focus_label || weekData.focus_key || 'Training Week',
               focusKey: weekData.focus_key,
               focusLabel: weekData.focus_label,
@@ -356,40 +407,35 @@ Return valid JSON matching the schema provided.`
           })
 
           // Create Workouts
-          const workoutsData = weekData.workouts.map((workout: any, index: number) => {
-            // Logic assuming Block Start is ALWAYS aligned to start of week (e.g. Monday)
-            // Mon=1 -> offset 0
-            // Sun=0 -> offset 6
+          const workoutsData = weekData.workouts
+            .map((workout: any, index: number) => {
+              // Find the exact date from validDays matching this dayOfWeek
+              const targetDate = schedule.validDays.find((d) => d.getDay() === workout.dayOfWeek)
 
-            // Validate dayOfWeek (0-6)
-            let dayOfWeek = workout.dayOfWeek
-            if (dayOfWeek < 0 || dayOfWeek > 6) {
-              logger.warn('Invalid dayOfWeek from AI, clamping', {
-                dayOfWeek,
-                weekNumber: weekData.weekNumber
-              })
-              dayOfWeek = Math.max(0, Math.min(6, dayOfWeek))
-            }
+              if (!targetDate) {
+                logger.warn('Skipping workout for invalid day (past or outside week)', {
+                  week: weekData.weekNumber,
+                  dayOfWeek: workout.dayOfWeek
+                })
+                return null
+              }
 
-            const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-            const workoutDate = new Date(weekStartDate)
-            workoutDate.setDate(workoutDate.getDate() + offset)
-
-            return {
-              userId,
-              trainingWeekId: createdWeek.id,
-              date: workoutDate,
-              title: workout.title,
-              description: workout.description,
-              type: workout.type,
-              durationSec: (workout.durationMinutes || 0) * 60,
-              tss: workout.tssEstimate,
-              workIntensity: getIntensityScore(workout.intensity),
-              externalId: `ai-gen-${createdWeek.id}-${dayOfWeek}-${index}-${Date.now()}`,
-              category: 'WORKOUT',
-              managedBy: 'COACH_WATTS'
-            }
-          })
+              return {
+                userId,
+                trainingWeekId: createdWeek.id,
+                date: targetDate,
+                title: workout.title,
+                description: workout.description,
+                type: workout.type,
+                durationSec: (workout.durationMinutes || 0) * 60,
+                tss: workout.tssEstimate,
+                workIntensity: getIntensityScore(workout.intensity),
+                externalId: `ai-gen-${createdWeek.id}-${workout.dayOfWeek}-${index}-${Date.now()}`,
+                category: 'WORKOUT',
+                managedBy: 'COACH_WATTS'
+              }
+            })
+            .filter((w: any) => w !== null)
 
           if (workoutsData.length > 0) {
             await tx.plannedWorkout.createMany({
