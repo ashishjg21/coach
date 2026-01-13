@@ -85,29 +85,10 @@ export const generateTrainingBlockTask = task({
 
     if (!block) throw new Error('Block not found')
 
-    const [user, availability] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: { ftp: true, weight: true, maxHr: true, aiPersona: true }
-      }),
-      prisma.trainingAvailability.findMany({
-        where: { userId }
-      })
-    ])
-
-    // 2. Format Availability Context
-    const scheduleContext = availability
-      .map((day) => {
-        const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day.dayOfWeek]
-        const slots = []
-        if (day.morning) slots.push('Morning')
-        if (day.afternoon) slots.push('Afternoon')
-        if (day.evening) slots.push('Evening')
-
-        if (slots.length === 0) return `${dayName}: REST DAY (No availability)`
-        return `${dayName}: Available (${slots.join(', ')}) - Preferred: ${day.preferredTypes ? JSON.stringify(day.preferredTypes) : 'Any'}`
-      })
-      .join('\n')
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { ftp: true, weight: true, maxHr: true, aiPersona: true }
+    })
 
     // 3. Build Prompt
     const eventsList =
@@ -157,17 +138,15 @@ BLOCK CONTEXT:
 - Progression Logic: ${block.progressionLogic || 'Standard linear progression'}
 - Recovery Week: Week ${block.recoveryWeekIndex || 4} is a recovery week.
 
-WEEKLY SCHEDULE CONSTRAINTS:
-${scheduleContext || 'No specific constraints, assume standard training week (Mon rest, Tue/Thu intensity, Sat/Sun long).'}
-
 INSTRUCTIONS:
 Generate a detailed daily training plan for each week in this block (${block.durationWeeks} weeks).
-- Adhere strictly to the Schedule Constraints (do not schedule workouts on unavailable days).
 - ONLY use the "Allowed Workout Types" listed above, UNLESS the athlete's custom instructions explicitly request otherwise (Custom Instructions take precedence).
 - Ensure progressive overload from week 1 to ${block.durationWeeks - 1}.
 - Ensure the recovery week (if applicable) has significantly reduced volume and intensity.
 - For "Ride" workouts, provide realistic TSS estimates based on duration and intensity.
 - Workout types: ${allowedTypesString}, Rest, Active Recovery.
+- Start each week on a Monday.
+- Provide a summary for each week explaining the focus and volume.
 
 OUTPUT FORMAT:
 Return valid JSON matching the schema provided.`
