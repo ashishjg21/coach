@@ -145,6 +145,13 @@ export const IntervalsService = {
     const gradeData = (streams.grade?.data as number[]) || null
     const movingData = (streams.moving?.data as boolean[]) || null
 
+    // New streams (2026-01-13)
+    const torqueData = (streams.torque?.data as number[]) || null
+    const tempData = (streams.temp?.data as number[]) || null
+    const respirationData = (streams.respiration?.data as number[]) || null
+    const hrvData = (streams.hrv?.data as number[]) || null
+    const leftRightBalanceData = (streams.left_right_balance?.data as number[]) || null
+
     // Calculate pacing metrics
     let lapSplits = null
     let paceVariability = null
@@ -194,6 +201,11 @@ export const IntervalsService = {
         latlng: latlngData as any,
         grade: gradeData,
         moving: movingData,
+        torque: torqueData as any,
+        temp: tempData as any,
+        respiration: respirationData as any,
+        hrv: hrvData as any,
+        leftRightBalance: leftRightBalanceData as any,
         lapSplits: lapSplits as any,
         paceVariability,
         avgPacePerKm,
@@ -211,6 +223,11 @@ export const IntervalsService = {
         latlng: latlngData as any,
         grade: gradeData,
         moving: movingData,
+        torque: torqueData as any,
+        temp: tempData as any,
+        respiration: respirationData as any,
+        hrv: hrvData as any,
+        leftRightBalance: leftRightBalanceData as any,
         lapSplits: lapSplits as any,
         paceVariability,
         avgPacePerKm,

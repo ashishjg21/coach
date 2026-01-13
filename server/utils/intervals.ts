@@ -1003,12 +1003,23 @@ export async function fetchIntervalsActivityStreams(
       }
       streams.latlng = { type: 'latlng', data: latlng }
     }
+
+    // Map velocity_smooth to velocity if velocity is missing
+    if (!streams.velocity && streams.velocity_smooth) {
+      streams.velocity = { type: 'velocity', data: streams.velocity_smooth.data as number[] }
+    }
+
+    // Map fixed_altitude to altitude if altitude is missing
+    if (!streams.altitude && streams.fixed_altitude) {
+      streams.altitude = { type: 'altitude', data: streams.fixed_altitude.data as number[] }
+    }
   }
   // Fallback for object format if it ever exists
   else if (typeof data === 'object' && data !== null) {
     if (data.time) streams.time = { type: 'time', data: data.time }
     if (data.distance) streams.distance = { type: 'distance', data: data.distance }
-    if (data.velocity) streams.velocity = { type: 'velocity', data: data.velocity }
+    if (data.velocity || data.velocity_smooth)
+      streams.velocity = { type: 'velocity', data: data.velocity || data.velocity_smooth }
     if (data.heartrate || data.hr)
       streams.heartrate = { type: 'heartrate', data: data.heartrate || data.hr }
     if (data.cadence || data.cad)

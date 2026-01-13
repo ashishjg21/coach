@@ -1,6 +1,7 @@
 import { prisma } from '../db'
 import { generateStructuredAnalysis } from '../gemini'
 import { wellnessRepository } from '../repositories/wellnessRepository'
+import { getUserAiSettings } from '../ai-settings'
 
 // Define the schema for the AI analysis
 const wellnessAnalysisSchema = {
@@ -57,6 +58,8 @@ export async function analyzeWellness(wellnessId: string, userId: string) {
   }
 
   try {
+    const aiSettings = await getUserAiSettings(userId)
+
     // Fetch 30-day history for context
     const endDate = wellness.date
     const startDate = new Date(wellness.date)
@@ -147,7 +150,8 @@ export async function analyzeWellness(wellnessId: string, userId: string) {
     }
 
     const prompt = `
-    Analyze this athlete's daily wellness data.
+    Analyze this athlete's daily wellness data as an expert **${aiSettings.aiPersona}** coach.
+    Adapt your tone and recommendations to match your **${aiSettings.aiPersona}** persona.
 
     CURRENT DAY (${wellness.date.toISOString().split('T')[0]}):
     - Recovery Score: ${wellness.recoveryScore}%
@@ -182,12 +186,17 @@ export async function analyzeWellness(wellnessId: string, userId: string) {
   `
 
     // Generate analysis using Gemini
-    const analysis = await generateStructuredAnalysis(prompt, wellnessAnalysisSchema, 'flash', {
-      userId,
-      operation: 'wellness_analysis',
-      entityType: 'Wellness',
-      entityId: wellnessId
-    })
+    const analysis = await generateStructuredAnalysis(
+      prompt,
+      wellnessAnalysisSchema,
+      aiSettings.aiModelPreference,
+      {
+        userId,
+        operation: 'wellness_analysis',
+        entityType: 'Wellness',
+        entityId: wellnessId
+      }
+    )
 
     // Save the result
     await prisma.wellness.update({
