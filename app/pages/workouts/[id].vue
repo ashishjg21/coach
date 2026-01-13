@@ -234,25 +234,41 @@
                       </div>
                     </div>
                   </div>
-                  <div class="flex gap-2">
-                    <span
-                      v-if="workout.deviceName && !['garmin', 'zwift'].includes(workout.source)"
-                      class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-                    >
-                      {{ workout.deviceName }}
-                    </span>
-                    <span
-                      v-if="!['strava', 'garmin', 'zwift'].includes(workout.source)"
-                      :class="getSourceBadgeClass(workout.source)"
-                    >
-                      {{ workout.source }}
-                    </span>
+                  <div class="flex gap-2 items-end">
+                    <!-- Device Badge/Attribution -->
+                    <template v-if="workout.deviceName">
+                      <!-- If device matches a known provider (e.g. Zwift, Apple Watch) and is distinct from source -->
+                      <UiDataAttribution
+                        v-if="
+                          detectProvider(workout.deviceName) &&
+                          detectProvider(workout.deviceName) !== workout.source
+                        "
+                        :provider="detectProvider(workout.deviceName) || ''"
+                        :device-name="workout.deviceName"
+                      />
+                      <!-- Fallback text badge if device name doesn't match a provider rule -->
+                      <!-- We hide this if source is 'garmin' because Garmin attribution includes device name -->
+                      <span
+                        v-else-if="
+                          !detectProvider(workout.deviceName) &&
+                          workout.source !== 'garmin' &&
+                          workout.source !== 'zwift'
+                        "
+                        class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                      >
+                        {{ workout.deviceName }}
+                      </span>
+                    </template>
+
+                    <!-- Source Badge/Attribution -->
                     <UiDataAttribution
-                      v-if="['strava', 'garmin', 'zwift'].includes(workout.source)"
+                      v-if="['strava', 'garmin', 'zwift', 'apple_health'].includes(workout.source)"
                       :provider="workout.source"
                       :device-name="workout.deviceName"
-                      class="self-center"
                     />
+                    <span v-else :class="getSourceBadgeClass(workout.source)">
+                      {{ workout.source }}
+                    </span>
                   </div>
                 </div>
 
@@ -1913,6 +1929,15 @@
       path: '/chat',
       query: { workoutId: workout.value.id }
     })
+  }
+
+  function detectProvider(name: string | undefined): string | undefined {
+    if (!name) return undefined
+    const lower = name.toLowerCase()
+    if (lower.includes('zwift')) return 'zwift'
+    if (lower.includes('garmin')) return 'garmin'
+    if (lower.includes('apple')) return 'apple_health'
+    return undefined
   }
 
   // Load data on mount

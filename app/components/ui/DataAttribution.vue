@@ -1,7 +1,7 @@
 <template>
   <div v-if="rule" :class="containerClasses">
     <!-- Logo -->
-    <div class="relative flex items-center">
+    <div class="relative flex items-end">
       <img
         :src="rule.logoLight"
         :alt="`Data from ${provider}`"
@@ -10,7 +10,11 @@
       <img
         :src="rule.logoDark"
         :alt="`Data from ${provider}`"
-        :class="[rule.logoHeightClass, 'w-auto object-contain hidden dark:block']"
+        :class="[
+          rule.logoHeightClass,
+          'w-auto object-contain hidden dark:block',
+          rule.invertInDarkMode ? 'invert' : ''
+        ]"
       />
     </div>
 
@@ -50,7 +54,7 @@
   })
 
   const containerClasses = computed(() => {
-    const classes = ['flex', 'items-center', 'select-none']
+    const classes = ['flex', 'items-end', 'select-none']
 
     switch (props.mode) {
       case 'overlay':
