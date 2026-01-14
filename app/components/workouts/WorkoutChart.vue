@@ -51,6 +51,7 @@
                 v-for="(step, index) in workout.steps"
                 :key="index"
                 class="relative flex items-end h-full"
+                :class="{ 'z-30': hoveredStep === step }"
                 :style="getStepContainerStyle(step)"
                 @mouseenter="hoveredStep = step"
                 @mouseleave="hoveredStep = null"
