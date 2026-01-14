@@ -1,4 +1,9 @@
 <script setup lang="ts">
+  import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
+  import { Pie } from 'vue-chartjs'
+
+  ChartJS.register(ArcElement, Tooltip, Legend)
+
   definePageMeta({
     layout: 'admin',
     middleware: ['auth', 'admin']
@@ -8,6 +13,43 @@
 
   useHead({
     title: 'User Statistics'
+  })
+
+  const pieOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right' as const,
+        labels: {
+          boxWidth: 12
+        }
+      }
+    }
+  }
+
+  // Generate consistent colors for countries
+  const getCountryColor = (country: string) => {
+    // Simple hash to color
+    let hash = 0
+    for (let i = 0; i < country.length; i++) {
+      hash = country.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const c = (hash & 0x00ffffff).toString(16).toUpperCase()
+    return '#' + '00000'.substring(0, 6 - c.length) + c
+  }
+
+  const countryChartData = computed(() => {
+    if (!stats.value?.usersByCountry) return { labels: [], datasets: [] }
+    return {
+      labels: stats.value.usersByCountry.map((c: any) => c.country),
+      datasets: [
+        {
+          backgroundColor: stats.value.usersByCountry.map((c: any) => getCountryColor(c.country)),
+          data: stats.value.usersByCountry.map((c: any) => c.count)
+        }
+      ]
+    }
   })
 </script>
 
@@ -40,24 +82,41 @@
             </UCard>
             <UCard>
               <div class="text-center">
-                <div class="text-xs font-bold text-green-500 uppercase tracking-widest mb-1">
+                <div
+                  class="flex items-center justify-center gap-1 text-xs font-bold text-green-500 uppercase tracking-widest mb-1"
+                >
                   Active (30d)
+                  <UTooltip text="Users who logged at least one workout in the last 30 days">
+                    <UIcon name="i-lucide-info" class="w-3.5 h-3.5 text-gray-400" />
+                  </UTooltip>
                 </div>
                 <div class="text-3xl font-bold">{{ stats?.activity.activeLast30Days }}</div>
               </div>
             </UCard>
             <UCard>
               <div class="text-center">
-                <div class="text-xs font-bold text-red-500 uppercase tracking-widest mb-1">
+                <div
+                  class="flex items-center justify-center gap-1 text-xs font-bold text-red-500 uppercase tracking-widest mb-1"
+                >
                   Inactive
+                  <UTooltip text="Users who have not logged a workout in the last 30 days">
+                    <UIcon name="i-lucide-info" class="w-3.5 h-3.5 text-gray-400" />
+                  </UTooltip>
                 </div>
                 <div class="text-3xl font-bold">{{ stats?.activity.inactiveUsers }}</div>
               </div>
             </UCard>
             <UCard>
               <div class="text-center">
-                <div class="text-xs font-bold text-blue-500 uppercase tracking-widest mb-1">
+                <div
+                  class="flex items-center justify-center gap-1 text-xs font-bold text-blue-500 uppercase tracking-widest mb-1"
+                >
                   Retention Rate
+                  <UTooltip
+                    text="Percentage of total users who are active (logged a workout in the last 30 days)"
+                  >
+                    <UIcon name="i-lucide-info" class="w-3.5 h-3.5 text-gray-400" />
+                  </UTooltip>
                 </div>
                 <div class="text-3xl font-bold">
                   {{ stats?.activity.retentionRate.toFixed(1) }}%
@@ -177,22 +236,45 @@
             </UCard>
           </div>
 
-          <!-- Auth Providers -->
-          <UCard>
-            <template #header>
-              <h3 class="font-semibold">Authentication Methods</h3>
-            </template>
-            <div class="flex gap-4 flex-wrap">
-              <div
-                v-for="item in stats?.authProviders"
-                :key="item.provider"
-                class="px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg flex flex-col items-center min-w-[100px]"
-              >
-                <span class="font-bold text-lg">{{ item.count }}</span>
-                <span class="text-xs text-gray-500 uppercase">{{ item.provider }}</span>
+          <!-- Demographics & Auth -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Auth Providers -->
+            <UCard>
+              <template #header>
+                <h3 class="font-semibold">Authentication Methods</h3>
+              </template>
+              <div class="flex gap-4 flex-wrap">
+                <div
+                  v-for="item in stats?.authProviders"
+                  :key="item.provider"
+                  class="px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg flex flex-col items-center min-w-[100px]"
+                >
+                  <span class="font-bold text-lg">{{ item.count }}</span>
+                  <span class="text-xs text-gray-500 uppercase">{{ item.provider }}</span>
+                </div>
               </div>
-            </div>
-          </UCard>
+            </UCard>
+
+            <!-- Users by Country -->
+            <UCard>
+              <template #header>
+                <h3 class="font-semibold">Users by Country</h3>
+              </template>
+              <div class="h-64 relative">
+                <Pie :data="countryChartData" :options="pieOptions" />
+              </div>
+              <div class="mt-4 space-y-2 border-t border-gray-100 dark:border-gray-800 pt-4">
+                <div
+                  v-for="item in stats?.usersByCountry.slice(0, 3)"
+                  :key="item.country"
+                  class="flex justify-between text-xs"
+                >
+                  <span class="font-medium truncate">{{ item.country }}</span>
+                  <span class="text-gray-500 font-mono">{{ item.count }} users</span>
+                </div>
+              </div>
+            </UCard>
+          </div>
         </template>
       </div>
     </template>

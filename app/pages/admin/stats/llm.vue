@@ -54,13 +54,114 @@
     }
   }
 
+  const stackedBarOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          boxWidth: 12,
+          padding: 15
+        }
+      }
+    },
+    scales: {
+      x: {
+        stacked: true,
+        grid: {
+          display: false
+        }
+      },
+      y: {
+        stacked: true,
+        beginAtZero: true
+      }
+    }
+  }
+
+  // Helper to generate consistent colors for models
+  const getModelColor = (model: string) => {
+    const colors: Record<string, string> = {
+      'gemini-2.0-flash-exp': '#3b82f6', // Blue
+      'gemini-1.5-flash': '#60a5fa', // Light Blue
+      'gemini-1.5-pro': '#8b5cf6', // Purple
+      'gpt-4o': '#10b981', // Emerald
+      'gpt-4o-mini': '#34d399', // Light Emerald
+      'claude-3-5-sonnet': '#f59e0b' // Amber
+    }
+    // Hash string to hex color fallback
+    if (!colors[model]) {
+      let hash = 0
+      for (let i = 0; i < model.length; i++) {
+        hash = model.charCodeAt(i) + ((hash << 5) - hash)
+      }
+      const c = (hash & 0x00ffffff).toString(16).toUpperCase()
+      return '#' + '00000'.substring(0, 6 - c.length) + c
+    }
+    return colors[model]
+  }
+
+  const dailyCostsChartData = computed(() => {
+    if (!stats.value?.dailyCostsByModel) return { labels: [], datasets: [] }
+
+    const data = stats.value.dailyCostsByModel
+    // Get unique dates sorted
+    const dates = [...new Set(data.map((d) => d.date))].sort()
+    // Get unique models
+    const models = [...new Set(data.map((d) => d.model))]
+
+    return {
+      labels: dates.map((d) =>
+        new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      ),
+      datasets: models.map((model) => {
+        return {
+          label: model,
+          backgroundColor: getModelColor(model),
+          data: dates.map((date) => {
+            const entry = data.find((d) => d.date === date && d.model === model)
+            return entry ? entry.cost : 0
+          })
+        }
+      })
+    }
+  })
+
+  const dailyUsersChartData = computed(() => {
+    if (!stats.value?.dailyUsersByModel) return { labels: [], datasets: [] }
+
+    const data = stats.value.dailyUsersByModel
+    // Get unique dates sorted
+    const dates = [...new Set(data.map((d) => d.date))].sort()
+    // Get unique models
+    const models = [...new Set(data.map((d) => d.model))]
+
+    return {
+      labels: dates.map((d) =>
+        new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      ),
+      datasets: models.map((model) => {
+        return {
+          label: model,
+          backgroundColor: getModelColor(model),
+          data: dates.map((date) => {
+            const entry = data.find((d) => d.date === date && d.model === model)
+            return entry ? entry.count : 0
+          })
+        }
+      })
+    }
+  })
+
   const modelChartData = computed(() => {
     if (!stats.value?.usageByModel) return { labels: [], datasets: [] }
     return {
       labels: stats.value.usageByModel.map((m) => m.model),
       datasets: [
         {
-          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+          backgroundColor: stats.value.usageByModel.map((m) => getModelColor(m.model)),
           data: stats.value.usageByModel.map((m) => m.count)
         }
       ]
@@ -171,6 +272,27 @@
                   (((stats?.tokens.completion || 0) / (stats?.tokens.total || 1)) * 100).toFixed(0)
                 }}% of total
               </div>
+            </div>
+          </UCard>
+        </div>
+
+        <!-- NEW: Daily Trends -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <UCard>
+            <template #header>
+              <h3 class="font-semibold">Daily Costs by Model</h3>
+            </template>
+            <div class="h-64 relative">
+              <Bar :data="dailyCostsChartData" :options="stackedBarOptions" />
+            </div>
+          </UCard>
+
+          <UCard>
+            <template #header>
+              <h3 class="font-semibold">Daily Active Users by Model</h3>
+            </template>
+            <div class="h-64 relative">
+              <Bar :data="dailyUsersChartData" :options="stackedBarOptions" />
             </div>
           </UCard>
         </div>

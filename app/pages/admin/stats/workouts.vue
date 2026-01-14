@@ -1,4 +1,16 @@
 <script setup lang="ts">
+  import {
+    Chart as ChartJS,
+    Tooltip,
+    Legend,
+    BarElement,
+    CategoryScale,
+    LinearScale
+  } from 'chart.js'
+  import { Bar } from 'vue-chartjs'
+
+  ChartJS.register(Tooltip, Legend, BarElement, CategoryScale, LinearScale)
+
   definePageMeta({
     layout: 'admin',
     middleware: ['auth', 'admin']
@@ -10,9 +22,86 @@
     title: 'Workout Stats'
   })
 
-  const maxDailyWorkouts = computed(() => {
-    if (!stats.value?.workoutsByDay) return 1
-    return Math.max(...stats.value.workoutsByDay.map((d: any) => d.count)) || 1
+  // Chart Options for Stacked Bar
+  const stackedBarOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom' as const,
+        labels: {
+          boxWidth: 12,
+          padding: 15
+        }
+      },
+      tooltip: {
+        mode: 'index' as const,
+        intersect: false
+      }
+    },
+    scales: {
+      x: {
+        stacked: true,
+        grid: {
+          display: false
+        }
+      },
+      y: {
+        stacked: true,
+        beginAtZero: true
+      }
+    }
+  }
+
+  // Consistent colors for workout types
+  const getWorkoutColor = (type: string) => {
+    const colors: Record<string, string> = {
+      Ride: '#ef4444', // Red
+      Run: '#3b82f6', // Blue
+      Swim: '#0ea5e9', // Light Blue
+      WeightTraining: '#f59e0b', // Amber
+      Walk: '#10b981', // Emerald
+      Hike: '#22c55e', // Green
+      Yoga: '#8b5cf6', // Purple
+      Workout: '#6366f1' // Indigo
+    }
+    // Fallback hash color
+    if (!colors[type]) {
+      let hash = 0
+      for (let i = 0; i < type.length; i++) {
+        hash = type.charCodeAt(i) + ((hash << 5) - hash)
+      }
+      const c = (hash & 0x00ffffff).toString(16).toUpperCase()
+      return '#' + '00000'.substring(0, 6 - c.length) + c
+    }
+    return colors[type]
+  }
+
+  const dailyVolumeChartData = computed(() => {
+    if (!stats.value?.workoutsByDay) return { labels: [], datasets: [] }
+
+    const data = stats.value.workoutsByDay
+    // Get unique dates sorted
+    const dates = [...new Set(data.map((d: any) => d.date))].sort()
+    // Get unique types
+    const types = [...new Set(data.map((d: any) => d.type))]
+
+    return {
+      labels: dates.map((d: any) =>
+        new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      ),
+      datasets: types.map((type: any) => {
+        return {
+          label: type,
+          backgroundColor: getWorkoutColor(type),
+          data: dates.map((date: any) => {
+            const entry = data.find((d: any) => d.date === date && d.type === type)
+            return entry ? entry.count : 0
+          })
+        }
+      })
+    }
   })
 </script>
 
@@ -94,23 +183,8 @@
               <span class="text-xs text-gray-500">Last 30 Days</span>
             </div>
           </template>
-          <div class="h-64">
-            <div v-if="stats" class="flex items-end justify-between h-full pt-4 gap-1">
-              <div
-                v-for="day in stats.workoutsByDay"
-                :key="day.date"
-                class="group relative flex-1 bg-blue-500 rounded-t transition-all hover:bg-blue-600"
-                :style="{
-                  height: `${(day.count / maxDailyWorkouts) * 100}%`
-                }"
-              >
-                <div
-                  class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10"
-                >
-                  {{ day.date }}: {{ day.count }} workouts
-                </div>
-              </div>
-            </div>
+          <div class="h-64 relative">
+            <Bar :data="dailyVolumeChartData" :options="stackedBarOptions" />
           </div>
         </UCard>
 
