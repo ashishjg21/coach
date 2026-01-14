@@ -27,18 +27,19 @@ export function useUserRuns() {
   const fetchActiveRuns = async () => {
     if (isLoading.value && !pollInterval) return
 
-    console.log('[useUserRuns] Fetching active runs...')
     isLoading.value = true
     try {
       const data = await $fetch<TriggerRun[]>('/api/runs/active')
-      console.log('[useUserRuns] Fetched runs:', data.length)
 
-      const finalRuns = [...runs.value]
-      const existingMap = new Map(finalRuns.map((r) => [r.id, r]))
+      // Create a map from the new API data
+      const newRunsMap = new Map<string, TriggerRun>()
+      data.forEach((run) => newRunsMap.set(run.id, run))
 
-      data.forEach((apiRun) => {
-        const existing = existingMap.get(apiRun.id)
-        if (existing) {
+      // Check existing runs for any local final states we want to preserve
+      // (e.g. if API is slightly behind and says EXECUTING but we know it's COMPLETED via WS)
+      runs.value.forEach((existing) => {
+        if (newRunsMap.has(existing.id)) {
+          const apiRun = newRunsMap.get(existing.id)!
           const isLocalFinal = ['COMPLETED', 'FAILED', 'CANCELED', 'TIMED_OUT'].includes(
             existing.status
           )
@@ -47,23 +48,18 @@ export function useUserRuns() {
           )
 
           if (isLocalFinal && !isApiFinal) {
-            console.log(
-              `[useUserRuns] Preserving local final status for ${apiRun.id} (${existing.status} vs API ${apiRun.status})`
-            )
-            Object.assign(existing, { ...apiRun, status: existing.status })
-          } else {
-            Object.assign(existing, apiRun)
+            // Overwrite API run status with local final status
+            Object.assign(apiRun, { ...existing, status: existing.status })
           }
-        } else {
-          finalRuns.push(apiRun)
-          existingMap.set(apiRun.id, apiRun)
         }
       })
 
+      const finalRuns = Array.from(newRunsMap.values())
       finalRuns.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
+
       runs.value = finalRuns
     } catch (e) {
-      console.error('[useUserRuns] Failed to fetch active runs:', e)
+      // Failed to fetch active runs
     } finally {
       isLoading.value = false
     }
@@ -72,7 +68,6 @@ export function useUserRuns() {
   // --- Polling ---
   const startPolling = () => {
     if (pollInterval) return
-    console.log('[useUserRuns] Starting polling fallback')
     pollInterval = setInterval(() => {
       if (!isConnected.value && activeSubscribers > 0) {
         fetchActiveRuns()
@@ -82,7 +77,6 @@ export function useUserRuns() {
 
   const stopPolling = () => {
     if (pollInterval) {
-      console.log('[useUserRuns] Stopping polling')
       clearInterval(pollInterval)
       pollInterval = null
     }
@@ -91,34 +85,32 @@ export function useUserRuns() {
   // --- WebSocket ---
   const connectWebSocket = () => {
     if (ws) return
-    if (!session.value?.user?.id) {
-      console.log('[useUserRuns] Skipping WS connect: No user ID')
+    if (!session.value?.user || !(session.value.user as any).id) {
       return
     }
 
-    console.log('[useUserRuns] Connecting WebSocket...')
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const url = `${protocol}//${window.location.host}/api/websocket`
 
     ws = new WebSocket(url)
 
     ws.onopen = () => {
-      console.log('[useUserRuns] WS Connected')
       isConnected.value = true
       stopPolling()
-      ws?.send(
-        JSON.stringify({
-          type: 'subscribe_user',
-          userId: session.value.user.id
-        })
-      )
+      if (session.value?.user && (session.value.user as any).id) {
+        ws?.send(
+          JSON.stringify({
+            type: 'subscribe_user',
+            userId: (session.value.user as any).id
+          })
+        )
+      }
     }
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
         if (data.type === 'run_update') {
-          console.log('[useUserRuns] Received update:', data.taskIdentifier, data.status)
           handleRunUpdate(data)
         }
       } catch (e) {
@@ -127,7 +119,6 @@ export function useUserRuns() {
     }
 
     ws.onclose = () => {
-      console.log('[useUserRuns] WS Closed')
       isConnected.value = false
       ws = null
       startPolling()
@@ -144,30 +135,27 @@ export function useUserRuns() {
       id: update.runId,
       taskIdentifier:
         update.taskIdentifier ||
-        (existingIndex !== -1 ? runs.value[existingIndex].taskIdentifier : 'Unknown Task'),
+        (existingIndex !== -1 ? runs.value[existingIndex]?.taskIdentifier : 'Unknown Task'),
       status: update.status,
       startedAt:
         update.startedAt ||
-        (existingIndex !== -1 ? runs.value[existingIndex].startedAt : new Date().toISOString()),
+        (existingIndex !== -1 ? runs.value[existingIndex]?.startedAt : new Date().toISOString()),
       finishedAt: update.finishedAt,
       output: update.output,
       error: update.error
     }
 
+    const newRuns = [...runs.value]
     if (existingIndex !== -1) {
-      runs.value[existingIndex] = { ...runs.value[existingIndex], ...updatedRun }
+      newRuns[existingIndex] = { ...newRuns[existingIndex], ...updatedRun }
     } else {
-      runs.value.unshift(updatedRun)
+      newRuns.unshift(updatedRun)
     }
+    runs.value = newRuns
   }
 
   const cancelRun = async (runId: string) => {
-    try {
-      await $fetch(`/api/runs/${runId}`, { method: 'DELETE' })
-    } catch (e) {
-      console.error(`[useUserRuns] Failed to cancel run ${runId}:`, e)
-      throw e
-    }
+    await $fetch(`/api/runs/${runId}`, { method: 'DELETE' as any })
   }
 
   const init = async () => {
@@ -183,7 +171,7 @@ export function useUserRuns() {
 
   if (import.meta.client) {
     watch(
-      () => session.value?.user?.id,
+      () => (session.value?.user as any)?.id,
       (newId) => {
         if (newId && !ws) {
           connectWebSocket()
@@ -241,8 +229,7 @@ export function useUserRunsState() {
           const isCompleted = newRun.status === 'COMPLETED'
           if (isCompleted) {
             const oldRun = oldRuns?.find((r) => r.id === newRun.id)
-            if (!oldRun || oldRun.status !== 'COMPLETED') {
-              console.log(`[useUserRuns] Task completed: ${taskIdentifier} (${newRun.id})`)
+            if (oldRun && oldRun.status !== 'COMPLETED') {
               callback(newRun)
             }
           }
