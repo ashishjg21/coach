@@ -206,6 +206,16 @@
       >
         <h3 class="font-semibold text-lg">{{ selectedBlock.name }} - Overview</h3>
         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+          <UTooltip text="Show independent workouts not part of this plan">
+            <UButton
+              :icon="showIndependentWorkouts ? 'i-heroicons-eye' : 'i-heroicons-eye-slash'"
+              :color="showIndependentWorkouts ? 'primary' : 'neutral'"
+              variant="ghost"
+              size="xs"
+              :loading="fetchingIndependent"
+              @click="showIndependentWorkouts = !showIndependentWorkouts"
+            />
+          </UTooltip>
           <UButton
             size="xs"
             color="primary"
@@ -280,7 +290,7 @@
                         title="Structured Workout"
                       />
                       <UButton
-                        v-if="selectedWeek?.workouts.some((w: any) => !w.structuredWorkout)"
+                        v-if="visibleWorkouts.some((w: any) => !w.structuredWorkout)"
                         size="xs"
                         color="primary"
                         variant="ghost"
@@ -297,18 +307,27 @@
               </thead>
               <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                 <tr
-                  v-for="workout in selectedWeek.workouts"
+                  v-for="workout in visibleWorkouts"
                   :key="workout.id"
                   class="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors group"
                   draggable="true"
-                  :class="{ 'opacity-50': draggingId === workout.id }"
+                  :class="{
+                    'opacity-50': draggingId === workout.id,
+                    'bg-gray-50/50 dark:bg-gray-800/50': workout.isIndependent
+                  }"
                   @dragstart="onDragStart($event, workout)"
                   @dragover.prevent
                   @drop="onDrop($event, workout)"
                   @click="navigateToWorkout(workout.id)"
                 >
                   <td class="pl-2 text-center cursor-move text-gray-300 group-hover:text-gray-500">
-                    <UIcon name="i-heroicons-bars-2" class="w-4 h-4" />
+                    <UIcon
+                      v-if="workout.isIndependent"
+                      name="i-heroicons-link-slash"
+                      class="w-4 h-4 text-gray-400"
+                      title="Independent Workout (Not part of plan)"
+                    />
+                    <UIcon v-else name="i-heroicons-bars-2" class="w-4 h-4" />
                   </td>
                   <td
                     class="px-4 py-3 text-center border-l-4"
@@ -402,9 +421,10 @@
           <!-- Workouts List (Mobile) -->
           <div class="block sm:hidden space-y-2">
             <div
-              v-for="workout in selectedWeek.workouts"
+              v-for="workout in visibleWorkouts"
               :key="workout.id"
               class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 flex items-center gap-2.5 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700 w-full"
+              :class="{ 'bg-gray-50/50 dark:bg-gray-800/50 border-dashed': workout.isIndependent }"
               @click="navigateToWorkout(workout.id)"
             >
               <div
@@ -518,7 +538,7 @@
       <!-- Zone Distribution Chart -->
       <WeeklyZoneSummary
         v-if="selectedWeek"
-        :workouts="selectedWeek.workouts"
+        :workouts="visibleWorkouts"
         :loading="generatingAllStructures"
         @generate="generateAllStructureForWeek"
       />
@@ -579,6 +599,52 @@
   const draggingId = ref<string | null>(null)
   const publishingId = ref<string | null>(null)
   const toast = useToast()
+
+  // Independent Workouts Logic
+  const showIndependentWorkouts = ref(false)
+  const independentWorkouts = ref<any[]>([])
+  const fetchingIndependent = ref(false)
+
+  watch([showIndependentWorkouts, selectedWeekId], async ([show, weekId]) => {
+    if (show && weekId && selectedWeek.value) {
+      fetchingIndependent.value = true
+      try {
+        const workouts = await $fetch('/api/planned-workouts', {
+          query: {
+            startDate: selectedWeek.value.startDate,
+            endDate: selectedWeek.value.endDate,
+            independentOnly: true,
+            limit: 50
+          }
+        })
+        independentWorkouts.value = workouts
+      } catch (e) {
+        console.error('Failed to fetch independent workouts', e)
+      } finally {
+        fetchingIndependent.value = false
+      }
+    } else {
+      independentWorkouts.value = []
+    }
+  })
+
+  const visibleWorkouts = computed(() => {
+    if (!selectedWeek.value) return []
+    const baseWorkouts = selectedWeek.value.workouts || []
+
+    if (!showIndependentWorkouts.value) return baseWorkouts
+
+    const extras = independentWorkouts.value.map((w: any) => ({
+      ...w,
+      isIndependent: true,
+      // Ensure syncStatus is present if missing (though API returns full object)
+      syncStatus: w.syncStatus || 'LOCAL_ONLY'
+    }))
+
+    return [...baseWorkouts, ...extras].sort(
+      (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    )
+  })
 
   // Background Task Monitoring
   const { refresh: refreshRuns } = useUserRuns()
@@ -722,22 +788,21 @@
 
     if (!sourceId || sourceId === targetWorkout.id) return
 
-    // Find source in list
-    const sourceWorkout = selectedWeek.value.workouts.find((w: any) => w.id === sourceId)
+    // Find source in either list
+    let sourceWorkout = selectedWeek.value.workouts.find((w: any) => w.id === sourceId)
+    if (!sourceWorkout) {
+      sourceWorkout = independentWorkouts.value.find((w: any) => w.id === sourceId)
+    }
+
     if (!sourceWorkout) return
 
     // Optimistic Swap Dates
     const sourceDate = sourceWorkout.date
     const targetDate = targetWorkout.date
 
-    // Swap in UI (mutating prop/local state temporarily)
+    // Swap in UI (mutating reactive objects)
     sourceWorkout.date = targetDate
     targetWorkout.date = sourceDate
-
-    // Re-sort list by date to reflect visual change
-    selectedWeek.value.workouts.sort(
-      (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    )
 
     // Call API
     try {
@@ -751,9 +816,6 @@
       // Revert on fail
       sourceWorkout.date = sourceDate
       targetWorkout.date = targetDate
-      selectedWeek.value.workouts.sort(
-        (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      )
       toast.add({ title: 'Failed to move', color: 'error' })
     }
   }
@@ -812,10 +874,10 @@
   }
 
   async function generateAllStructureForWeek() {
-    if (!selectedWeek.value) return
+    if (!visibleWorkouts.value.length) return
 
     // Find workouts without structure
-    const pendingWorkouts = selectedWeek.value.workouts.filter((w: any) => !w.structuredWorkout)
+    const pendingWorkouts = visibleWorkouts.value.filter((w: any) => !w.structuredWorkout)
 
     if (pendingWorkouts.length === 0) return
 
