@@ -717,11 +717,9 @@ Maintain your **${aiSettings.aiPersona}** persona throughout the plan's reasonin
 
           const rawDate = d.date
           const [y, m, day] = rawDate.split('-').map(Number)
-          // Create a "Local Date" object (using system/server time, but representing the abstract date)
-          const abstractDate = new Date(y, m - 1, day)
-
-          // Get the UTC timestamp for the start of that day in the user's timezone
-          const workoutDate = getStartOfDayUTC(timezone, abstractDate)
+          // Create a UTC Date directly to represent the calendar day.
+          // This prevents timezone shifting (e.g. Jan 15 becoming Jan 14 in US timezones).
+          const workoutDate = new Date(Date.UTC(y, m - 1, day))
 
           logger.log('Processing generated workout day', {
             rawDate: d.date,

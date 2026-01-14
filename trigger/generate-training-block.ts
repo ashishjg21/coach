@@ -212,13 +212,12 @@ ${profile.planning_context?.opportunities?.length ? `Opportunities: ${profile.pl
     for (let i = 0; i < block.durationWeeks; i++) {
       const weekStart = new Date(currentCursor)
 
-      // Find next Sunday (0)
-      // If current is Sunday(0), it ends today.
-      const currentDay = weekStart.getDay()
+      // Find next Sunday (0) using UTC methods for stability
+      const currentDay = weekStart.getUTCDay()
       const daysToSunday = currentDay === 0 ? 0 : 7 - currentDay
 
       const weekEnd = new Date(weekStart)
-      weekEnd.setDate(weekEnd.getDate() + daysToSunday)
+      weekEnd.setUTCDate(weekEnd.getUTCDate() + daysToSunday)
 
       // Generate valid days
       const validDays = []
@@ -231,13 +230,14 @@ ${profile.planning_context?.opportunities?.length ? `Opportunities: ${profile.pl
 
       // Helper to avoid infinite loop safety, max 7 days
       for (let d = 0; d <= daysToSunday; d++) {
-        const dateStr = formatUserDate(loopDate, timezone)
+        // Use UTC formatting for comparison to maintain stability
+        const dateStr = formatDateUTC(loopDate)
 
         // Allow today and future
         if (dateStr >= todayStr) {
           validDays.push(new Date(loopDate))
         }
-        loopDate.setDate(loopDate.getDate() + 1)
+        loopDate.setUTCDate(loopDate.getUTCDate() + 1)
       }
 
       weekSchedules.push({
@@ -250,8 +250,9 @@ ${profile.planning_context?.opportunities?.length ? `Opportunities: ${profile.pl
       // Format for Prompt
       const daysText = validDays
         .map((d) => {
-          const dayName = d.toLocaleDateString('en-US', { weekday: 'long', timeZone: timezone })
-          const dStr = formatUserDate(d, timezone)
+          // Keep display names local but dates stable
+          const dayName = d.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })
+          const dStr = formatDateUTC(d)
           return `${dayName} (${dStr})`
         })
         .join(', ')
@@ -260,7 +261,7 @@ ${profile.planning_context?.opportunities?.length ? `Opportunities: ${profile.pl
 
       // Next week starts next day (Monday)
       currentCursor = new Date(weekEnd)
-      currentCursor.setDate(currentCursor.getDate() + 1)
+      currentCursor.setUTCDate(currentCursor.getUTCDate() + 1)
     }
 
     // 3. Build Prompt
@@ -464,7 +465,8 @@ Return valid JSON matching the schema provided.`
           const workoutsData = weekData.workouts
             .map((workout: any, index: number) => {
               // Find the exact date from validDays matching this dayOfWeek
-              const targetDate = schedule.validDays.find((d) => d.getDay() === workout.dayOfWeek)
+              // Use getUTCDay() for stability with calendar dates.
+              const targetDate = schedule.validDays.find((d) => d.getUTCDay() === workout.dayOfWeek)
 
               if (!targetDate) {
                 logger.warn('Skipping workout for invalid day (past or outside week)', {
