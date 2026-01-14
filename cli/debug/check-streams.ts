@@ -48,8 +48,8 @@ const checkStreamsCommand = new Command('check-streams')
 
       if (workouts.length === 0) return
 
-      const workoutIds = workouts.map((w) => w.id)
-
+      const workoutIds = workouts.map(w => w.id)
+      
       const streams = await prisma.workoutStream.findMany({
         where: { workoutId: { in: workoutIds } },
         select: {
@@ -63,7 +63,7 @@ const checkStreamsCommand = new Command('check-streams')
 
       console.log(`Found ${streams.length} stream records.`)
 
-      const streamsMap = new Map(streams.map((s) => [s.workoutId, s]))
+      const streamsMap = new Map(streams.map(s => [s.workoutId, s]))
 
       let missingStreamsCount = 0
       let emptyStreamsCount = 0
@@ -72,39 +72,28 @@ const checkStreamsCommand = new Command('check-streams')
       for (const workout of workouts) {
         const stream = streamsMap.get(workout.id)
         if (!stream) {
-          console.log(
-            chalk.red(
-              `[MISSING] ${workout.date.toISOString().split('T')[0]} - ${workout.title} (${workout.source})`
-            )
-          )
+          console.log(chalk.red(`[MISSING] ${workout.date.toISOString().split('T')[0]} - ${workout.title} (${workout.source})`))
           missingStreamsCount++
         } else {
-          const hasHr =
-            (Array.isArray(stream.heartrate) && (stream.heartrate as any[]).length > 0) ||
-            (stream.hrZoneTimes as any[])?.length > 0
-          const hasPower =
-            (Array.isArray(stream.watts) && (stream.watts as any[]).length > 0) ||
-            (stream.powerZoneTimes as any[])?.length > 0
-
-          if (!hasHr && !hasPower) {
-            console.log(
-              chalk.yellow(
-                `[EMPTY]   ${workout.date.toISOString().split('T')[0]} - ${workout.title} (${workout.source}) - Stream record exists but no HR/Power data`
-              )
-            )
-            emptyStreamsCount++
-          } else {
-            validStreamsCount++
-            //  console.log(chalk.green(`[OK]      ${workout.date.toISOString().split('T')[0]} - ${workout.title}`))
-          }
+            const hasHr = (Array.isArray(stream.heartrate) && (stream.heartrate as any[]).length > 0) || (stream.hrZoneTimes as any[])?.length > 0
+            const hasPower = (Array.isArray(stream.watts) && (stream.watts as any[]).length > 0) || (stream.powerZoneTimes as any[])?.length > 0
+            
+            if (!hasHr && !hasPower) {
+                 console.log(chalk.yellow(`[EMPTY]   ${workout.date.toISOString().split('T')[0]} - ${workout.title} (${workout.source}) - Stream record exists but no HR/Power data`))
+                 emptyStreamsCount++
+            } else {
+                 validStreamsCount++
+                //  console.log(chalk.green(`[OK]      ${workout.date.toISOString().split('T')[0]} - ${workout.title}`))
+            }
         }
       }
-
+      
       console.log('\nSummary:')
       console.log(`Total Workouts: ${workouts.length}`)
       console.log(`Missing Stream Records: ${missingStreamsCount}`)
       console.log(`Empty Data Streams: ${emptyStreamsCount}`)
       console.log(`Valid Streams: ${validStreamsCount}`)
+
     } catch (error) {
       console.error('Error:', error)
     } finally {

@@ -4,10 +4,10 @@ import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
-import {
-  calculatePMCForDateRange,
-  getInitialPMCValues,
-  getCurrentFitnessSummary
+import { 
+  calculatePMCForDateRange, 
+  getInitialPMCValues, 
+  getCurrentFitnessSummary 
 } from '../../server/utils/training-stress'
 
 const trainingLoadCommand = new Command('training-load')
@@ -34,12 +34,12 @@ trainingLoadCommand
 
     const pool = new pg.Pool({ connectionString })
     const adapter = new PrismaPg(pool)
-
+    
     // Hack: We need to ensure the utils use *our* prisma instance or connection.
     if (isProd) {
       process.env.DATABASE_URL = connectionString
     }
-
+    
     // Now we can import the client that the utils use
     const { prisma } = await import('../../server/utils/db')
 
@@ -48,12 +48,12 @@ trainingLoadCommand
 
       // Resolve User
       let user = await prisma.user.findUnique({
-        where: { id: identifier }
+        where: { id: identifier },
       })
 
       if (!user) {
         user = await prisma.user.findUnique({
-          where: { email: identifier }
+          where: { email: identifier },
         })
       }
 
@@ -68,16 +68,14 @@ trainingLoadCommand
       // 1. Current Fitness Summary (Dashboard Logic)
       console.log(chalk.bold.cyan('\n=== 1. Dashboard Summary (getCurrentFitnessSummary) ==='))
       const summary = await getCurrentFitnessSummary(userId)
-      console.log(
-        `Last Updated: ${summary.lastUpdated ? summary.lastUpdated.toISOString() : 'N/A'}`
-      )
+      console.log(`Last Updated: ${summary.lastUpdated ? summary.lastUpdated.toISOString() : 'N/A'}`)
       console.log(`CTL: ${chalk.green(summary.ctl.toFixed(1))}`)
       console.log(`ATL: ${chalk.yellow(summary.atl.toFixed(1))}`)
       console.log(`TSB: ${chalk.blue(summary.tsb.toFixed(1))}`)
 
       // 2. Latest DB Records
       console.log(chalk.bold.cyan('\n=== 2. Latest DB Records ==='))
-
+      
       const latestWellness = await prisma.wellness.findFirst({
         where: { userId },
         orderBy: { date: 'desc' }
@@ -105,7 +103,7 @@ trainingLoadCommand
 
       // 3. Chart Calculation Logic (calculatePMCForDateRange)
       console.log(chalk.bold.cyan(`\n=== 3. Chart Calculation (Last ${days} Days) ===`))
-
+      
       const endDate = new Date()
       // Extend end date to include "tomorrow" if summary is ahead, mirroring API logic
       if (summary.lastUpdated && new Date(summary.lastUpdated) > endDate) {
@@ -123,9 +121,7 @@ trainingLoadCommand
       startDate.setDate(startDate.getDate() - days)
       startDate.setHours(0, 0, 0, 0)
 
-      console.log(
-        `Range: ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`
-      )
+      console.log(`Range: ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`)
 
       // Step 3a: Initial Values
       const initialValues = await getInitialPMCValues(userId, startDate)
@@ -150,31 +146,30 @@ trainingLoadCommand
         where: { userId, date: { gte: startDate, lte: endDate } },
         select: { date: true, ctl: true, atl: true }
       })
-      const wellnessMap = new Map(rangeWellness.map((w) => [w.date.toISOString().split('T')[0], w]))
+      const wellnessMap = new Map(rangeWellness.map(w => [w.date.toISOString().split('T')[0], w]))
 
       for (const day of pmcData) {
         const dateKey = day.date.toISOString().split('T')[0]
         const w = wellnessMap.get(dateKey)
-
+        
         let sourceInfo = ''
         if (w && w.ctl !== null) {
           const match = Math.abs(w.ctl - day.ctl) < 0.1 && Math.abs(w.atl - day.atl) < 0.1
-          sourceInfo = match
-            ? chalk.green('Matches Wellness')
-            : chalk.red(`Mismatch (Well: ${w.ctl?.toFixed(1)})`)
+          sourceInfo = match ? chalk.green('Matches Wellness') : chalk.red(`Mismatch (Well: ${w.ctl?.toFixed(1)})`)
         } else {
           sourceInfo = chalk.gray('Calculated')
         }
 
         console.log(
           `${dateKey} | ` +
-            `${day.tss.toFixed(0).padStart(3)} | ` +
-            `${day.ctl.toFixed(1).padStart(9)} | ` +
-            `${day.atl.toFixed(1).padStart(9)} | ` +
-            `${day.tsb.toFixed(1).padStart(9)} | ` +
-            sourceInfo
+          `${day.tss.toFixed(0).padStart(3)} | ` +
+          `${day.ctl.toFixed(1).padStart(9)} | ` +
+          `${day.atl.toFixed(1).padStart(9)} | ` +
+          `${day.tsb.toFixed(1).padStart(9)} | ` +
+          sourceInfo
         )
       }
+
     } catch (e: any) {
       console.error(chalk.red('Error:'), e)
     } finally {

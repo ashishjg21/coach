@@ -58,9 +58,7 @@ athleteCommand
       console.log(`Email:     ${chalk.white(user.email)}`)
       console.log(`ID:        ${chalk.gray(user.id)}`)
       console.log(`Timezone:  ${chalk.magenta(user.timezone || 'UTC')}`)
-      console.log(
-        `Metrics:   FTP ${chalk.yellow(user.ftp || 'N/A')}W | Weight ${chalk.yellow(user.weight || 'N/A')}kg | MaxHR ${chalk.yellow(user.maxHr || 'N/A')}bpm`
-      )
+      console.log(`Metrics:   FTP ${chalk.yellow(user.ftp || 'N/A')}W | Weight ${chalk.yellow(user.weight || 'N/A')}kg | MaxHR ${chalk.yellow(user.maxHr || 'N/A')}bpm`)
       if (user.ftp && user.weight) {
         console.log(`W/kg:      ${chalk.green((user.ftp / user.weight).toFixed(2))} W/kg`)
       }
@@ -68,7 +66,7 @@ athleteCommand
 
       // 2. Current Form (Source of Truth)
       console.log(chalk.bold.cyan('\n=== Current Form (Source of Truth) ==='))
-
+      
       const latestWellness = await prisma.wellness.findFirst({
         where: { userId },
         orderBy: { date: 'desc' }
@@ -119,7 +117,7 @@ athleteCommand
       console.log(`Updated:   ${lastUpdated ? lastUpdated.toISOString().split('T')[0] : 'N/A'}`)
       console.log(`CTL:       ${chalk.bold.white(currentCTL.toFixed(1))} (Fitness)`)
       console.log(`ATL:       ${chalk.bold.white(currentATL.toFixed(1))} (Fatigue)`)
-
+      
       let tsbColor = chalk.white
       if (currentTSB > 5) tsbColor = chalk.green
       else if (currentTSB > -10) tsbColor = chalk.yellow
@@ -131,8 +129,8 @@ athleteCommand
       // 3. AI Profile Report
       console.log(chalk.bold.cyan('\n=== AI Athlete Profile Report ==='))
       const profileReport = await prisma.report.findFirst({
-        where: {
-          userId,
+        where: { 
+          userId, 
           type: 'ATHLETE_PROFILE',
           status: 'COMPLETED'
         },
@@ -143,14 +141,12 @@ athleteCommand
         console.log(`Generated: ${profileReport.createdAt.toISOString()}`)
         const json = profileReport.analysisJson as any
         console.log(`Title:     ${json?.title || 'N/A'}`)
-
+        
         if (json?.athlete_scores) {
           const scores = json.athlete_scores
-          console.log(
-            `Scores:    Fitness ${scores.current_fitness}/10 | Recovery ${scores.recovery_capacity}/10 | Consistency ${scores.training_consistency}/10`
-          )
+          console.log(`Scores:    Fitness ${scores.current_fitness}/10 | Recovery ${scores.recovery_capacity}/10 | Consistency ${scores.training_consistency}/10`)
         }
-
+        
         if (json?.executive_summary) {
           console.log(chalk.gray(`Summary:   ${json.executive_summary.substring(0, 150)}...`))
         }
@@ -169,14 +165,18 @@ athleteCommand
       if (recentWorkouts.length === 0) {
         console.log(chalk.yellow('No workouts found.'))
       } else {
-        console.log(chalk.gray('Date       | TSS | IF   | Dur  | Title'))
-        recentWorkouts.forEach((w) => {
+        console.log(
+          chalk.gray(
+            'Date       | TSS | IF   | Dur  | Title'
+          )
+        )
+        recentWorkouts.forEach(w => {
           const date = w.date.toISOString().split('T')[0]
           const tss = w.tss?.toFixed(0).padStart(3, ' ') || '---'
           const intensity = w.intensity?.toFixed(2).padStart(4, ' ') || '----'
           const dur = (w.durationSec / 60).toFixed(0).padStart(3, ' ') + 'm'
           const title = w.title.substring(0, 40)
-
+          
           console.log(`${date} | ${tss} | ${intensity} | ${dur} | ${title}`)
         })
       }
@@ -191,12 +191,13 @@ athleteCommand
       if (goals.length === 0) {
         console.log(chalk.yellow('No active goals.'))
       } else {
-        goals.forEach((g) => {
+        goals.forEach(g => {
           const priority = g.priority === 'HIGH' ? chalk.red('HIGH') : g.priority
           console.log(`[${priority}] ${g.title} (${g.type})`)
           if (g.targetDate) console.log(`  Target: ${g.targetDate.toISOString().split('T')[0]}`)
         })
       }
+
     } catch (e: any) {
       console.error(chalk.red('Error:'), e)
     } finally {
