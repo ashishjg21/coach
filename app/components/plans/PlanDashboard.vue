@@ -323,21 +323,36 @@
                   @click="navigateToWorkout(workout.id)"
                 >
                   <td class="pl-2 text-center cursor-move text-gray-300 group-hover:text-gray-500">
-                    <UTooltip text="Link to Plan">
+                    <UTooltip v-if="workout.isIndependent" text="Link to Plan">
                       <UButton
-                        v-if="workout.isIndependent"
-                        icon="i-heroicons-link"
+                        :icon="
+                          hoveredLinkId === workout.id
+                            ? 'i-heroicons-link'
+                            : 'i-heroicons-link-slash'
+                        "
                         color="neutral"
                         variant="ghost"
                         size="xs"
+                        @mouseenter="hoveredLinkId = workout.id"
+                        @mouseleave="hoveredLinkId = null"
                         @click.stop="linkWorkout(workout)"
                       />
                     </UTooltip>
-                    <UIcon
-                      v-if="!workout.isIndependent"
-                      name="i-heroicons-bars-2"
-                      class="w-4 h-4"
-                    />
+                    <UTooltip v-else text="Unlink from Plan">
+                      <UButton
+                        :icon="
+                          hoveredLinkId === workout.id
+                            ? 'i-heroicons-link-slash'
+                            : 'i-heroicons-link'
+                        "
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                        @mouseenter="hoveredLinkId = workout.id"
+                        @mouseleave="hoveredLinkId = null"
+                        @click.stop="unlinkWorkout(workout)"
+                      />
+                    </UTooltip>
                   </td>
                   <td
                     class="px-4 py-3 text-center border-l-4"
@@ -412,7 +427,7 @@
                         v-if="workout.type !== 'Rest' && workout.type !== 'Active Recovery'"
                         size="xs"
                         color="neutral"
-                        :variant="isLocalWorkout(workout) ? 'ghost' : 'soft'"
+                        variant="ghost"
                         :icon="
                           isLocalWorkout(workout)
                             ? 'i-heroicons-cloud-arrow-up'
@@ -454,6 +469,22 @@
                     formatDay(workout.date)
                   }}</span>
                   <div class="flex items-center gap-2">
+                    <UButton
+                      v-if="workout.isIndependent"
+                      icon="i-heroicons-link-slash"
+                      color="neutral"
+                      variant="ghost"
+                      size="xs"
+                      @click.stop="linkWorkout(workout)"
+                    />
+                    <UButton
+                      v-else
+                      icon="i-heroicons-link"
+                      color="neutral"
+                      variant="ghost"
+                      size="xs"
+                      @click.stop="unlinkWorkout(workout)"
+                    />
                     <UBadge
                       :color="workout.completed ? 'success' : 'neutral'"
                       size="xs"
@@ -465,7 +496,7 @@
                       v-if="workout.type !== 'Rest' && workout.type !== 'Active Recovery'"
                       size="xs"
                       color="neutral"
-                      :variant="isLocalWorkout(workout) ? 'ghost' : 'soft'"
+                      variant="ghost"
                       :icon="
                         isLocalWorkout(workout)
                           ? 'i-heroicons-cloud-arrow-up'
@@ -607,6 +638,7 @@
   const generatingAllStructures = ref(false)
   const adapting = ref<string | null>(null)
   const draggingId = ref<string | null>(null)
+  const hoveredLinkId = ref<string | null>(null)
   const publishingId = ref<string | null>(null)
   const toast = useToast()
 
@@ -849,6 +881,26 @@
       toast.add({ title: 'Workout Linked', color: 'success' })
     } catch (e) {
       toast.add({ title: 'Failed to link', color: 'error' })
+    }
+  }
+
+  async function unlinkWorkout(workout: any) {
+    try {
+      await $fetch(`/api/workouts/planned/${workout.id}/unlink`, {
+        method: 'POST'
+      })
+
+      // Optimistically add to independent list if showing
+      if (showIndependentWorkouts.value) {
+        if (!independentWorkouts.value.some((w) => w.id === workout.id)) {
+          independentWorkouts.value.push({ ...workout })
+        }
+      }
+
+      emit('refresh')
+      toast.add({ title: 'Workout Unlinked', color: 'success' })
+    } catch (e) {
+      toast.add({ title: 'Failed to unlink', color: 'error' })
     }
   }
 
