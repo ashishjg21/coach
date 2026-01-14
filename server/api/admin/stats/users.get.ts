@@ -106,6 +106,14 @@ export default defineEventHandler(async (event) => {
   const usersByDay = fillMissingDays(mapToRecord(usersByDayRaw, 'count'))
   const activeUsersByDay = fillMissingDays(mapToRecord(activeUsersByDayRaw, 'count'))
 
+  // 6. Users by Country
+  const usersByCountry = await prisma.user.groupBy({
+    by: ['country'],
+    _count: {
+      id: true
+    }
+  })
+
   return {
     integrations: integrations
       .map((i) => ({ provider: i.provider, count: i._count.userId }))
@@ -124,6 +132,9 @@ export default defineEventHandler(async (event) => {
       usersByDay,
       activeUsersByDay
     },
-    authProviders: authProviders.map((p) => ({ provider: p.provider, count: p._count.userId }))
+    authProviders: authProviders.map((p) => ({ provider: p.provider, count: p._count.userId })),
+    usersByCountry: usersByCountry
+      .map((c) => ({ country: c.country || 'Unknown', count: c._count.id }))
+      .sort((a, b) => b.count - a.count)
   }
 })

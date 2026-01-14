@@ -12,18 +12,18 @@ export default defineEventHandler(async (event) => {
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-  // 1. Workouts by Day (already in main stats, but good to have detailed here if we add type filtering later)
-  // For now, let's reuse the raw query for efficiency
-  const workoutsByDayRaw = await prisma.$queryRaw<{ date: string; count: bigint }[]>`
-    SELECT DATE("date") as date, COUNT(*) as count
+  // 1. Workouts by Day and Type
+  const workoutsByDayRaw = await prisma.$queryRaw<{ date: string; type: string; count: bigint }[]>`
+    SELECT DATE("date") as date, "type", COUNT(*) as count
     FROM "Workout"
     WHERE "date" >= ${thirtyDaysAgo}
-    GROUP BY DATE("date")
+    GROUP BY DATE("date"), "type"
     ORDER BY date ASC
   `
 
   const workoutsByDay = workoutsByDayRaw.map((row) => ({
     date: new Date(row.date).toISOString().split('T')[0],
+    type: row.type || 'Unknown',
     count: Number(row.count)
   }))
 

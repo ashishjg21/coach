@@ -152,6 +152,40 @@ export default defineEventHandler(async (event) => {
     count: Number(row.count)
   }))
 
+  // 10. Stacked Daily Costs per Model
+  const dailyCostsByModelRaw = await prisma.$queryRaw<
+    { date: string; model: string; cost: number }[]
+  >`
+    SELECT DATE("createdAt") as date, model, SUM("estimatedCost") as cost
+    FROM "LlmUsage"
+    WHERE "createdAt" >= ${thirtyDaysAgo}
+    GROUP BY DATE("createdAt"), model
+    ORDER BY date ASC
+  `
+
+  const dailyCostsByModel = dailyCostsByModelRaw.map((row) => ({
+    date: new Date(row.date).toISOString().split('T')[0],
+    model: row.model,
+    cost: Number(row.cost || 0)
+  }))
+
+  // 11. Daily Users per Model
+  const dailyUsersByModelRaw = await prisma.$queryRaw<
+    { date: string; model: string; count: bigint }[]
+  >`
+    SELECT DATE("createdAt") as date, model, COUNT(DISTINCT "userId") as count
+    FROM "LlmUsage"
+    WHERE "createdAt" >= ${thirtyDaysAgo} AND "userId" IS NOT NULL
+    GROUP BY DATE("createdAt"), model
+    ORDER BY date ASC
+  `
+
+  const dailyUsersByModel = dailyUsersByModelRaw.map((row) => ({
+    date: new Date(row.date).toISOString().split('T')[0],
+    model: row.model,
+    count: Number(row.count)
+  }))
+
   return {
     usageByModel: usageByModel
       .map((m) => ({
@@ -169,6 +203,8 @@ export default defineEventHandler(async (event) => {
       }))
       .sort((a, b) => b.count - a.count),
     usageByTool,
+    dailyCostsByModel,
+    dailyUsersByModel,
     topSpenders: topSpendersDetails,
     recentFailures,
     tokens: {
