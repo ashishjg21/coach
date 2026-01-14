@@ -62,12 +62,18 @@ export default defineEventHandler(async (event) => {
   })
 
   // Trigger background job with the recommendation ID
-  const handle = await tasks.trigger('recommend-today-activity', {
-    userId,
-    date: today,
-    recommendationId: recommendation.id,
-    userFeedback
-  })
+  const handle = await tasks.trigger(
+    'recommend-today-activity',
+    {
+      userId,
+      date: today,
+      recommendationId: recommendation.id,
+      userFeedback
+    },
+    {
+      tags: [`user:${userId}`]
+    }
+  )
 
   return {
     success: true,

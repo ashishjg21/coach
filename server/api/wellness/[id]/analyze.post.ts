@@ -36,10 +36,16 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Trigger the background task
-    const handle = await tasks.trigger('analyze-wellness', {
-      wellnessId,
-      userId
-    })
+    const handle = await tasks.trigger(
+      'analyze-wellness',
+      {
+        wellnessId,
+        userId
+      },
+      {
+        tags: [`user:${userId}`]
+      }
+    )
 
     return {
       status: 'PROCESSING',

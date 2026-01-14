@@ -91,9 +91,15 @@ export default defineEventHandler(async (event) => {
   })
 
   // Trigger regeneration of structured workout based on the new description/title/params
-  await tasks.trigger('generate-structured-workout', {
-    plannedWorkoutId: recommendation.plannedWorkoutId
-  })
+  await tasks.trigger(
+    'generate-structured-workout',
+    {
+      plannedWorkoutId: recommendation.plannedWorkoutId
+    },
+    {
+      tags: [`user:${userId}`]
+    }
+  )
 
   // Sync to Intervals.icu if it's already published (not local-only)
   const isLocal =

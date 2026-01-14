@@ -121,7 +121,8 @@ export default defineEventHandler(async (event) => {
         endDate: bufferEnd.toISOString()
       },
       {
-        concurrencyKey: integration.userId
+        concurrencyKey: integration.userId,
+        tags: [`user:${integration.userId}`]
       }
     )
 

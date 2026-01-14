@@ -63,7 +63,8 @@ export default defineEventHandler(async (event) => {
       reportId: report.id
     },
     {
-      concurrencyKey: userId
+      concurrencyKey: userId,
+      tags: [`user:${userId}`]
     }
   )
 

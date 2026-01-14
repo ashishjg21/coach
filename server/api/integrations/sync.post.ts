@@ -181,7 +181,8 @@ export default defineEventHandler(async (event) => {
         endDate: endDate.toISOString()
       },
       {
-        concurrencyKey: userId
+        concurrencyKey: userId,
+        tags: [`user:${userId}`]
       }
     )
 

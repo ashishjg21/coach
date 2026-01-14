@@ -158,7 +158,8 @@ export default defineEventHandler(async (event) => {
           config: reportConfig
         },
         {
-          concurrencyKey: userId
+          concurrencyKey: userId,
+          tags: [`user:${userId}`]
         }
       )
     } else if (reportType === 'LAST_3_WORKOUTS') {
@@ -169,7 +170,8 @@ export default defineEventHandler(async (event) => {
           reportId: report.id
         },
         {
-          concurrencyKey: userId
+          concurrencyKey: userId,
+          tags: [`user:${userId}`]
         }
       )
     } else if (reportType === 'LAST_3_NUTRITION') {
@@ -180,7 +182,8 @@ export default defineEventHandler(async (event) => {
           reportId: report.id
         },
         {
-          concurrencyKey: userId
+          concurrencyKey: userId,
+          tags: [`user:${userId}`]
         }
       )
     } else if (reportType === 'LAST_7_NUTRITION') {
@@ -191,7 +194,8 @@ export default defineEventHandler(async (event) => {
           reportId: report.id
         },
         {
-          concurrencyKey: userId
+          concurrencyKey: userId,
+          tags: [`user:${userId}`]
         }
       )
     } else {
@@ -202,7 +206,8 @@ export default defineEventHandler(async (event) => {
           reportId: report.id
         },
         {
-          concurrencyKey: userId
+          concurrencyKey: userId,
+          tags: [`user:${userId}`]
         }
       )
     }

@@ -51,11 +51,17 @@ const syncIntervalsIntegration = async (user: any, account: any) => {
     const endDate = new Date().toISOString()
     const startDate = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString()
 
-    await tasks.trigger('ingest-intervals', {
-      userId: user.id,
-      startDate,
-      endDate
-    })
+    await tasks.trigger(
+      'ingest-intervals',
+      {
+        userId: user.id,
+        startDate,
+        endDate
+      },
+      {
+        tags: [`user:${user.id}`]
+      }
+    )
     console.log('Triggered initial Intervals.icu sync')
   } catch (error) {
     console.error('Failed to sync Intervals.icu integration:', error)

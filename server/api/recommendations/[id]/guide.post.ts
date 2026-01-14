@@ -50,7 +50,10 @@ export default defineEventHandler(async (event) => {
       userId: user.id,
       recommendationId: id!
     },
-    { concurrencyKey: user.id }
+    {
+      concurrencyKey: user.id,
+      tags: [`user:${user.id}`]
+    }
   )
 
   return {

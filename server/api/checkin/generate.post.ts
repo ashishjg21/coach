@@ -42,11 +42,17 @@ export default defineEventHandler(async (event) => {
   }
 
   // Trigger the task
-  await tasks.trigger<typeof generateDailyCheckinTask>('generate-daily-checkin', {
-    userId,
-    date: today,
-    checkinId: checkin.id
-  })
+  await tasks.trigger<typeof generateDailyCheckinTask>(
+    'generate-daily-checkin',
+    {
+      userId,
+      date: today,
+      checkinId: checkin.id
+    },
+    {
+      tags: [`user:${userId}`]
+    }
+  )
 
   return checkin
 })
