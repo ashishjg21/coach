@@ -66,6 +66,7 @@
         <!-- Active Plan View -->
         <div v-else-if="activePlan">
           <PlanDashboard
+            :key="activePlan.id"
             :plan="activePlan"
             :user-ftp="userFtp"
             :is-generating="isPolling"

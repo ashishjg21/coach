@@ -162,6 +162,8 @@
           ? `Week ${selectedWeek.weekNumber}: ${formatDate(selectedWeek.startDate, 'MMM d')} - ${formatDate(selectedWeek.endDate, 'MMM d')}`
           : undefined
       "
+      :start-date="selectedWeek?.startDate"
+      :end-date="selectedWeek?.endDate"
       @generate="generatePlanWithAI"
     />
 
@@ -313,7 +315,7 @@
                   draggable="true"
                   :class="{
                     'opacity-50': draggingId === workout.id,
-                    'bg-gray-50/50 dark:bg-gray-800/50': workout.isIndependent
+                    'bg-independent-stripes': workout.isIndependent
                   }"
                   @dragstart="onDragStart($event, workout)"
                   @dragover.prevent
@@ -321,13 +323,21 @@
                   @click="navigateToWorkout(workout.id)"
                 >
                   <td class="pl-2 text-center cursor-move text-gray-300 group-hover:text-gray-500">
+                    <UTooltip text="Link to Plan">
+                      <UButton
+                        v-if="workout.isIndependent"
+                        icon="i-heroicons-link"
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                        @click.stop="linkWorkout(workout)"
+                      />
+                    </UTooltip>
                     <UIcon
-                      v-if="workout.isIndependent"
-                      name="i-heroicons-link-slash"
-                      class="w-4 h-4 text-gray-400"
-                      title="Independent Workout (Not part of plan)"
+                      v-if="!workout.isIndependent"
+                      name="i-heroicons-bars-2"
+                      class="w-4 h-4"
                     />
-                    <UIcon v-else name="i-heroicons-bars-2" class="w-4 h-4" />
                   </td>
                   <td
                     class="px-4 py-3 text-center border-l-4"
@@ -424,7 +434,7 @@
               v-for="workout in visibleWorkouts"
               :key="workout.id"
               class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 flex items-center gap-2.5 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700 w-full"
-              :class="{ 'bg-gray-50/50 dark:bg-gray-800/50 border-dashed': workout.isIndependent }"
+              :class="{ 'bg-independent-stripes border-dashed': workout.isIndependent }"
               @click="navigateToWorkout(workout.id)"
             >
               <div
@@ -601,7 +611,7 @@
   const toast = useToast()
 
   // Independent Workouts Logic
-  const showIndependentWorkouts = ref(false)
+  const showIndependentWorkouts = ref(true)
   const independentWorkouts = ref<any[]>([])
   const fetchingIndependent = ref(false)
 
@@ -634,12 +644,16 @@
 
     if (!showIndependentWorkouts.value) return baseWorkouts
 
-    const extras = independentWorkouts.value.map((w: any) => ({
-      ...w,
-      isIndependent: true,
-      // Ensure syncStatus is present if missing (though API returns full object)
-      syncStatus: w.syncStatus || 'LOCAL_ONLY'
-    }))
+    const baseIds = new Set(baseWorkouts.map((w: any) => w.id))
+
+    const extras = independentWorkouts.value
+      .filter((w: any) => !baseIds.has(w.id))
+      .map((w: any) => ({
+        ...w,
+        isIndependent: true,
+        // Ensure syncStatus is present if missing (though API returns full object)
+        syncStatus: w.syncStatus || 'LOCAL_ONLY'
+      }))
 
     return [...baseWorkouts, ...extras].sort(
       (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -820,6 +834,24 @@
     }
   }
 
+  async function linkWorkout(workout: any) {
+    if (!selectedWeek.value?.id) return
+    try {
+      await $fetch(`/api/workouts/planned/${workout.id}/link`, {
+        method: 'POST',
+        body: { trainingWeekId: selectedWeek.value.id }
+      })
+
+      // Optimistically remove from independent list
+      independentWorkouts.value = independentWorkouts.value.filter((w) => w.id !== workout.id)
+
+      emit('refresh')
+      toast.add({ title: 'Workout Linked', color: 'success' })
+    } catch (e) {
+      toast.add({ title: 'Failed to link', color: 'error' })
+    }
+  }
+
   async function generateWorkoutsForBlock() {
     if (!selectedBlockId.value) return
 
@@ -984,7 +1016,7 @@
     }
   }
 
-  async function generatePlanWithAI(instructions: string) {
+  async function generatePlanWithAI(instructions: string, anchorWorkoutIds?: string[]) {
     if (!selectedBlockId.value || !selectedWeekId.value) return
 
     showAIPlanModal.value = false
@@ -996,7 +1028,8 @@
         body: {
           blockId: selectedBlockId.value,
           weekId: selectedWeekId.value,
-          instructions
+          instructions,
+          anchorWorkoutIds
         }
       })
       refreshRuns()
@@ -1026,12 +1059,27 @@
       // This prevents resetting the selection on every 'refresh' poll which updates the same plan object
       if (newPlan && newPlan.blocks.length > 0) {
         // Check if we are already viewing a valid block/week for this plan
-        const isSamePlan =
-          selectedBlockId.value && newPlan.blocks.some((b: any) => b.id === selectedBlockId.value)
+        const currentBlock = newPlan.blocks.find((b: any) => b.id === selectedBlockId.value)
 
-        if (isSamePlan) {
-          // We are already looking at a block in this plan.
-          // Just update the reactive data, don't change selection.
+        if (currentBlock) {
+          // We are still on the same plan/block.
+          // But check if the selected week still exists (generation might have replaced weeks)
+          const weekExists = currentBlock.weeks.some((w: any) => w.id === selectedWeekId.value)
+
+          if (!weekExists && currentBlock.weeks.length > 0) {
+            // Week ID is stale (likely regenerated). Find matching week by number or date, or default to first.
+            const today = getUserLocalDate()
+            const todayTime = today.getTime()
+
+            const activeWeek = currentBlock.weeks.find((w: any) => {
+              const start = new Date(w.startDate).getTime()
+              const end = new Date(w.endDate).getTime()
+              return todayTime >= start && todayTime <= end
+            })
+
+            selectedWeekId.value = activeWeek ? activeWeek.id : currentBlock.weeks[0].id
+          }
+
           return
         }
 
@@ -1106,3 +1154,25 @@
     }
   })
 </script>
+
+<style scoped>
+  .bg-independent-stripes {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.02),
+      rgba(0, 0, 0, 0.02) 10px,
+      transparent 10px,
+      transparent 20px
+    );
+  }
+
+  .dark .bg-independent-stripes {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.03),
+      rgba(255, 255, 255, 0.03) 10px,
+      transparent 10px,
+      transparent 20px
+    );
+  }
+</style>

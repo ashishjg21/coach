@@ -3,8 +3,12 @@
     <!-- Scrollable Content -->
     <div class="flex-1 overflow-y-auto px-1 py-2 space-y-6">
       <!-- Progress Indicator -->
-      <div v-if="step <= 3" class="flex items-center justify-center gap-2 mb-4">
-        <div class="flex items-center">
+      <div
+        v-if="step <= 4"
+        class="flex items-center justify-center gap-2 mb-4 overflow-x-auto pb-2"
+      >
+        <!-- Step 1 -->
+        <div class="flex items-center flex-shrink-0">
           <div
             class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
             :class="
@@ -20,13 +24,17 @@
             Goal
           </div>
         </div>
-        <div class="w-12 h-1 bg-gray-200 dark:bg-gray-800 rounded-full mx-2 overflow-hidden">
+        <div
+          class="w-8 sm:w-12 h-1 bg-gray-200 dark:bg-gray-800 rounded-full mx-2 overflow-hidden flex-shrink-0"
+        >
           <div
             class="h-full bg-primary transition-all duration-300"
             :style="{ width: step >= 2 ? '100%' : '0%' }"
           />
         </div>
-        <div class="flex items-center">
+
+        <!-- Step 2 -->
+        <div class="flex items-center flex-shrink-0">
           <div
             class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
             :class="
@@ -42,13 +50,17 @@
             Strategy
           </div>
         </div>
-        <div class="w-12 h-1 bg-gray-200 dark:bg-gray-800 rounded-full mx-2 overflow-hidden">
+        <div
+          class="w-8 sm:w-12 h-1 bg-gray-200 dark:bg-gray-800 rounded-full mx-2 overflow-hidden flex-shrink-0"
+        >
           <div
             class="h-full bg-primary transition-all duration-300"
             :style="{ width: step >= 3 ? '100%' : '0%' }"
           />
         </div>
-        <div class="flex items-center">
+
+        <!-- Step 3 -->
+        <div class="flex items-center flex-shrink-0">
           <div
             class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
             :class="
@@ -61,16 +73,20 @@
             class="text-xs font-medium ml-2"
             :class="step >= 3 ? 'text-primary' : 'text-gray-500'"
           >
-            Details
+            Schedule
           </div>
         </div>
-        <div class="w-12 h-1 bg-gray-200 dark:bg-gray-800 rounded-full mx-2 overflow-hidden">
+        <div
+          class="w-8 sm:w-12 h-1 bg-gray-200 dark:bg-gray-800 rounded-full mx-2 overflow-hidden flex-shrink-0"
+        >
           <div
             class="h-full bg-primary transition-all duration-300"
             :style="{ width: step >= 4 ? '100%' : '0%' }"
           />
         </div>
-        <div class="flex items-center">
+
+        <!-- Step 4 -->
+        <div class="flex items-center flex-shrink-0">
           <div
             class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
             :class="
@@ -82,6 +98,32 @@
           <div
             class="text-xs font-medium ml-2"
             :class="step >= 4 ? 'text-primary' : 'text-gray-500'"
+          >
+            Details
+          </div>
+        </div>
+        <div
+          class="w-8 sm:w-12 h-1 bg-gray-200 dark:bg-gray-800 rounded-full mx-2 overflow-hidden flex-shrink-0"
+        >
+          <div
+            class="h-full bg-primary transition-all duration-300"
+            :style="{ width: step >= 5 ? '100%' : '0%' }"
+          />
+        </div>
+
+        <!-- Step 5 -->
+        <div class="flex items-center flex-shrink-0">
+          <div
+            class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
+            :class="
+              step >= 5 ? 'bg-primary text-white' : 'bg-gray-200 dark:bg-gray-800 text-gray-500'
+            "
+          >
+            5
+          </div>
+          <div
+            class="text-xs font-medium ml-2"
+            :class="step >= 5 ? 'text-primary' : 'text-gray-500'"
           >
             Review
           </div>
@@ -336,11 +378,106 @@
         </div>
       </div>
 
-      <!-- Step 3: Custom Instructions -->
+      <!-- Step 3: Schedule & Existing Workouts -->
       <div v-else-if="step === 3" class="space-y-6">
         <div class="flex items-center gap-3 mb-2">
           <UButton icon="i-heroicons-arrow-left" variant="ghost" size="sm" @click="step = 2" />
-          <h3 class="text-xl font-semibold">Step 3: Custom Details</h3>
+          <h3 class="text-xl font-semibold">Step 3: Review Schedule</h3>
+        </div>
+
+        <div class="space-y-4">
+          <div
+            v-if="loadingWorkouts"
+            class="flex flex-col items-center justify-center py-8 space-y-3"
+          >
+            <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary" />
+            <p class="text-sm text-muted">Checking for existing workouts...</p>
+          </div>
+
+          <div v-else-if="independentWorkouts.length > 0" class="space-y-4">
+            <div
+              class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-sm text-blue-800 dark:text-blue-200"
+            >
+              <p>
+                We found <strong>{{ independentWorkouts.length }} planned workouts</strong> during
+                this period.
+              </p>
+              <p class="mt-1">
+                Select the ones you want to <strong>keep and incorporate</strong> into your new
+                plan. The AI will build the schedule around them.
+              </p>
+            </div>
+
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <div
+                class="bg-gray-50 dark:bg-gray-800/50 p-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center"
+              >
+                <span class="text-xs font-medium uppercase text-muted ml-2">Workouts</span>
+                <UButton
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  @click="anchorWorkoutIds = independentWorkouts.map((w) => w.id)"
+                  >Select All</UButton
+                >
+              </div>
+              <div class="max-h-60 overflow-y-auto p-2 space-y-1">
+                <div
+                  v-for="workout in independentWorkouts"
+                  :key="workout.id"
+                  class="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded cursor-pointer transition-colors"
+                  :class="anchorWorkoutIds.includes(workout.id) ? 'bg-primary/5' : ''"
+                  @click="toggleAnchor(workout.id)"
+                >
+                  <UCheckbox
+                    :model-value="anchorWorkoutIds.includes(workout.id)"
+                    @update:model-value="toggleAnchor(workout.id)"
+                    @click.stop
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-center">
+                      <span
+                        class="font-medium text-sm truncate"
+                        :class="anchorWorkoutIds.includes(workout.id) ? 'text-primary' : ''"
+                        >{{ workout.title }}</span
+                      >
+                      <span class="text-xs text-muted font-mono">{{
+                        formatDate(workout.date)
+                      }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-0.5">
+                      <UIcon
+                        v-if="anchorWorkoutIds.includes(workout.id)"
+                        name="i-heroicons-lock-closed"
+                        class="w-3 h-3 text-primary"
+                      />
+                      <span class="text-xs text-muted truncate"
+                        >{{ workout.type }} •
+                        {{ Math.round((workout.durationSec || 0) / 60) }}m</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-else
+            class="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed border-gray-300 dark:border-gray-700"
+          >
+            <UIcon name="i-heroicons-calendar" class="w-12 h-12 text-gray-300 mb-3 mx-auto" />
+            <h4 class="font-medium text-gray-900 dark:text-gray-100">No conflicts found</h4>
+            <p class="text-sm text-gray-500 mt-1">Your schedule is clear for this period.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Custom Instructions -->
+      <div v-else-if="step === 4" class="space-y-6">
+        <div class="flex items-center gap-3 mb-2">
+          <UButton icon="i-heroicons-arrow-left" variant="ghost" size="sm" @click="step = 3" />
+          <h3 class="text-xl font-semibold">Step 4: Custom Details</h3>
         </div>
 
         <div class="space-y-4">
@@ -368,10 +505,10 @@
         </div>
       </div>
 
-      <!-- Step 4: Plan Preview (Blocks) -->
-      <div v-else-if="step === 4" class="space-y-6">
+      <!-- Step 5: Plan Preview (Blocks) -->
+      <div v-else-if="step === 5" class="space-y-6">
         <div class="flex items-center gap-3 mb-2">
-          <h3 class="text-xl font-semibold">Step 4: Review Your Plan</h3>
+          <h3 class="text-xl font-semibold">Step 5: Review Your Plan</h3>
         </div>
 
         <div v-if="generatedPlan" class="space-y-6">
@@ -470,11 +607,17 @@
 
       <template v-else-if="step === 2">
         <UButton size="xl" color="primary" icon="i-heroicons-arrow-right" @click="step = 3">
-          Next: Final Details
+          Next: Schedule Review
         </UButton>
       </template>
 
       <template v-else-if="step === 3">
+        <UButton size="xl" color="primary" icon="i-heroicons-arrow-right" @click="step = 4">
+          Next: Custom Details
+        </UButton>
+      </template>
+
+      <template v-else-if="step === 4">
         <UButton
           size="xl"
           color="primary"
@@ -487,8 +630,8 @@
         </UButton>
       </template>
 
-      <template v-else-if="step === 4">
-        <UButton variant="ghost" @click="step = 3">Back</UButton>
+      <template v-else-if="step === 5">
+        <UButton variant="ghost" @click="step = 4">Back</UButton>
         <UButton
           size="xl"
           color="success"
@@ -547,6 +690,49 @@
   // Step 3 State
   const customInstructions = ref('')
   const initializing = ref(false)
+  const anchorWorkoutIds = ref<string[]>([])
+  const independentWorkouts = ref<any[]>([])
+  const loadingWorkouts = ref(false)
+
+  async function fetchIndependentWorkouts() {
+    loadingWorkouts.value = true
+    try {
+      // Determine range
+      // startDate.value is YYYY-MM-DD. Treat as UTC date for query consistency with DB.
+      const start = new Date(startDate.value)
+      let end = new Date(start)
+
+      if (isEventBased.value && endDate.value) {
+        end = new Date(endDate.value)
+      } else {
+        end.setDate(end.getDate() + durationWeeks.value * 7)
+      }
+
+      const workouts: any[] = await $fetch('/api/planned-workouts', {
+        query: {
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+          // Fetch ALL workouts (including those in current plan) so user can carry them over
+          // independentOnly: 'true',
+          limit: 100
+        }
+      })
+      independentWorkouts.value = workouts
+      // Default select all? Or none? Let's select all by default as user likely wants to keep them if they added them manually.
+      anchorWorkoutIds.value = workouts.map((w) => w.id)
+    } catch (e) {
+      console.error('Failed to fetch independent workouts', e)
+    } finally {
+      loadingWorkouts.value = false
+    }
+  }
+
+  // Watch step to fetch workouts when entering Step 3
+  watch(step, (newStep) => {
+    if (newStep === 3) {
+      fetchIndependentWorkouts()
+    }
+  })
 
   // Step 4 State
   const generatedPlan = ref<any>(null)
@@ -636,6 +822,14 @@
     }
   }
 
+  function toggleAnchor(id: string) {
+    if (anchorWorkoutIds.value.includes(id)) {
+      anchorWorkoutIds.value = anchorWorkoutIds.value.filter((i) => i !== id)
+    } else {
+      anchorWorkoutIds.value.push(id)
+    }
+  }
+
   function recommendStrategy() {
     // Simple logic for now, could be LLM powered later
     if (volumeHours.value > 10) {
@@ -703,7 +897,7 @@
       })
 
       generatedPlan.value = response.plan
-      step.value = 4
+      step.value = 5
     } catch (error: any) {
       toast.add({
         title: 'Failed to generate plan',
@@ -720,7 +914,13 @@
     activating.value = true
     try {
       // Activate the plan (archives others, triggers generation)
-      await $fetch(`/api/plans/${generatedPlan.value.id}/activate`, { method: 'POST' })
+      await $fetch(`/api/plans/${generatedPlan.value.id}/activate`, {
+        method: 'POST',
+        body: {
+          startDate: generatedPlan.value.startDate, // Ensure start date is respected
+          anchorWorkoutIds: anchorWorkoutIds.value
+        }
+      })
 
       emit('plan-created', generatedPlan.value)
       emit('close')

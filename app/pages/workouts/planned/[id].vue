@@ -35,6 +35,18 @@
           </UButton>
 
           <UButton
+            v-if="workout?.trainingWeekId"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            class="font-bold"
+            icon="i-heroicons-link-slash"
+            @click="showEjectModal = true"
+          >
+            <span class="hidden sm:inline">Eject</span>
+          </UButton>
+
+          <UButton
             v-if="workout"
             color="neutral"
             variant="outline"
@@ -599,6 +611,36 @@
   </UModal>
 
   <UModal
+    v-model:open="showEjectModal"
+    title="Eject from Plan"
+    description="Make this workout independent."
+  >
+    <template #body>
+      <div class="p-6 space-y-4">
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg flex items-start gap-3">
+          <UIcon
+            name="i-heroicons-exclamation-triangle"
+            class="w-5 h-5 text-yellow-600 flex-shrink-0"
+          />
+          <div class="text-sm text-yellow-800 dark:text-yellow-200">
+            <p class="font-medium">You are about to unlink this workout from your training plan.</p>
+            <p class="mt-1">
+              It will become an "Independent Workout" and will no longer be counted towards the
+              plan's weekly structure or stats unless you re-link it later.
+            </p>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <UButton label="Cancel" color="neutral" variant="ghost" @click="showEjectModal = false" />
+        <UButton label="Eject Workout" color="error" :loading="ejecting" @click="ejectWorkout" />
+      </div>
+    </template>
+  </UModal>
+
+  <UModal
     v-model:open="isShareModalOpen"
     title="Share Workout"
     description="Anyone with this link can view this planned workout. The link will expire in 30 days."
@@ -684,6 +726,10 @@
   const shareLink = ref('')
   const generatingShareLink = ref(false)
   const publishing = ref(false)
+
+  // Eject logic
+  const showEjectModal = ref(false)
+  const ejecting = ref(false)
 
   // Listeners
   onTaskCompleted('generate-workout-messages', async (run) => {
@@ -780,6 +826,37 @@
       })
     } finally {
       publishing.value = false
+    }
+  }
+
+  async function ejectWorkout() {
+    if (!workout.value?.id) return
+    ejecting.value = true
+    try {
+      // Re-use the link API but pass null trainingWeekId
+      await $fetch(`/api/workouts/planned/${workout.value.id}/link`, {
+        method: 'POST',
+        body: { trainingWeekId: null }
+      })
+
+      // Update local state
+      workout.value.trainingWeekId = null
+      workout.value.trainingWeek = null // Clear relationship data in UI
+
+      showEjectModal.value = false
+      toast.add({
+        title: 'Workout Ejected',
+        description: 'This workout is now independent of the training plan.',
+        color: 'success'
+      })
+    } catch (error: any) {
+      toast.add({
+        title: 'Failed to eject',
+        description: error.data?.message || 'Error ejecting workout',
+        color: 'error'
+      })
+    } finally {
+      ejecting.value = false
     }
   }
 
