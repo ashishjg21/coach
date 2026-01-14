@@ -16,6 +16,16 @@ defineRouteMeta({
         name: 'startDate',
         in: 'query',
         schema: { type: 'string', format: 'date-time' }
+      },
+      {
+        name: 'endDate',
+        in: 'query',
+        schema: { type: 'string', format: 'date-time' }
+      },
+      {
+        name: 'independentOnly',
+        in: 'query',
+        schema: { type: 'boolean' }
       }
     ],
     responses: {
@@ -34,7 +44,8 @@ defineRouteMeta({
                   type: { type: 'string' },
                   description: { type: 'string', nullable: true },
                   durationSec: { type: 'integer', nullable: true },
-                  tss: { type: 'number', nullable: true }
+                  tss: { type: 'number', nullable: true },
+                  trainingWeekId: { type: 'string', nullable: true }
                 }
               }
             }
@@ -57,14 +68,24 @@ export default defineEventHandler(async (event) => {
   }
 
   const query = getQuery(event)
-  const limit = query.limit ? parseInt(query.limit as string) : 10
+  const limit = query.limit ? parseInt(query.limit as string) : undefined
   const startDate = query.startDate ? new Date(query.startDate as string) : new Date()
+  const endDate = query.endDate ? new Date(query.endDate as string) : undefined
+  const independentOnly = query.independentOnly === 'true'
 
   const where: any = {
     userId: (session.user as any).id,
     date: {
       gte: startDate
     }
+  }
+
+  if (endDate) {
+    where.date.lte = endDate
+  }
+
+  if (independentOnly) {
+    where.trainingWeekId = null
   }
 
   const plannedWorkouts = await prisma.plannedWorkout.findMany({
