@@ -71,6 +71,22 @@
             </div>
           </UCard>
 
+          <!-- User Notes -->
+          <UCard>
+            <div class="space-y-3">
+              <label class="text-sm font-medium text-gray-900 dark:text-white block">
+                Do you have anything to share?
+              </label>
+              <UTextarea
+                v-model="userNotes"
+                placeholder="E.g., I feel tired today, I think I have the flu, etc."
+                :rows="4"
+                autoresize
+                class="w-full"
+              />
+            </div>
+          </UCard>
+
           <!-- AI Feedback Section -->
           <div class="flex justify-end pt-2">
             <AiFeedback
@@ -132,6 +148,7 @@
   const error = ref<string | null>(null)
   const checkin = ref<any>(null)
   const answers = ref<Record<string, string>>({})
+  const userNotes = ref('')
   const localQuestions = ref<any[]>([])
   const expandedQuestions = ref<Set<string>>(new Set())
 
@@ -171,6 +188,7 @@
     await fetchToday()
     if (checkin.value?.status === 'COMPLETED') {
       localQuestions.value = checkin.value.questions || []
+      userNotes.value = checkin.value.userNotes || ''
       useCheckinStore().currentCheckin = checkin.value
       // Note: we don't need to manually set loading=false because fetchToday handles it
       // but if we were stuck in "loading" state from generate(), we might.
@@ -191,6 +209,7 @@
       if (data) {
         checkin.value = data
         localQuestions.value = data.questions || []
+        userNotes.value = data.userNotes || ''
         // Pre-fill answers if they exist
         data.questions.forEach((q: any) => {
           if (q.answer) answers.value[q.id] = q.answer
@@ -216,6 +235,7 @@
       })
       checkin.value = data
       localQuestions.value = data.questions || []
+      userNotes.value = ''
       answers.value = {} // Reset answers on regenerate
 
       refreshRuns()
@@ -239,23 +259,12 @@
         }
       })
 
-      // We also want to update the questions list on the backend to reflect deletions?
-      // The endpoint 'answer.post.ts' updates questions. If we pass answers, it updates them.
-      // But if we removed questions, 'answer.post.ts' logic currently only updates answers.
-      // Maybe we should just save the answers we have. The removed questions will remain in DB but unanswered.
-      // Ideally we should tell backend which questions are now "active" or "removed".
-      // For MVP, just saving answers is fine. The UI will show all questions next time unless we persist the removal.
-      // User asked to "X" them. Persisting removal would be better.
-      // Let's stick to saving answers for now. If user reloads, deleted questions might reappear if we don't handle it.
-      // But `fetchToday` re-fetches from DB.
-      // Let's modify `answer.post.ts` to also accept a list of active question IDs if we want to persist deletions?
-      // Or just let them be unanswered.
-
       await $fetch('/api/checkin/answer', {
         method: 'POST',
         body: {
           checkinId: checkin.value.id,
-          answers: filteredAnswers
+          answers: filteredAnswers,
+          userNotes: userNotes.value
         }
       })
       await useCheckinStore().fetchToday()
