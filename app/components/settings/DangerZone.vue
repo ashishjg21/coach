@@ -11,19 +11,29 @@
 
       <div class="space-y-4">
         <div>
-          <h3 class="font-medium mb-1">Clear Future Schedule</h3>
+          <h3 class="font-medium mb-1">Clear Schedule</h3>
           <p class="text-sm text-muted mb-3">
-            Remove all uncompleted planned workouts scheduled for future dates. This is useful if
-            you want to regenerate your plan completely.
+            Remove planned workouts from your schedule. This is useful if you want to regenerate
+            your plan or clean up old entries.
           </p>
-          <UButton
-            color="warning"
-            variant="soft"
-            :loading="clearingSchedule"
-            @click="isClearScheduleModalOpen = true"
-          >
-            Clear Future Workouts
-          </UButton>
+          <div class="flex flex-wrap gap-2">
+            <UButton
+              color="warning"
+              variant="soft"
+              :loading="clearingSchedule"
+              @click="isClearScheduleModalOpen = true"
+            >
+              Clear Future Workouts
+            </UButton>
+            <UButton
+              color="warning"
+              variant="soft"
+              :loading="clearingPastSchedule"
+              @click="isClearPastScheduleModalOpen = true"
+            >
+              Clear Past Planned (Non-Completed) Workouts
+            </UButton>
+          </div>
         </div>
       </div>
     </UCard>
@@ -129,6 +139,27 @@
       </template>
     </UModal>
 
+    <!-- Clear Past Schedule Confirmation Modal -->
+    <UModal v-model:open="isClearPastScheduleModalOpen" title="Clear Past Schedule">
+      <template #body>
+        <p>
+          Are you sure? This will delete ALL past planned workouts that were NOT completed. This
+          only affects workouts managed by CoachWatts.
+        </p>
+      </template>
+
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton color="neutral" variant="ghost" @click="isClearPastScheduleModalOpen = false"
+            >Cancel</UButton
+          >
+          <UButton color="warning" :loading="clearingPastSchedule" @click="executeClearPastSchedule"
+            >Clear Past Workouts</UButton
+          >
+        </div>
+      </template>
+    </UModal>
+
     <!-- Wipe Profiles Confirmation Modal -->
     <UModal v-model:open="isWipeProfilesModalOpen" title="Wipe Athlete Profiles">
       <template #body>
@@ -194,10 +225,12 @@
   const toast = useToast()
   const { signOut } = useAuth()
   const clearingSchedule = ref(false)
+  const clearingPastSchedule = ref(false)
   const wipingProfiles = ref(false)
   const wipingAnalysis = ref(false)
   const deletingAccount = ref(false)
   const isClearScheduleModalOpen = ref(false)
+  const isClearPastScheduleModalOpen = ref(false)
   const isWipeProfilesModalOpen = ref(false)
   const isWipeAnalysisModalOpen = ref(false)
   const isDeleteAccountModalOpen = ref(false)
@@ -224,6 +257,31 @@
       })
     } finally {
       clearingSchedule.value = false
+    }
+  }
+
+  async function executeClearPastSchedule() {
+    clearingPastSchedule.value = true
+    try {
+      const result: any = await $fetch('/api/plans/workouts/past', {
+        method: 'DELETE'
+      })
+
+      toast.add({
+        title: 'Schedule Cleared',
+        description: `Removed ${result.count} past planned workouts.`,
+        color: 'success'
+      })
+      isClearPastScheduleModalOpen.value = false
+    } catch (error) {
+      console.error('Failed to clear past schedule', error)
+      toast.add({
+        title: 'Action Failed',
+        description: 'Could not clear past workouts.',
+        color: 'error'
+      })
+    } finally {
+      clearingPastSchedule.value = false
     }
   }
 
