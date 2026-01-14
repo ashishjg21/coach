@@ -130,3 +130,7 @@ Future feature specifications and improvement plans.
 - [**Performance Page Upgrade**](./06-plans/performance-page-upgrade.md) - Next steps for the performance dashboard.
 - [**Strava Compliance**](./06-plans/strava_compliance_response.md) - Ensuring adherence to Strava API policies.
 - [**Withings Integration**](./06-plans/withings-enhancements.md) - Plans for adding smart scale data.
+
+## ❤️ Community
+
+- [**Acknowledgements**](../ACKNOWLEDGEMENTS.md) - Recognition of contributors and built-with technologies.

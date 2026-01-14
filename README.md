@@ -17,7 +17,8 @@
     <a href="#key-features">Key Features</a> •
     <a href="#quick-start">Quick Start</a> •
     <a href="#integrations">Integrations</a> •
-    <a href="./docs/INDEX.md">Documentation</a>
+    <a href="./docs/INDEX.md">Documentation</a> •
+    <a href="./ACKNOWLEDGEMENTS.md">Acknowledgements</a>
   </p>
 </div>
 
@@ -142,7 +143,7 @@ We welcome contributions! Whether it's fixing bugs, improving documentation, or 
 
 ## 📄 License
 
-Distributed under the MIT License. See [`LICENSE`](./LICENSE) for more information.
+Distributed under the MIT License. See [`LICENSE`](./LICENSE) for more information. Acknowledgements of third-party assets and contributors can be found in [`ACKNOWLEDGEMENTS.md`](./ACKNOWLEDGEMENTS.md).
 
 ## ❤️ Community & Support
 
