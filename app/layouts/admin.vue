@@ -124,16 +124,16 @@
           onSelect: () => {
             isOpen.value = false
           }
+        },
+        {
+          label: 'Database Health',
+          icon: 'i-lucide-database',
+          to: '/admin/debug/database',
+          onSelect: () => {
+            isOpen.value = false
+          }
         }
       ]
-    },
-    {
-      label: 'Database Health',
-      icon: 'i-lucide-database',
-      to: '/admin/database',
-      onSelect: () => {
-        isOpen.value = false
-      }
     },
     {
       label: 'System Messages',
