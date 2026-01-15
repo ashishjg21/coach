@@ -127,7 +127,43 @@ model User {
   athletes   CoachingRelationship[] @relation("CoachRelation")
   invites    CoachingInvite[]
 
+  // System Message Dismissals
+  systemMessageDismissals UserSystemMessageDismissal[]
+
   @@index([createdAt])
+}
+
+// --------------------------------------
+// System Announcements
+// --------------------------------------
+
+model SystemMessage {
+  id          String   @id @default(uuid())
+  title       String
+  content     String   @db.Text
+  type        String   @default("INFO") // INFO, WARNING, ERROR, SUCCESS
+  isActive    Boolean  @default(true)
+  expiresAt   DateTime?
+
+  // Tracking user dismissals
+  dismissals  UserSystemMessageDismissal[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model UserSystemMessageDismissal {
+  id              String        @id @default(uuid())
+  userId          String
+  systemMessageId String
+
+  dismissedAt     DateTime      @default(now())
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  systemMessage   SystemMessage @relation(fields: [systemMessageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, systemMessageId])
+  @@index([userId])
 }
 
 // --------------------------------------
