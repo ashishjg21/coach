@@ -13,7 +13,7 @@
       padded: false
     }"
     class="mb-6 w-full shadow-sm"
-    @close="dismiss"
+    @update:open="dismiss"
   />
 </template>
 
