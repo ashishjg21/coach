@@ -6,7 +6,7 @@
     :color="color"
     :variant="variant"
     :icon="icon"
-    :close-button="{
+    :close="{
       icon: 'i-heroicons-x-mark-20-solid',
       color: 'gray',
       variant: 'link',
