@@ -241,7 +241,7 @@
                   @click="navigateToWellness(wellness.id)"
                 >
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {{ formatDate(wellness.date) }}
+                    {{ formatDateUTC(wellness.date) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <span
@@ -424,7 +424,7 @@
     }
   }
 
-  const { formatDate, getUserLocalDate } = useFormat()
+  const { formatDate, formatDateUTC, getUserLocalDate } = useFormat()
 
   // Computed properties
   const filteredWellness = computed(() => {
@@ -507,20 +507,6 @@
   })
 
   // Functions
-  function formatDate(date: string | Date) {
-    // Parse date in UTC to avoid timezone conversion issues
-    // Database stores dates as YYYY-MM-DD (date-only, no time component)
-    const d = new Date(date)
-    const formatted = d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      timeZone: 'UTC' // Force UTC to prevent timezone shifts
-    })
-
-    return formatted
-  }
-
   function getRecoveryBadgeClass(score: number) {
     const baseClass = 'px-2 py-1 rounded text-xs font-semibold'
     if (score > 80)
@@ -923,4 +909,22 @@
   onMounted(() => {
     fetchWellness()
   })
+
+  function formatWellnessDate(dateStr: string): string {
+    const date = new Date(dateStr)
+    const today = getUserLocalDate()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    const dStr = formatDateUTC(date, 'yyyy-MM-dd')
+    const tStr = formatDateUTC(today, 'yyyy-MM-dd')
+    const yStr = formatDateUTC(yesterday, 'yyyy-MM-dd')
+
+    if (dStr === tStr) return 'today'
+    if (dStr === yStr) return 'yesterday'
+
+    const diffDays = Math.floor((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+    if (diffDays > 1 && diffDays < 7) return `${diffDays} days ago`
+    return formatDateUTC(date, 'MMM d')
+  }
 </script>
