@@ -307,7 +307,7 @@
                   >
                     <div class="w-12 text-center shrink-0 pt-1">
                       <div class="text-[10px] uppercase text-gray-500">
-                        {{ format(day.date, 'EEE') }}
+                        {{ formatDateUTC(day.date, 'EEE') }}
                       </div>
                       <div
                         class="w-8 h-8 mx-auto flex items-center justify-center rounded-full text-sm font-bold mt-0.5"
@@ -318,7 +318,7 @@
                           day.isOtherMonth ? 'opacity-30' : ''
                         ]"
                       >
-                        {{ format(day.date, 'd') }}
+                        {{ formatDateUTC(day.date, 'd') }}
                       </div>
                     </div>
 
@@ -755,8 +755,7 @@
     addMonths,
     subMonths,
     isSameMonth,
-    getISOWeek,
-    isToday as isTodayDate
+    getISOWeek
   } from 'date-fns'
   import { useStorage } from '@vueuse/core'
   import type { CalendarActivity } from '../../types/calendar'
@@ -769,7 +768,7 @@
   })
 
   const integrationStore = useIntegrationStore()
-  const { formatDate, formatDateUTC, formatDateTime } = useFormat()
+  const { formatDate, formatDateUTC, formatDateTime, getUserLocalDate } = useFormat()
 
   // Modal state
   const showPlannedWorkoutModal = ref(false)
@@ -792,7 +791,7 @@
   const linkCompleted = ref<CalendarActivity | null>(null)
   const isLinking = ref(false)
 
-  const currentDate = ref(new Date())
+  const currentDate = ref(getUserLocalDate())
   const viewMode = ref<'calendar' | 'list'>('calendar')
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -803,11 +802,11 @@
     refresh
   } = await useFetch<CalendarActivity[]>('/api/calendar', {
     query: computed(() => {
-      const start = format(
+      const start = formatDateUTC(
         startOfWeek(startOfMonth(currentDate.value), { weekStartsOn: 1 }),
         'yyyy-MM-dd'
       )
-      const end = format(
+      const end = formatDateUTC(
         endOfWeek(endOfMonth(currentDate.value), { weekStartsOn: 1 }),
         'yyyy-MM-dd'
       )
@@ -904,7 +903,7 @@
     let currentWeek = []
 
     for (const day of days) {
-      const dayStr = format(day, 'yyyy-MM-dd')
+      const dayStr = formatDateUTC(day, 'yyyy-MM-dd')
       const dayActivities = (activities.value || []).filter((a) => {
         // IMPORTANT: Use UTC formatting for planned workouts (date-only)
         // and local formatting for completed workouts (timestamps)
@@ -930,9 +929,9 @@
     return weeks
   })
 
-  const currentMonthLabel = computed(() => format(currentDate.value, 'MMMM yyyy'))
+  const currentMonthLabel = computed(() => formatDateUTC(currentDate.value, 'MMMM yyyy'))
 
-  const isCurrentMonth = computed(() => isSameMonth(currentDate.value, new Date()))
+  const isCurrentMonth = computed(() => isSameMonth(currentDate.value, getUserLocalDate()))
 
   // Navigation
   function nextMonth() {
@@ -944,7 +943,11 @@
   }
 
   function goToToday() {
-    currentDate.value = new Date()
+    currentDate.value = getUserLocalDate()
+  }
+
+  function isTodayDate(date: Date) {
+    return date.getTime() === getUserLocalDate().getTime()
   }
 
   // Helpers
@@ -1211,7 +1214,7 @@
       await $fetch(`/api/planned-workouts/${activity.id}`, {
         method: 'PATCH',
         body: {
-          date: format(date, 'yyyy-MM-dd')
+          date: formatDateUTC(date, 'yyyy-MM-dd')
         }
       })
 
@@ -1220,7 +1223,7 @@
 
       toast.add({
         title: 'Workout Rescheduled',
-        description: `Workout moved to ${format(date, 'MMM do')}.`,
+        description: `Workout moved to ${formatDateUTC(date, 'MMM do')}.`,
         color: 'success'
       })
     } catch (error: any) {

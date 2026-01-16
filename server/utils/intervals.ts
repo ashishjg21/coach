@@ -846,7 +846,9 @@ export function cleanIntervalsDescription(description: string): string {
   let splitIndex = -1
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim()
+    const line = lines[i]?.trim()
+    if (!line) continue
+
     // Heuristics for Intervals.icu workout text start
     if (
       /^(Warmup|Cooldown|Main Set)$/i.test(line) || // Section headers

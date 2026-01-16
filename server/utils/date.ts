@@ -123,7 +123,7 @@ export function formatDateUTC(date: Date, formatStr: string = 'yyyy-MM-dd'): str
  * Get the user's current local date as a Date object set to UTC midnight.
  * This is useful for querying Prisma @db.Date columns.
  */
-export function getUserLocalDate(timezone: string): Date {
+export function getUserLocalDate(timezone: string = 'UTC'): Date {
   try {
     const now = new Date()
     const dateStr = format(toZonedTime(now, timezone), 'yyyy-MM-dd', { timeZone: timezone })

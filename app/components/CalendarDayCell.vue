@@ -279,10 +279,12 @@
 </template>
 
 <script setup lang="ts">
-  import { format, isToday as isTodayFn, isSameMonth } from 'date-fns'
+  import { isSameMonth } from 'date-fns'
   import type { CalendarActivity } from '../../types/calendar'
   import MiniWorkoutChart from '~/components/workouts/MiniWorkoutChart.vue'
   import MiniZoneChart from '~/components/MiniZoneChart.vue'
+
+  const { formatDateUTC, getUserLocalDate } = useFormat()
 
   const props = defineProps<{
     date: Date
@@ -300,7 +302,7 @@
     'reschedule-activity': [data: { activity: { id: string; source: string }; date: Date }]
   }>()
 
-  const dayNumber = computed(() => format(props.date, 'd'))
+  const dayNumber = computed(() => formatDateUTC(props.date, 'd'))
   const isDragOver = ref<string | null>(null)
   const isDayDragOver = ref(false)
 
@@ -392,9 +394,9 @@
 
           // Only allow rescheduling planned workouts
           if (sourceActivity.source === 'planned') {
-            const targetDateStr = format(props.date, 'yyyy-MM-dd')
+            const targetDateStr = formatDateUTC(props.date, 'yyyy-MM-dd')
             const sourceDateStr = sourceActivity.date
-              ? format(new Date(sourceActivity.date), 'yyyy-MM-dd')
+              ? formatDateUTC(new Date(sourceActivity.date), 'yyyy-MM-dd')
               : ''
 
             // Only emit if the date has changed
@@ -412,7 +414,9 @@
     }
   }
 
-  const isToday = computed(() => isTodayFn(props.date))
+  const isToday = computed(() => {
+    return props.date.getTime() === getUserLocalDate().getTime()
+  })
 
   // Get nutrition data from any activity on this day (they all have same nutrition data)
   const dayNutrition = computed(() => {

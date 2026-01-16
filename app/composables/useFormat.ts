@@ -1,4 +1,4 @@
-import { format, toZonedTime } from 'date-fns-tz'
+import { format, toZonedTime, fromZonedTime } from 'date-fns-tz'
 import { formatDistanceToNow } from 'date-fns'
 
 export const useFormat = () => {
@@ -103,6 +103,19 @@ export const useFormat = () => {
     }
   }
 
+  /**
+   * Construct a Date object from a local date string (YYYY-MM-DD) and time string (HH:mm:ss)
+   * interpreted in the user's timezone. Returns a standard Date object (which renders as UTC in ISO string).
+   */
+  const getUserDateFromLocal = (dateStr: string, timeStr: string = '00:00:00'): Date => {
+    try {
+      return fromZonedTime(`${dateStr}T${timeStr}`, timezone.value)
+    } catch (e) {
+      // Fallback to simple UTC construction if invalid
+      return new Date(`${dateStr}T${timeStr}Z`)
+    }
+  }
+
   return {
     formatDate,
     formatDateUTC,
@@ -112,6 +125,7 @@ export const useFormat = () => {
     formatUserDate,
     getUserLocalDate,
     getUserLocalTime,
+    getUserDateFromLocal,
     timezone
   }
 }

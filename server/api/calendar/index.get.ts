@@ -81,7 +81,7 @@ export default defineEventHandler(async (event) => {
     where: { id: userId },
     select: { timezone: true }
   })
-  const today = getUserLocalDate(user?.timezone)
+  const today = getUserLocalDate(user?.timezone ?? 'UTC')
 
   // Fetch nutrition data for the date range
   const nutrition = await nutritionRepository.getForUser(userId, {

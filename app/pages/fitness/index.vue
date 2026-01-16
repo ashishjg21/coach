@@ -424,7 +424,7 @@
     }
   }
 
-  const { formatDate, formatDateUTC, getUserLocalDate } = useFormat()
+  const { formatDateUTC, getUserLocalDate } = useFormat()
 
   // Computed properties
   const filteredWellness = computed(() => {
