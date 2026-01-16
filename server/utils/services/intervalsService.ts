@@ -50,8 +50,13 @@ export const IntervalsService = {
 
     const allActivities = await fetchIntervalsWorkouts(integration, startDate, historicalEnd)
 
-    // Filter out incomplete Strava activities
+    // Filter out incomplete Strava activities and Notes/Holidays
     const activities = allActivities.filter((activity) => {
+      // Filter out Notes and Holidays
+      if (['Note', 'Holiday'].includes(activity.type)) {
+        return false
+      }
+
       const isIncompleteStrava =
         activity.source === 'STRAVA' && activity._note?.includes('not available via the API')
       if (isIncompleteStrava) {
@@ -299,6 +304,14 @@ export const IntervalsService = {
     let eventsUpserted = 0
 
     for (const planned of plannedWorkouts) {
+      // Filter out Notes and Holidays
+      if (
+        ['NOTE', 'HOLIDAY'].includes(planned.category || '') ||
+        ['Note', 'Holiday'].includes(planned.type || '')
+      ) {
+        continue
+      }
+
       const normalizedPlanned = normalizeIntervalsPlannedWorkout(planned, userId)
 
       await prisma.plannedWorkout.upsert({
