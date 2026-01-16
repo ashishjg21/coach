@@ -1,5 +1,6 @@
 import { Command } from 'commander'
 import webhookCommand from './webhook'
+import webhookTriggerCommand from './webhook-trigger'
 import profileCommand from './profile'
 import workoutCommand from './workout'
 import userStatsCommand from './user-stats'
@@ -18,6 +19,7 @@ const debugCommand = new Command('debug')
 debugCommand
   .description('Debugging utilities')
   .addCommand(webhookCommand)
+  .addCommand(webhookTriggerCommand)
   .addCommand(profileCommand)
   .addCommand(workoutCommand)
   .addCommand(userStatsCommand)
