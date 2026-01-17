@@ -51,6 +51,8 @@ export const ingestWithingsTask = task({
       data: { syncStatus: 'SYNCING' }
     })
 
+    const timezone = await getUserTimezone(userId)
+
     try {
       // 1. Fetch Measure Groups (Wellness)
       // Include Weight (1), Fat Ratio (6), Muscle Mass (76), Hydration (77), Bone Mass (88)
@@ -131,7 +133,8 @@ export const ingestWithingsTask = task({
         const sleepSummaries = await fetchWithingsSleep(
           integration,
           new Date(startDate),
-          new Date(endDate)
+          new Date(endDate),
+          timezone
         )
 
         logger.log(`[Withings Ingest] Fetched ${sleepSummaries.length} sleep summaries`)
@@ -201,7 +204,8 @@ export const ingestWithingsTask = task({
         const workouts = await fetchWithingsWorkouts(
           updatedIntegration,
           new Date(startDate),
-          new Date(endDate)
+          new Date(endDate),
+          timezone
         )
 
         logger.log(`[Withings Ingest] Fetched ${workouts.length} workouts`)
