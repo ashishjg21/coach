@@ -686,7 +686,12 @@ export async function fetchIntervalsAthleteProfile(integration: Integration) {
     // Basic info
     name: athlete.name || null,
     email: athlete.email || null,
-    sex: athlete.sex || null,
+    sex:
+      athlete.sex === 'M' || athlete.sex === 'Male'
+        ? 'Male'
+        : athlete.sex === 'F' || athlete.sex === 'Female'
+          ? 'Female'
+          : 'Other',
     dateOfBirth: athlete.icu_date_of_birth || null,
     age: athlete.icu_date_of_birth ? calculateAge(athlete.icu_date_of_birth) : null,
     location: {

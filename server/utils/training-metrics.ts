@@ -1,5 +1,6 @@
 import { prisma } from './db'
 import { formatUserDate } from './date'
+import { sportSettingsRepository } from './repositories/sportSettingsRepository'
 
 /**
  * Training Metrics Utility
@@ -132,14 +133,27 @@ export async function calculateZoneDistribution(
 ): Promise<{ hr?: ZoneDistribution; power?: ZoneDistribution }> {
   if (workoutIds.length === 0) return {}
 
-  // Fetch user's zone definitions
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { hrZones: true, powerZones: true }
-  })
+  // Fetch user's default sport settings (primary zone source)
+  const defaultProfile = await sportSettingsRepository.getDefault(userId)
 
-  const hrZones = (user?.hrZones as unknown as Zone[]) || DEFAULT_HR_ZONES
-  const powerZones = (user?.powerZones as unknown as Zone[]) || DEFAULT_POWER_ZONES
+  let hrZones: Zone[] = []
+  let powerZones: Zone[] = []
+
+  if (defaultProfile) {
+    hrZones = (defaultProfile.hrZones as unknown as Zone[]) || []
+    powerZones = (defaultProfile.powerZones as unknown as Zone[]) || []
+  }
+
+  // Fallback to legacy User zones if default profile zones are empty
+  if (hrZones.length === 0 || powerZones.length === 0) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { hrZones: true, powerZones: true }
+    })
+    if (hrZones.length === 0) hrZones = (user?.hrZones as unknown as Zone[]) || DEFAULT_HR_ZONES
+    if (powerZones.length === 0)
+      powerZones = (user?.powerZones as unknown as Zone[]) || DEFAULT_POWER_ZONES
+  }
 
   // Fetch streams for all workouts
   const streams = await prisma.workoutStream.findMany({

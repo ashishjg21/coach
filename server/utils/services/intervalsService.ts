@@ -7,12 +7,15 @@ import {
   normalizeIntervalsWellness,
   normalizeIntervalsPlannedWorkout,
   normalizeIntervalsCalendarNote,
-  fetchIntervalsActivityStreams
+  fetchIntervalsActivityStreams,
+  fetchIntervalsAthlete,
+  fetchIntervalsAthleteProfile
 } from '../intervals'
 import { workoutRepository } from '../repositories/workoutRepository'
 import { wellnessRepository } from '../repositories/wellnessRepository'
 import { eventRepository } from '../repositories/eventRepository'
 import { calendarNoteRepository } from '../repositories/calendarNoteRepository'
+import { sportSettingsRepository } from '../repositories/sportSettingsRepository'
 import { normalizeTSS } from '../normalize-tss'
 import { calculateWorkoutStress } from '../calculate-workout-stress'
 import { getUserTimezone, getEndOfDayUTC, getStartOfDayUTC } from '../date'
@@ -27,6 +30,57 @@ import {
 } from '../pacing'
 
 export const IntervalsService = {
+  /**
+   * Get athlete profile from Intervals.icu
+   */
+  async getAthlete(accessToken: string, athleteId: string) {
+    return await fetchIntervalsAthlete(accessToken, athleteId)
+  },
+
+  /**
+   * Get normalized athlete profile from Intervals.icu
+   */
+  async getAthleteProfile(integration: any) {
+    return await fetchIntervalsAthleteProfile(integration)
+  },
+
+  /**
+   * Sync athlete profile settings (Basic + Sports)
+   */
+  async syncProfile(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { integrations: true }
+    })
+
+    if (!user) return
+
+    const integration = user.integrations.find((i) => i.provider === 'intervals')
+    if (!integration || !integration.externalUserId) return
+
+    const profile = (await fetchIntervalsAthlete(
+      integration.accessToken,
+      integration.externalUserId
+    )) as any
+
+    // Update Basic Settings
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        weight: profile.weight,
+        restingHr: profile.restingHr,
+        maxHr: profile.maxHr,
+        lthr: profile.lthr,
+        ftp: profile.ftp
+      }
+    })
+
+    // Update Sport Settings
+    if (profile.sportSettings && profile.sportSettings.length > 0) {
+      await sportSettingsRepository.upsertSettings(userId, profile.sportSettings)
+    }
+  },
+
   /**
    * Sync activities for a user within a given date range.
    */
@@ -331,6 +385,11 @@ export const IntervalsService = {
     let notesUpserted = 0
 
     for (const planned of plannedWorkouts) {
+      // Skip "Weekly" notes which are internal system notes
+      if (planned.name === 'Weekly') {
+        continue
+      }
+
       const category = planned.category || ''
       const type = planned.type || ''
 
