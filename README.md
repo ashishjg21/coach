@@ -5,6 +5,7 @@
     <strong>Your Open Source AI-Powered Endurance Coach</strong>
   </p>
 
+
   <p align="center">
     <a href="https://nuxt.com"><img src="https://img.shields.io/badge/Nuxt-4.2-00DC82?style=flat-square&logo=nuxt.js&logoColor=white" alt="Nuxt 4" /></a>
     <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
