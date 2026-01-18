@@ -76,7 +76,6 @@
                 <UIcon
                   :name="badge.icon"
                   class="w-3.5 h-3.5 opacity-60 hover:opacity-100 transition-opacity"
-                  :class="badge.color"
                 />
               </UTooltip>
             </div>
@@ -499,25 +498,19 @@
 
   function getDataBadges(workout: any) {
     const badges = []
-    if (workout.averageHr > 0)
-      badges.push({ icon: 'i-heroicons-heart', label: 'Heart Rate', color: 'text-red-500' })
-    if (workout.averageWatts > 0)
-      badges.push({ icon: 'i-heroicons-bolt', label: 'Power', color: 'text-yellow-500' })
-    if (workout.distanceMeters > 0)
-      badges.push({ icon: 'i-heroicons-map-pin', label: 'GPS', color: 'text-blue-500' })
-    if (workout.averageCadence > 0)
-      badges.push({ icon: 'i-ph-sneaker-move', label: 'Cadence', color: 'text-purple-500' })
+    if (workout.averageHr > 0) badges.push({ icon: 'i-heroicons-heart', label: 'Heart Rate' })
+    if (workout.averageWatts > 0) badges.push({ icon: 'i-heroicons-bolt', label: 'Power' })
+    if (workout.distanceMeters > 0) badges.push({ icon: 'i-heroicons-map-pin', label: 'GPS' })
+    if (workout.averageCadence > 0) badges.push({ icon: 'i-ph-sneaker-move', label: 'Cadence' })
     if (workout.streams)
       badges.push({
         icon: 'i-heroicons-chart-bar',
-        label: 'Detailed Streams',
-        color: 'text-green-500'
+        label: 'Detailed Streams'
       })
     if (workout.elevationGain > 0)
       badges.push({
         icon: 'i-heroicons-arrow-trending-up',
-        label: 'Elevation',
-        color: 'text-gray-500'
+        label: 'Elevation'
       })
     return badges
   }
