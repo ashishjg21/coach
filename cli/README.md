@@ -86,6 +86,23 @@ Troubleshooting and debugging commands.
   - `--source <source>`: Filter by source (default: `intervals`).
   - `-v, --verbose`: Show comparison for all fields, even matching ones.
 
+### Trigger (`trigger`)
+
+Trigger.dev management commands.
+
+- **List Runs:**
+
+  ```bash
+  npx tsx cli/index.ts trigger list
+  ```
+
+  Lists the latest trigger runs.
+
+  Options:
+  - `--prod`: Use production environment (requires `TRIGGER_PROD_SECRET_KEY` in `.env`).
+  - `-l, --limit <number>`: Number of runs to show (default: 20).
+  - `--status <status>`: Filter by status (e.g., `COMPLETED`, `FAILED`).
+
 ## Development & Maintenance
 
 ### Philosophy
