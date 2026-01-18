@@ -51,10 +51,7 @@
             variant="outline"
             color="primary"
             class="flex flex-col items-start p-4 h-auto text-left border-dashed"
-            @click="
-              showConfigModal = true
-              showSelectModal = false
-            "
+            @click="openCustomReportConfig"
           >
             <div class="flex items-center gap-3 mb-2">
               <UIcon name="i-heroicons-adjustments-horizontal" class="w-6 h-6 shrink-0" />
@@ -375,6 +372,11 @@
     } catch (error) {
       // Error handling is done in store
     }
+  }
+
+  const openCustomReportConfig = () => {
+    showConfigModal.value = true
+    showSelectModal.value = false
   }
 
   const handleCustomReport = async (config: any) => {
