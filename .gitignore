@@ -42,8 +42,18 @@ application_default_credentials.json
 
 # AI Tool Skills & Configs
 !.gemini/
-.gemini/settings.json
+!.gemini/settings.json
 .gemini/telemetry.log
+# Ignore hook cache and logs
+.gemini/hook-cache.json
+.gemini/hook-debug.log
+.gemini/memory/session-*.jsonl
+
+# Keep hook scripts
+!.gemini/hooks/*.sh
+!.gemini/hooks/*.js
+
+
 .claude/
 .codex/
 .cursor/
