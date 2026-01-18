@@ -103,6 +103,17 @@ Trigger.dev management commands.
   - `-l, --limit <number>`: Number of runs to show (default: 20).
   - `--status <status>`: Filter by status (e.g., `COMPLETED`, `FAILED`).
 
+- **Get Run Details:**
+
+  ```bash
+  npx tsx cli/index.ts trigger get <runId>
+  ```
+
+  Gets detailed information about a specific run.
+
+  Options:
+  - `--prod`: Use production environment.
+
 ## Development & Maintenance
 
 ### Philosophy
