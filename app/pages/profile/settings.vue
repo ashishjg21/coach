@@ -52,6 +52,7 @@
               :settings="sportSettings"
               :profile="profile"
               @update:settings="updateSportSettings"
+              @autodetect="handleAutodetect"
             />
           </div>
         </div>

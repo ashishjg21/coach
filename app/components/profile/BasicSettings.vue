@@ -1004,7 +1004,14 @@
 
   function saveField() {
     if (editingField.value) {
-      const newValue = editValue.value === '' ? null : editValue.value
+      let newValue = editValue.value === '' ? null : editValue.value
+
+      // Coerce numeric fields
+      const numericFields = ['weight', 'height', 'restingHr', 'maxHr', 'lthr', 'ftp']
+      if (numericFields.includes(editingField.value) && newValue !== null) {
+        const num = Number(newValue)
+        newValue = isNaN(num) ? null : num
+      }
 
       emit('update:modelValue', {
         ...props.modelValue,

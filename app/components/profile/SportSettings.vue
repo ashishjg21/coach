@@ -2,9 +2,27 @@
   <div class="space-y-6 animate-fade-in">
     <div class="flex justify-between items-center">
       <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Configure Sports</h3>
-      <UButton icon="i-lucide-plus" size="sm" variant="soft" color="primary" @click="openAddModal">
-        Add Sport
-      </UButton>
+      <div class="flex gap-2">
+        <UButton
+          icon="i-heroicons-arrow-path"
+          size="sm"
+          variant="soft"
+          color="primary"
+          :loading="autodetecting"
+          @click="autodetectProfile"
+        >
+          Auto-detect
+        </UButton>
+        <UButton
+          icon="i-lucide-plus"
+          size="sm"
+          variant="soft"
+          color="primary"
+          @click="openAddModal"
+        >
+          Add Sport
+        </UButton>
+      </div>
     </div>
 
     <!-- Empty State -->
@@ -577,6 +595,80 @@
       </UAccordion>
     </div>
 
+    <!-- Autodetect Confirmation Modal -->
+    <UModal
+      v-model:open="showConfirmModal"
+      title="Confirm Sport Profile Updates"
+      description="We found changes in your connected apps (like Intervals.icu) for your sport profiles. Review them below:"
+    >
+      <template #body>
+        <div class="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+          <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+            <li
+              v-for="(sport, idx) in pendingDiffs.sportSettings"
+              :key="idx"
+              class="p-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50"
+            >
+              <div class="flex items-center gap-2 mb-2">
+                <UIcon :name="getIconForTypes(sport.types)" class="w-4 h-4 text-primary" />
+                <span class="font-semibold text-gray-900 dark:text-white">{{
+                  sport.name || sport.types.join(', ')
+                }}</span>
+                <UBadge v-if="!sport.id" color="success" variant="subtle" size="xs" class="ml-auto">
+                  New Profile
+                </UBadge>
+                <UBadge v-else color="warning" variant="subtle" size="xs" class="ml-auto">
+                  Updated
+                </UBadge>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400 pl-6">
+                <div v-if="sport.ftp" class="flex justify-between">
+                  <span>FTP:</span>
+                  <span class="font-mono font-medium text-gray-900 dark:text-gray-200"
+                    >{{ sport.ftp }}W</span
+                  >
+                </div>
+                <div v-if="sport.lthr" class="flex justify-between">
+                  <span>LTHR:</span>
+                  <span class="font-mono font-medium text-gray-900 dark:text-gray-200"
+                    >{{ sport.lthr }}bpm</span
+                  >
+                </div>
+                <div v-if="sport.maxHr" class="flex justify-between">
+                  <span>Max HR:</span>
+                  <span class="font-mono font-medium text-gray-900 dark:text-gray-200"
+                    >{{ sport.maxHr }}bpm</span
+                  >
+                </div>
+                <div v-if="sport.powerZones" class="flex justify-between col-span-2">
+                  <span>Power Zones:</span>
+                  <span class="font-medium text-primary"
+                    >{{ sport.powerZones.length }} zones detected</span
+                  >
+                </div>
+                <div v-if="sport.hrZones" class="flex justify-between col-span-2">
+                  <span>HR Zones:</span>
+                  <span class="font-medium text-primary"
+                    >{{ sport.hrZones.length }} zones detected</span
+                  >
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton color="neutral" variant="ghost" @click="showConfirmModal = false"
+            >Cancel</UButton
+          >
+          <UButton color="primary" @click="confirmAutodetect">Apply Changes</UButton>
+        </div>
+      </template>
+    </UModal>
+
     <!-- Add Sport Slideover -->
     <USlideover
       v-model:open="showAddModal"
@@ -833,8 +925,9 @@
     profile?: any
   }>()
 
-  const emit = defineEmits(['update:settings'])
+  const emit = defineEmits(['update:settings', 'autodetect'])
 
+  const toast = useToast()
   const editingIndex = ref<number | null>(null)
   const editForm = ref<any>({})
 
@@ -863,6 +956,12 @@
     powerZones: [],
     hrZones: []
   })
+
+  // Auto-detect State
+  const autodetecting = ref(false)
+  const showConfirmModal = ref(false)
+  const pendingDiffs = ref<any>({})
+  const pendingDetectedProfile = ref<any>({})
 
   const availableSports = Object.keys(WORKOUT_ICONS).sort()
 
@@ -1104,6 +1203,74 @@
     const mins = Math.floor(secondsPerKm / 60)
     const secs = Math.round(secondsPerKm % 60)
     return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  async function autodetectProfile() {
+    autodetecting.value = true
+    try {
+      const response: any = await $fetch('/api/profile/autodetect', {
+        method: 'POST'
+      })
+
+      if (
+        response.success &&
+        response.diff &&
+        response.diff.sportSettings &&
+        response.diff.sportSettings.length > 0
+      ) {
+        pendingDiffs.value = response.diff
+        pendingDetectedProfile.value = response.detected
+        showConfirmModal.value = true
+      } else if (response.success && Object.keys(response.diff).length > 0) {
+        // Detected changes in basic settings but not sport settings
+        // Notify user to check Basic Settings tab
+        toast.add({
+          title: 'Basic Settings Found',
+          description:
+            'Updates found for basic profile stats. Switch to the Basic Settings tab to review.',
+          color: 'primary',
+          actions: [
+            {
+              label: 'Switch Tab',
+              click: () => emit('autodetect', null) // Signal parent to maybe switch tab? Or just let user do it
+            }
+          ]
+        })
+      } else {
+        toast.add({
+          title: 'No Updates Found',
+          description: response.message || 'Your sport profiles are already in sync.',
+          color: 'neutral'
+        })
+      }
+    } catch (error: any) {
+      toast.add({
+        title: 'Autodetect Failed',
+        description: error.message || 'Failed to sync with apps.',
+        color: 'error'
+      })
+    } finally {
+      autodetecting.value = false
+    }
+  }
+
+  function confirmAutodetect() {
+    if (pendingDetectedProfile.value.sportSettings) {
+      // Merge detected sport settings into current settings
+      // We need to be careful: are we replacing or merging?
+      // The logic in autodetect.post.ts returns the *changes*.
+      // But typically we might just want to replace the list or update specific items.
+
+      // Actually, autodetect logic on parent 'handleAutodetect' does:
+      // if (updatedProfile.sportSettings) sportSettings.value = updatedProfile.sportSettings
+      // So we should emit the FULL detected profile if possible, OR just the changes.
+      // Parent handleAutodetect expects 'updatedProfile' object.
+
+      // We emit 'autodetect' event which parent listens to
+      emit('autodetect', pendingDetectedProfile.value)
+    }
+
+    showConfirmModal.value = false
   }
 </script>
 
