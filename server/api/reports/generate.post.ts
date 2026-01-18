@@ -72,8 +72,18 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const reportType = body.type || 'WEEKLY_ANALYSIS'
   const customConfig = body.config // Custom configuration from the form
+  const templateId = body.templateId // Direct template reference
 
-  // Validate report type
+  // Mapping of legacy types to new template IDs
+  const LEGACY_TEMPLATE_MAP: Record<string, string> = {
+    LAST_3_WORKOUTS: '00000000-0000-0000-0000-000000000001',
+    WEEKLY_ANALYSIS: '00000000-0000-0000-0000-000000000002'
+  }
+
+  // Resolve template ID
+  const resolvedTemplateId = templateId || LEGACY_TEMPLATE_MAP[reportType]
+
+  // Validate report type if no templateId
   const validTypes = [
     'WEEKLY_ANALYSIS',
     'LAST_3_WORKOUTS',
@@ -81,12 +91,16 @@ export default defineEventHandler(async (event) => {
     'LAST_7_NUTRITION',
     'CUSTOM'
   ]
-  if (!validTypes.includes(reportType)) {
+  if (!resolvedTemplateId && !validTypes.includes(reportType)) {
     throw createError({
       statusCode: 400,
       message: `Invalid report type. Must be one of: ${validTypes.join(', ')}`
     })
   }
+
+  // If it's a CUSTOM report without a templateId, we still use the legacy custom flow for now
+  // OR we can create a system template for CUSTOM if it doesn't exist.
+  // For now, let's stick to the unified trigger for EVERYTHING that has a template.
 
   // Determine date range based on report type or custom config
   const timezone = await getUserTimezone(userId)
@@ -95,16 +109,14 @@ export default defineEventHandler(async (event) => {
   let reportConfig: any = null
 
   if (reportType === 'CUSTOM' && customConfig) {
-    // Handle custom configuration
+    // ... custom config logic remains same ...
     reportConfig = customConfig
-
     if (customConfig.timeframeType === 'days') {
       const days = customConfig.days || 7
       dateRangeStart = getStartOfDaysAgoUTC(timezone, days)
     } else if (customConfig.timeframeType === 'ytd') {
       dateRangeStart = getStartOfYearUTC(timezone)
     } else if (customConfig.timeframeType === 'count') {
-      // For count-based, we'll use a 90-day lookback to find the items
       dateRangeStart = getStartOfDaysAgoUTC(timezone, 90)
     } else if (customConfig.timeframeType === 'range') {
       dateRangeStart = new Date(customConfig.startDate)
@@ -113,30 +125,25 @@ export default defineEventHandler(async (event) => {
       dateRangeStart = getStartOfDaysAgoUTC(timezone, 7)
     }
   } else if (reportType === 'LAST_3_WORKOUTS') {
-    // For last 3 workouts, we'll use a 30-day lookback to find them
     dateRangeStart = getStartOfDaysAgoUTC(timezone, 30)
   } else if (reportType === 'LAST_3_NUTRITION') {
-    // For last 3 nutrition days
     dateRangeStart = getStartOfDaysAgoUTC(timezone, 3)
   } else if (reportType === 'LAST_7_NUTRITION') {
-    // For last 7 nutrition days
     dateRangeStart = getStartOfDaysAgoUTC(timezone, 7)
   } else {
-    // WEEKLY_ANALYSIS uses 7 days (previous week)
     dateRangeStart = getStartOfDaysAgoUTC(timezone, 7)
   }
 
-  // Create report record with custom config stored in analysisJson temporarily
-  // (will be replaced with actual analysis results)
+  // Create report record
   const reportData: any = {
     userId,
     type: reportType,
     status: 'PENDING',
     dateRangeStart,
-    dateRangeEnd
+    dateRangeEnd,
+    templateId: resolvedTemplateId
   }
 
-  // Only add analysisJson if we have a custom config
   if (reportConfig) {
     reportData.analysisJson = { _customConfig: reportConfig }
   }
@@ -146,28 +153,31 @@ export default defineEventHandler(async (event) => {
   })
 
   try {
-    // Trigger appropriate background job based on report type with per-user concurrency
+    // Trigger background job
     let handle
-    if (reportType === 'CUSTOM') {
-      // For custom reports, use a generic analysis job that respects the config
+
+    if (resolvedTemplateId) {
+      // USE UNIFIED TRIGGER
+      handle = await tasks.trigger(
+        'generate-report',
+        {
+          userId,
+          reportId: report.id,
+          templateId: resolvedTemplateId
+        },
+        {
+          concurrencyKey: userId,
+          tags: [`user:${userId}`, `template:${resolvedTemplateId}`]
+        }
+      )
+    } else if (reportType === 'CUSTOM') {
+      // Legacy Custom flow (to be refactored later if needed)
       handle = await tasks.trigger(
         'generate-custom-report',
         {
           userId,
           reportId: report.id,
           config: reportConfig
-        },
-        {
-          concurrencyKey: userId,
-          tags: [`user:${userId}`]
-        }
-      )
-    } else if (reportType === 'LAST_3_WORKOUTS') {
-      handle = await tasks.trigger(
-        'analyze-last-3-workouts',
-        {
-          userId,
-          reportId: report.id
         },
         {
           concurrencyKey: userId,
@@ -199,6 +209,7 @@ export default defineEventHandler(async (event) => {
         }
       )
     } else {
+      // Fallback to weekly analysis
       handle = await tasks.trigger(
         'generate-weekly-report',
         {

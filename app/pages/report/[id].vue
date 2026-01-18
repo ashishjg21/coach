@@ -21,7 +21,7 @@
 
     <template #body>
       <div class="p-4 sm:p-6 max-w-4xl mx-auto">
-        <div v-if="pending" class="space-y-6">
+        <div v-if="pending && !report" class="space-y-6">
           <!-- Header Skeleton -->
           <div class="mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">

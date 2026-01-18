@@ -9,6 +9,7 @@ import backfillManagedByCommand from './managed-by'
 import backfillKilojoulesCommand from './kilojoules'
 import backfillCalendarNotesCommand from './calendar-notes'
 import backfillSportSettingsCommand from './sport-settings'
+import backfillReportTemplatesCommand from './report-templates'
 
 const backfill = new Command('backfill')
 
@@ -24,5 +25,6 @@ backfill
   .addCommand(backfillKilojoulesCommand)
   .addCommand(backfillCalendarNotesCommand)
   .addCommand(backfillSportSettingsCommand)
+  .addCommand(backfillReportTemplatesCommand)
 
 export default backfill

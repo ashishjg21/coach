@@ -41,6 +41,7 @@ export const useReportStore = defineStore('report', () => {
 
   // Listeners for all report tasks
   const reportTasks = [
+    'generate-report',
     'generate-custom-report',
     'analyze-last-3-workouts',
     'analyze-last-3-nutrition',
@@ -65,7 +66,18 @@ export const useReportStore = defineStore('report', () => {
     generating.value = true
     try {
       const body: any = { type }
-      if (config) body.config = config
+
+      // Handle templateId and other config
+      if (config) {
+        if (config.templateId) {
+          body.templateId = config.templateId
+          // Remove templateId from config to avoid nested duplication if needed
+          const { templateId, ...rest } = config
+          if (Object.keys(rest).length > 0) body.config = rest
+        } else {
+          body.config = config
+        }
+      }
 
       const result = await $fetch<{ reportId: string }>('/api/reports/generate', {
         method: 'POST',

@@ -1,4 +1,5 @@
 <template>
+  <!-- Configure Custom Report Modal (Legacy/Advanced) -->
   <UModal
     v-model:open="showConfigModal"
     title="Configure Custom Report"
@@ -7,6 +8,71 @@
   >
     <template #body>
       <ReportConfigModal @generate="handleCustomReport" @close="showConfigModal = false" />
+    </template>
+  </UModal>
+
+  <!-- Select Report Template Modal (New) -->
+  <UModal
+    v-model:open="showSelectModal"
+    title="Create New Report"
+    description="Select a report template to analyze your training data"
+    :ui="{ content: 'sm:max-w-3xl' }"
+  >
+    <template #body>
+      <div class="p-4 sm:p-6">
+        <div v-if="loadingTemplates" class="flex justify-center p-8">
+          <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Templates -->
+          <UButton
+            v-for="template in templates"
+            :key="template.id"
+            variant="outline"
+            color="neutral"
+            class="flex flex-col items-start p-4 h-auto text-left transition-all hover:ring-2 hover:ring-primary/50"
+            @click="generateReport(template.type || 'TEMPLATE', template.id)"
+          >
+            <div class="flex items-center gap-3 mb-2 w-full">
+              <UIcon
+                :name="template.icon || 'i-heroicons-document-text'"
+                class="w-6 h-6 text-primary shrink-0"
+              />
+              <span class="font-bold text-base flex-1">{{ template.name }}</span>
+              <UBadge v-if="template.isSystem" size="sm" variant="subtle" color="neutral"
+                >System</UBadge
+              >
+            </div>
+            <p class="text-sm text-muted line-clamp-2">{{ template.description }}</p>
+          </UButton>
+
+          <!-- Custom Report Button -->
+          <UButton
+            variant="outline"
+            color="primary"
+            class="flex flex-col items-start p-4 h-auto text-left border-dashed"
+            @click="
+              showConfigModal = true
+              showSelectModal = false
+            "
+          >
+            <div class="flex items-center gap-3 mb-2">
+              <UIcon name="i-heroicons-adjustments-horizontal" class="w-6 h-6 shrink-0" />
+              <span class="font-bold text-base">Custom Report</span>
+            </div>
+            <p class="text-sm text-muted">
+              Configure a one-off report with custom filters and timeframe.
+            </p>
+          </UButton>
+        </div>
+
+        <div
+          class="mt-8 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center"
+        >
+          <p class="text-xs text-muted">You can define your own report templates soon.</p>
+          <UButton color="neutral" variant="ghost" @click="showSelectModal = false">Cancel</UButton>
+        </div>
+      </div>
     </template>
   </UModal>
 
@@ -20,103 +86,16 @@
           <div class="flex gap-2 sm:gap-3 items-center">
             <UButton
               :loading="reportStore.generating"
-              icon="i-heroicons-adjustments-horizontal"
+              icon="i-heroicons-plus"
               color="primary"
               variant="solid"
               size="sm"
               class="font-bold"
-              @click="showConfigModal = true"
+              @click="showSelectModal = true"
             >
-              <span class="hidden sm:inline">Custom Report</span>
-              <span class="sm:hidden">Custom</span>
+              <span class="hidden sm:inline">New Report</span>
+              <span class="sm:hidden">New</span>
             </UButton>
-            <USeparator orientation="vertical" class="h-6 hidden sm:block" />
-            <div class="hidden sm:flex gap-3">
-              <UButton
-                :loading="reportStore.generating"
-                icon="i-heroicons-chart-bar"
-                color="neutral"
-                variant="outline"
-                size="sm"
-                class="font-bold"
-                @click="generateReport('LAST_3_WORKOUTS')"
-              >
-                <span class="hidden lg:inline">Last 3 Workouts</span>
-                <span class="lg:hidden">Workouts</span>
-              </UButton>
-              <UButton
-                :loading="reportStore.generating"
-                icon="i-heroicons-calendar"
-                color="neutral"
-                variant="outline"
-                size="sm"
-                class="font-bold"
-                @click="generateReport('WEEKLY_ANALYSIS')"
-              >
-                <span class="hidden lg:inline">Weekly Analysis</span>
-                <span class="lg:hidden">Weekly</span>
-              </UButton>
-              <UButton
-                :loading="reportStore.generating"
-                icon="i-heroicons-cake"
-                color="neutral"
-                variant="outline"
-                size="sm"
-                class="font-bold"
-                @click="generateReport('LAST_3_NUTRITION')"
-              >
-                <span class="hidden lg:inline">Last 3 Days</span>
-                <span class="lg:hidden">Nutrition</span>
-              </UButton>
-              <UButton
-                :loading="reportStore.generating"
-                icon="i-heroicons-cake"
-                color="neutral"
-                variant="outline"
-                size="sm"
-                class="font-bold"
-                @click="generateReport('LAST_7_NUTRITION')"
-              >
-                <span class="hidden lg:inline">Weekly Nutrition</span>
-                <span class="lg:hidden">Trends</span>
-              </UButton>
-            </div>
-            <UDropdownMenu
-              v-if="!reportStore.generating"
-              class="sm:hidden"
-              :items="[
-                [
-                  {
-                    label: 'Last 3 Workouts',
-                    icon: 'i-heroicons-chart-bar',
-                    onSelect: () => generateReport('LAST_3_WORKOUTS')
-                  },
-                  {
-                    label: 'Weekly Analysis',
-                    icon: 'i-heroicons-calendar',
-                    onSelect: () => generateReport('WEEKLY_ANALYSIS')
-                  },
-                  {
-                    label: 'Last 3 Days (Nutrition)',
-                    icon: 'i-heroicons-cake',
-                    onSelect: () => generateReport('LAST_3_NUTRITION')
-                  },
-                  {
-                    label: 'Weekly Nutrition',
-                    icon: 'i-heroicons-cake',
-                    onSelect: () => generateReport('LAST_7_NUTRITION')
-                  }
-                ]
-              ]"
-              :content="{ align: 'end' }"
-            >
-              <UButton
-                color="neutral"
-                variant="ghost"
-                icon="i-heroicons-ellipsis-vertical"
-                size="sm"
-              />
-            </UDropdownMenu>
           </div>
         </template>
       </UDashboardNavbar>
@@ -128,8 +107,8 @@
           <h2 class="text-2xl font-bold">Your Reports</h2>
           <p class="text-muted mt-1">AI-generated training analysis and recommendations</p>
           <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
-            Use the <strong>Custom Report</strong> button to configure exactly what you want to
-            analyze with filters for timeframe, workout types, and focus areas.
+            Select from predefined templates or use the <strong>Custom Report</strong> option to
+            configure exactly what you want to analyze.
           </p>
         </div>
 
@@ -201,26 +180,9 @@
             <UIcon name="i-heroicons-document-text" class="w-16 h-16 text-muted mx-auto mb-4" />
             <p class="mb-4">No reports yet</p>
             <div class="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
-              <UButton :loading="reportStore.generating" size="lg" @click="showConfigModal = true">
-                <UIcon name="i-heroicons-adjustments-horizontal" class="w-5 h-5 mr-2" />
-                Create Custom Report
-              </UButton>
-
-              <UButton
-                :loading="reportStore.generating"
-                variant="outline"
-                @click="generateReport('LAST_3_WORKOUTS')"
-              >
-                <UIcon name="i-heroicons-chart-bar" class="w-4 h-4 mr-2" />
-                Last 3 Workouts
-              </UButton>
-              <UButton
-                :loading="reportStore.generating"
-                variant="outline"
-                @click="generateReport('WEEKLY_ANALYSIS')"
-              >
-                <UIcon name="i-heroicons-calendar" class="w-4 h-4 mr-2" />
-                Weekly Analysis
+              <UButton :loading="reportStore.generating" size="lg" @click="showSelectModal = true">
+                <UIcon name="i-heroicons-plus" class="w-5 h-5 mr-2" />
+                Create First Report
               </UButton>
             </div>
           </div>
@@ -266,8 +228,8 @@
                 >
                   <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
                     <div class="flex items-center gap-2">
-                      <UIcon :name="getReportIcon(report.type)" class="w-5 h-5 text-primary" />
-                      <span class="font-medium">{{ getReportTitle(report.type) }}</span>
+                      <UIcon :name="getReportIcon(report)" class="w-5 h-5 text-primary" />
+                      <span class="font-medium">{{ getReportTitle(report) }}</span>
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
@@ -312,6 +274,9 @@
 <script setup lang="ts">
   // State
   const showConfigModal = ref(false)
+  const showSelectModal = ref(false)
+  const templates = ref<any[]>([])
+  const loadingTemplates = ref(false)
   const toast = useToast()
   const { formatDate: baseFormatDate, formatDateTime } = useFormat()
 
@@ -338,13 +303,25 @@
     ]
   })
 
-  // Fetch reports data on mount
-  onMounted(() => {
+  // Fetch data on mount
+  onMounted(async () => {
     reportStore.fetchReports()
+    fetchTemplates()
   })
 
-  // Centralized report type configuration
-  const REPORT_TYPE_CONFIG = {
+  const fetchTemplates = async () => {
+    loadingTemplates.value = true
+    try {
+      templates.value = await $fetch('/api/reports/templates')
+    } catch (error) {
+      console.error('Error fetching templates:', error)
+    } finally {
+      loadingTemplates.value = false
+    }
+  }
+
+  // Centralized report type configuration (Legacy fallback + overrides)
+  const REPORT_TYPE_CONFIG: any = {
     LAST_3_WORKOUTS: {
       label: 'Last 3 Workouts Analysis',
       icon: 'i-heroicons-chart-bar',
@@ -385,11 +362,15 @@
       icon: 'i-heroicons-adjustments-horizontal',
       description: 'Custom training analysis report with your specified filters.'
     }
-  } as const
+  }
 
-  const generateReport = async (reportType: string) => {
+  const generateReport = async (reportType: string, templateId?: string) => {
+    showSelectModal.value = false
     try {
-      const reportId = await reportStore.generateReport(reportType)
+      const reportId = await reportStore.generateReport(
+        reportType,
+        templateId ? { templateId } : undefined
+      )
       navigateTo(`/report/${reportId}`)
     } catch (error) {
       // Error handling is done in store
@@ -407,18 +388,28 @@
     }
   }
 
-  const getReportTitle = (type: string): string => {
-    type ReportTypeKey = keyof typeof REPORT_TYPE_CONFIG
-    if (type in REPORT_TYPE_CONFIG) {
-      return REPORT_TYPE_CONFIG[type as ReportTypeKey].label
+  const getReportTitle = (report: any): string => {
+    if (report.templateId) {
+      const template = templates.value.find((t) => t.id === report.templateId)
+      if (template) return template.name
     }
-    return type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+
+    const type = report.type
+    if (type in REPORT_TYPE_CONFIG) {
+      return REPORT_TYPE_CONFIG[type].label
+    }
+    return type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
   }
 
-  const getReportIcon = (type: string): string => {
-    type ReportTypeKey = keyof typeof REPORT_TYPE_CONFIG
+  const getReportIcon = (report: any): string => {
+    if (report.templateId) {
+      const template = templates.value.find((t) => t.id === report.templateId)
+      if (template?.icon) return template.icon
+    }
+
+    const type = report.type
     if (type in REPORT_TYPE_CONFIG) {
-      return REPORT_TYPE_CONFIG[type as ReportTypeKey].icon
+      return REPORT_TYPE_CONFIG[type].icon
     }
     return 'i-heroicons-document-text'
   }

@@ -92,6 +92,7 @@ export default defineEventHandler(async (event) => {
     select: {
       id: true,
       type: true,
+      templateId: true,
       status: true,
       createdAt: true,
       updatedAt: true,

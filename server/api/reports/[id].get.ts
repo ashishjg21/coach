@@ -64,6 +64,7 @@ export default defineEventHandler(async (event) => {
       userId: (session.user as any).id
     },
     include: {
+      template: true,
       workouts: {
         include: {
           workout: {
