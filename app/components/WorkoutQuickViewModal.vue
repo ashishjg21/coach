@@ -33,13 +33,21 @@
               <span>{{ formatDateTime(workout.date) }}</span>
             </div>
           </div>
-          <UBadge
-            :color="workout.source === 'manual' ? 'warning' : 'neutral'"
-            variant="subtle"
-            size="xs"
-          >
-            {{ workout.source.toUpperCase() }}
-          </UBadge>
+          <div class="flex flex-col items-end gap-1">
+            <UiDataAttribution
+              v-if="['strava', 'garmin', 'zwift', 'apple_health', 'whoop'].includes(workout.source)"
+              :provider="workout.source"
+              :device-name="workout.deviceName"
+            />
+            <UBadge
+              v-else
+              :color="workout.source === 'manual' ? 'warning' : 'neutral'"
+              variant="subtle"
+              size="xs"
+            >
+              {{ workout.source.toUpperCase() }}
+            </UBadge>
+          </div>
         </div>
 
         <!-- Clean Stats Grid (Top Level) -->
