@@ -272,6 +272,62 @@ export async function fetchWhoopWorkouts(
   return allWorkouts
 }
 
+export async function fetchWhoopWorkout(
+  integration: Integration,
+  workoutId: string
+): Promise<WhoopWorkout | null> {
+  try {
+    const validIntegration = await ensureValidToken(integration)
+
+    const response = await fetch(
+      `https://api.prod.whoop.com/developer/v2/activity/workout/${workoutId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${validIntegration.accessToken}`
+        }
+      }
+    )
+
+    if (!response.ok) {
+      console.error(`Failed to fetch workout ${workoutId}:`, response.status)
+      return null
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error(`Error fetching workout ${workoutId}:`, error)
+    return null
+  }
+}
+
+export async function fetchWhoopRecoveryBySleepId(
+  integration: Integration,
+  sleepId: string
+): Promise<WhoopRecovery | null> {
+  // 1. Fetch the sleep to get the timestamp
+  const sleep = await fetchWhoopSleep(integration, sleepId)
+  if (!sleep) {
+    console.error(`Could not find sleep ${sleepId} to fetch associated recovery`)
+    return null
+  }
+
+  // 2. Define a search window around the sleep.
+  // Sleep start time is a good anchor. Recovery is usually generated after sleep.
+  // We'll search from sleep start to sleep end + some buffer, or just a generic 2-day window around it.
+  const sleepDate = new Date(sleep.start)
+  const startDate = new Date(sleepDate)
+  startDate.setDate(startDate.getDate() - 1)
+  const endDate = new Date(sleepDate)
+  endDate.setDate(endDate.getDate() + 2)
+
+  // 3. Fetch recoveries in range
+  const recoveries = await fetchWhoopRecovery(integration, startDate, endDate)
+
+  // 4. Find the one matching the sleepId
+  const match = recoveries.find((r) => r.sleep_id === sleepId)
+  return match || null
+}
+
 export async function fetchWhoopSleep(
   integration: Integration,
   sleepId: string

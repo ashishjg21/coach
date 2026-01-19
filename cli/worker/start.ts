@@ -3,6 +3,7 @@ import { Worker } from 'bullmq'
 import IORedis from 'ioredis'
 import chalk from 'chalk'
 import { IntervalsService } from '../../server/utils/services/intervalsService'
+import { WhoopService } from '../../server/utils/services/whoopService'
 import { logWebhookRequest, updateWebhookStatus } from '../../server/utils/webhook-logger'
 import { prisma } from '../../server/utils/db'
 import { webhookQueue, pingQueue } from '../../server/utils/queue'
@@ -104,28 +105,64 @@ export const startCommand = new Command('start')
         }
 
         if (provider === 'whoop') {
-          const { payload, headers } = job.data
+          const { type, payload, headers } = job.data
+          let { userId, logId } = job.data
 
-          console.log(chalk.cyan(`[WhoopJob ${job.id}]`) + ` Processing Whoop webhook payload`)
+          // 1. Log if not already logged (e.g. from async endpoint)
+          if (!logId) {
+            const log = await logWebhookRequest({
+              provider: 'whoop',
+              eventType: payload?.type || 'UNKNOWN',
+              payload,
+              headers,
+              status: 'PENDING'
+            })
+            logId = log?.id
+          }
 
-          // Log raw request receipt
-          const log = await logWebhookRequest({
-            provider: 'whoop',
-            eventType: payload?.type || 'UNKNOWN',
-            payload,
-            headers,
-            status: 'PENDING'
-          })
+          console.log(
+            chalk.cyan(`[WhoopJob ${job.id}]`) +
+              ` Processing Whoop event ${type || payload?.type} (LogID: ${logId})`
+          )
 
-          console.log(chalk.green(`[WhoopJob ${job.id}] Logged event ${log?.id}`))
+          // 2. Resolve User ID if missing
+          if (!userId) {
+            const externalUserId = payload?.user_id
+            if (externalUserId) {
+              const integration = await prisma.integration.findFirst({
+                where: {
+                  provider: 'whoop',
+                  externalUserId: externalUserId.toString()
+                }
+              })
+              userId = integration?.userId
+            }
+          }
 
-          if (log)
-            await updateWebhookStatus(
-              log.id,
-              'PROCESSED',
-              'Logged only (processing not implemented)'
-            )
-          return { handled: true, logId: log?.id }
+          if (!userId) {
+            console.warn(`[WhoopJob ${job.id}] No user found for whoop payload`)
+            if (logId) await updateWebhookStatus(logId, 'IGNORED', 'User not found')
+            return { handled: false, message: 'User not found' }
+          }
+
+          // 3. Process Event
+          try {
+            const eventType = type || payload?.type
+            const result = await WhoopService.processWebhookEvent(userId, eventType, payload)
+
+            console.log(chalk.green(`[WhoopJob ${job.id}] Completed: ${result.message}`))
+
+            if (logId) {
+              await updateWebhookStatus(logId, 'PROCESSED', result.message)
+            }
+            return result
+          } catch (error: any) {
+            console.error(chalk.red(`[WhoopJob ${job.id}] Failed:`), error)
+            if (logId) {
+              await updateWebhookStatus(logId, 'FAILED', error.message || 'Unknown error')
+            }
+            throw error
+          }
         }
 
         console.log(
