@@ -1139,23 +1139,73 @@
         const today = getUserLocalDate()
         const todayTime = today.getTime()
 
-        const activeBlock =
-          newPlan.blocks.find((b: any) => {
-            const start = new Date(b.startDate).getTime()
-            const end = start + b.durationWeeks * 7 * 24 * 3600 * 1000 - 1
-            return todayTime >= start && todayTime <= end
-          }) || newPlan.blocks[0]
+        // Helper to get block range
+        const getBlockRange = (b: any) => {
+          const start = new Date(b.startDate).getTime()
+          const end = start + b.durationWeeks * 7 * 24 * 3600 * 1000 - 1
+          return { start, end }
+        }
 
-        selectedBlockId.value = activeBlock.id
+        let targetBlock = newPlan.blocks[0]
+
+        // Try to find the exact current block
+        const activeBlock = newPlan.blocks.find((b: any) => {
+          const { start, end } = getBlockRange(b)
+          return todayTime >= start && todayTime <= end
+        })
+
+        if (activeBlock) {
+          targetBlock = activeBlock
+        } else {
+          // No exact match. Are we before or after?
+          const firstBlock = newPlan.blocks[0]
+          const lastBlock = newPlan.blocks[newPlan.blocks.length - 1]
+
+          const { start: firstStart } = getBlockRange(firstBlock)
+          const { end: lastEnd } = getBlockRange(lastBlock)
+
+          if (todayTime > lastEnd) {
+            // Plan finished, show last block
+            targetBlock = lastBlock
+          } else if (todayTime < firstStart) {
+            // Plan future, show first block
+            targetBlock = firstBlock
+          } else {
+            // In a gap? Find next block
+            targetBlock =
+              newPlan.blocks.find((b: any) => {
+                const { end } = getBlockRange(b)
+                return end >= todayTime
+              }) || lastBlock
+          }
+        }
+
+        selectedBlockId.value = targetBlock.id
 
         // 2. Determine Active Week within that block
-        if (activeBlock.weeks.length > 0) {
-          const currentWeek = activeBlock.weeks.find((w: any) => {
+        if (targetBlock.weeks.length > 0) {
+          const currentWeek = targetBlock.weeks.find((w: any) => {
             const start = new Date(w.startDate).getTime()
             const end = new Date(w.endDate).getTime()
             return todayTime >= start && todayTime <= end
           })
-          selectedWeekId.value = currentWeek ? currentWeek.id : activeBlock.weeks[0].id
+
+          if (currentWeek) {
+            selectedWeekId.value = currentWeek.id
+          } else {
+            // Fallback for week
+            const firstWeek = targetBlock.weeks[0]
+            const lastWeek = targetBlock.weeks[targetBlock.weeks.length - 1]
+
+            const startFirst = new Date(firstWeek.startDate).getTime()
+            const endLast = new Date(lastWeek.endDate).getTime()
+
+            if (todayTime > endLast) {
+              selectedWeekId.value = lastWeek.id
+            } else {
+              selectedWeekId.value = firstWeek.id
+            }
+          }
         }
 
         // 3. Auto-trigger structure generation if requested

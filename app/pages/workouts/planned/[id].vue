@@ -8,6 +8,7 @@
           </UButton>
         </template>
         <template #right>
+          <TriggerMonitorButton />
           <UButton
             v-if="workout?.structuredWorkout"
             color="neutral"
@@ -22,7 +23,7 @@
 
           <UButton
             v-if="workout"
-            color="primary"
+            color="neutral"
             variant="outline"
             size="sm"
             class="font-bold"
@@ -66,8 +67,7 @@
             class="font-bold"
             @click="chatAboutWorkout"
           >
-            <span class="hidden sm:inline">Chat about this workout</span>
-            <span class="sm:hidden">Chat</span>
+            <span>Chat</span>
           </UButton>
           <UButton
             v-if="workout && !workout.completed"
@@ -291,26 +291,35 @@
             </div>
           </div>
 
-          <!-- Coach Instructions -->
           <div
             v-if="workout.structuredWorkout?.coachInstructions"
             class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 border border-blue-100 dark:border-blue-800"
           >
-            <div class="flex items-start gap-4">
-              <div class="p-2 bg-blue-100 dark:bg-blue-800 rounded-full">
-                <UIcon
-                  name="i-heroicons-chat-bubble-bottom-center-text"
-                  class="w-6 h-6 text-blue-600 dark:text-blue-300"
-                />
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex items-start gap-4">
+                <div class="p-2 bg-blue-100 dark:bg-blue-800 rounded-full">
+                  <UIcon
+                    name="i-heroicons-chat-bubble-bottom-center-text"
+                    class="w-6 h-6 text-blue-600 dark:text-blue-300"
+                  />
+                </div>
+                <div>
+                  <h3 class="font-semibold text-lg text-blue-900 dark:text-blue-100">
+                    Coach's Advice
+                  </h3>
+                  <p class="text-blue-800 dark:text-blue-200 mt-2 italic">
+                    "{{ workout.structuredWorkout.coachInstructions }}"
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 class="font-semibold text-lg text-blue-900 dark:text-blue-100">
-                  Coach's Advice
-                </h3>
-                <p class="text-blue-800 dark:text-blue-200 mt-2 italic">
-                  "{{ workout.structuredWorkout.coachInstructions }}"
-                </p>
-              </div>
+
+              <!-- AI Feedback -->
+              <AiFeedback
+                v-if="llmUsageId"
+                :llm-usage-id="llmUsageId"
+                :initial-feedback="initialFeedback"
+                :initial-feedback-text="initialFeedbackText"
+              />
             </div>
           </div>
 
@@ -347,92 +356,6 @@
               >
                 {{ generating ? 'Generating Structure...' : 'Generate Workout Structure' }}
               </UButton>
-            </div>
-          </div>
-
-          <!-- Completed Workout Link -->
-          <div
-            v-if="workout.completedWorkouts && workout.completedWorkouts.length > 0"
-            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
-          >
-            <h3 class="text-lg font-semibold mb-4">Linked Completed Activities</h3>
-            <div class="space-y-3">
-              <NuxtLink
-                v-for="completed in workout.completedWorkouts"
-                :key="completed.id"
-                :to="`/workouts/${completed.id}`"
-                class="block p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary transition-colors"
-              >
-                <div class="flex items-center justify-between">
-                  <div class="flex-1">
-                    <div class="font-semibold">{{ completed.title }}</div>
-                    <div class="text-xs text-muted mt-1">
-                      {{ formatDate(completed.date) }}
-                    </div>
-                  </div>
-                  <div class="flex gap-4 text-sm">
-                    <div class="text-right">
-                      <div class="text-xs text-muted">Duration</div>
-                      <div class="font-semibold">{{ formatDuration(completed.durationSec) }}</div>
-                    </div>
-                    <div class="text-right">
-                      <div class="text-xs text-muted">TSS</div>
-                      <div class="font-semibold">{{ Math.round(completed.tss || 0) }}</div>
-                    </div>
-                    <div v-if="completed.normalizedPower" class="text-right">
-                      <div class="text-xs text-muted">NP</div>
-                      <div class="font-semibold">{{ completed.normalizedPower }}W</div>
-                    </div>
-                  </div>
-                </div>
-              </NuxtLink>
-            </div>
-          </div>
-
-          <!-- Stats Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
-            >
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <UIcon name="i-heroicons-clock" class="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <div class="text-xs text-muted">Planned Duration</div>
-                  <div class="text-2xl font-bold">{{ formatDuration(displayDuration) }}</div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
-            >
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
-                  <UIcon name="i-heroicons-bolt" class="w-5 h-5 text-amber-500" />
-                </div>
-                <div>
-                  <div class="text-xs text-muted">Training Stress</div>
-                  <div class="text-2xl font-bold">{{ Math.round(displayTss) }}</div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
-            >
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
-                  <UIcon name="i-heroicons-fire" class="w-5 h-5 text-green-500" />
-                </div>
-                <div>
-                  <div class="text-xs text-muted">Intensity</div>
-                  <div class="text-2xl font-bold">
-                    {{ Math.round((workout.workIntensity || 0) * 100) }}%
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -700,6 +623,8 @@
   import RunView from '~/components/workouts/planned/RunView.vue'
   import SwimView from '~/components/workouts/planned/SwimView.vue'
   import StrengthView from '~/components/workouts/planned/StrengthView.vue'
+  import TriggerMonitorButton from '~/components/dashboard/TriggerMonitorButton.vue'
+  import AiFeedback from '~/components/AiFeedback.vue'
 
   definePageMeta({
     middleware: 'auth'
@@ -728,6 +653,9 @@
   })
   const workout = ref<any>(null)
   const userFtp = ref<number | undefined>(undefined)
+  const llmUsageId = ref<string | undefined>(undefined)
+  const initialFeedback = ref<string | null>(null)
+  const initialFeedbackText = ref<string | null>(null)
 
   // Background Task Monitoring
   const { refresh: refreshRuns } = useUserRuns()
@@ -929,6 +857,9 @@
       const data: any = await $fetch(`/api/workouts/planned/${route.params.id}`)
       workout.value = data.workout
       userFtp.value = data.userFtp
+      llmUsageId.value = data.llmUsageId
+      initialFeedback.value = data.initialFeedback
+      initialFeedbackText.value = data.initialFeedbackText
 
       // Init form
       if (workout.value) {

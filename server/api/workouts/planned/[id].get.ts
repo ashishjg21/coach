@@ -77,8 +77,26 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, message: 'Access denied' })
   }
 
+  // Fetch most recent LLM usage for feedback
+  const llmUsage = await prisma.llmUsage.findFirst({
+    where: {
+      entityId: id,
+      entityType: 'PlannedWorkout',
+      success: true
+    },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      feedback: true,
+      feedbackText: true
+    }
+  })
+
   return {
     workout,
-    userFtp: user.ftp
+    userFtp: user.ftp,
+    llmUsageId: llmUsage?.id,
+    initialFeedback: llmUsage?.feedback,
+    initialFeedbackText: llmUsage?.feedbackText
   }
 })
