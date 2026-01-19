@@ -1,8 +1,16 @@
 import { toZonedTime, fromZonedTime, format } from 'date-fns-tz'
-import { startOfDay, endOfDay, subDays, startOfYear } from 'date-fns'
+import { startOfDay, endOfDay, subDays, startOfYear, differenceInYears } from 'date-fns'
 import { prisma } from './db'
 
 export const DEFAULT_TIMEZONE = 'UTC'
+
+/**
+ * Calculate age from Date of Birth
+ */
+export function calculateAge(dob: Date | null | undefined): number | null {
+  if (!dob) return null
+  return differenceInYears(new Date(), new Date(dob))
+}
 
 /**
  * Fetch a user's timezone, defaulting to UTC
