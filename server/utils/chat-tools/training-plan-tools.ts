@@ -398,6 +398,23 @@ export async function updatePlannedWorkout(
       }
     })
 
+    // Trigger structured workout regeneration if critical fields changed
+    // We trigger it regardless of specific field changes to be safe, as description/title context matters too
+    try {
+      console.log('[updatePlannedWorkout] 🚀 Triggering structured workout regeneration...', {
+        plannedWorkoutId: workout.id
+      })
+      await tasks.trigger('generate-structured-workout', {
+        plannedWorkoutId: workout.id
+      })
+      console.log('[updatePlannedWorkout] ✅ Triggered generation task')
+    } catch (triggerError) {
+      console.error(
+        '[updatePlannedWorkout] ⚠️ Failed to trigger structure generation:',
+        triggerError
+      )
+    }
+
     return {
       success: true,
       message: `Updated workout: ${workout.title}`,
