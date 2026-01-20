@@ -216,18 +216,15 @@ export function analyzePacingStrategy(lapSplits: any[]) {
   let strategy = 'even'
   let description = 'Well-paced with consistent splits'
 
-  if (paceVariation < 5) {
-    strategy = 'even'
-    description = 'Excellent even pacing throughout the activity'
-  } else if (paceDifference < -10) {
-    strategy = 'positive_split'
-    description = 'Started fast and slowed down (positive split)'
-  } else if (paceDifference > 10) {
+  if (paceDifference < -5) {
     strategy = 'negative_split'
     description = 'Started conservative and finished strong (negative split)'
+  } else if (paceDifference > 5) {
+    strategy = 'positive_split'
+    description = 'Started fast and slowed down (positive split)'
   } else {
-    strategy = 'slightly_uneven'
-    description = 'Mostly even pacing with minor variations'
+    strategy = 'even'
+    description = 'Excellent even pacing throughout the activity'
   }
 
   return {

@@ -466,13 +466,13 @@ export const WorkoutConverter = {
         const text = trimmed.replace(/^[-\s]+/, '')
 
         const setsMatch = text.match(/^(\d+)\s+sets/)
-        if (setsMatch) currentExercise.sets = parseInt(setsMatch[1], 10)
+        if (setsMatch) currentExercise.sets = parseInt(setsMatch[1]!, 10)
 
         const repsMatch = text.match(/x\s+(.+?)\s+reps/)
-        if (repsMatch) currentExercise.reps = repsMatch[1]
+        if (repsMatch) currentExercise.reps = repsMatch[1]!
 
         const weightMatch = text.match(/@\s+(.+)$/)
-        if (weightMatch) currentExercise.weight = weightMatch[1]
+        if (weightMatch) currentExercise.weight = weightMatch[1]!
 
         continue
       }
