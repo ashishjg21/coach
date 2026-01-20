@@ -170,7 +170,7 @@
           </h4>
           <UTable
             :columns="workoutColumns"
-            :rows="workouts.recentWorkouts.map((w) => enrichWorkoutDate(w))"
+            :data="workouts.recentWorkouts.map((w) => enrichWorkoutDate(w))"
             :ui="{ td: { padding: 'px-2 py-1', size: 'text-xs' } }"
           />
         </div>
@@ -180,7 +180,7 @@
           </h4>
           <UTable
             :columns="workoutColumns"
-            :rows="workouts.plannedWorkouts.map((w) => enrichWorkoutDate(w))"
+            :data="workouts.plannedWorkouts.map((w) => enrichWorkoutDate(w))"
             :ui="{ td: { padding: 'px-2 py-1', size: 'text-xs' } }"
           />
         </div>
@@ -240,11 +240,11 @@
 
   // Workout Table Columns
   const workoutColumns = [
-    { key: 'title', label: 'Title' },
-    { key: 'dbDate', label: 'DB Date (ISO)' },
-    { key: 'utcFormat', label: 'formatDateUTC' },
-    { key: 'userFormat', label: 'formatUserDate' },
-    { key: 'stdFormat', label: 'formatDate' }
+    { accessorKey: 'title', header: 'Title', id: 'title' },
+    { accessorKey: 'dbDate', header: 'DB Date (ISO)', id: 'dbDate' },
+    { accessorKey: 'utcFormat', header: 'formatDateUTC', id: 'utcFormat' },
+    { accessorKey: 'userFormat', header: 'formatUserDate', id: 'userFormat' },
+    { accessorKey: 'stdFormat', header: 'formatDate', id: 'stdFormat' }
   ]
 
   function enrichWorkoutDate(w: any) {
