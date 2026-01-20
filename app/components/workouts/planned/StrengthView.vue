@@ -65,6 +65,13 @@
         </div>
       </div>
     </div>
+    <div v-else-if="workout.description" class="space-y-4">
+      <div
+        class="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300"
+      >
+        {{ workout.description }}
+      </div>
+    </div>
     <div v-else class="text-center py-8 text-muted">No exercises generated yet.</div>
   </div>
 </template>
