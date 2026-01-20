@@ -6,6 +6,7 @@ import { getUserTimezone, getStartOfDaysAgoUTC } from '../server/utils/date'
 import { getCheckinHistoryContext } from '../server/utils/services/checkin-service'
 import { recommendationRepository } from '../server/utils/repositories/recommendationRepository'
 import { getUserAiSettings } from '../server/utils/ai-settings'
+import { userReportsQueue } from './queues'
 
 interface RecommendationHistoryItem {
   date: string
@@ -37,6 +38,7 @@ interface RecommendationsResponse {
 export const generateRecommendationsTask = task({
   id: 'generate-recommendations',
   maxDuration: 300,
+  queue: userReportsQueue,
   run: async (payload: { userId: string }) => {
     // ... (previous setup code remains the same) ...
     const { userId } = payload

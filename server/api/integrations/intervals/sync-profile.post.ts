@@ -42,10 +42,17 @@ export default defineEventHandler(async (event) => {
     }
 
     // Trigger profile auto-detection with forceUpdate: true to ensure it runs
-    await tasks.trigger('autodetect-intervals-profile', {
-      userId: user.id,
-      forceUpdate: true
-    })
+    await tasks.trigger(
+      'autodetect-intervals-profile',
+      {
+        userId: user.id,
+        forceUpdate: true
+      },
+      {
+        concurrencyKey: user.id,
+        tags: [`user:${user.id}`]
+      }
+    )
 
     return {
       success: true,

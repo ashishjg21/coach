@@ -59,13 +59,18 @@ const syncIntervalsIntegration = async (user: any, account: any) => {
         endDate
       },
       {
+        concurrencyKey: user.id,
         tags: [`user:${user.id}`]
       }
     )
     console.log('Triggered initial Intervals.icu sync')
 
     // Trigger profile auto-detection
-    await tasks.trigger('autodetect-intervals-profile', { userId: user.id })
+    await tasks.trigger(
+      'autodetect-intervals-profile',
+      { userId: user.id },
+      { concurrencyKey: user.id, tags: [`user:${user.id}`] }
+    )
     console.log('Triggered Intervals.icu profile auto-detection')
   } catch (error) {
     console.error('Failed to sync Intervals.icu integration:', error)

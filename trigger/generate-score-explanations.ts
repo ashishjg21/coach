@@ -4,6 +4,7 @@ import { workoutRepository } from '../server/utils/repositories/workoutRepositor
 import { nutritionRepository } from '../server/utils/repositories/nutritionRepository'
 import { generateStructuredAnalysis } from '../server/utils/gemini'
 import { getUserTimezone, getStartOfDaysAgoUTC, formatUserDate } from '../server/utils/date'
+import { userReportsQueue } from './queues'
 
 interface TrendAnalysisSection {
   executive_summary: string
@@ -312,6 +313,7 @@ async function calculateWorkoutSummary(userId: string, period: number, timezone:
 export const generateScoreExplanationsTask = task({
   id: 'generate-score-explanations',
   maxDuration: 600,
+  queue: userReportsQueue,
   run: async (payload: { userId: string; force?: boolean }) => {
     const { userId, force } = payload
 
