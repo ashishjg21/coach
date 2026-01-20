@@ -504,8 +504,9 @@ export const IntervalsService = {
       const newStruct = normalizedPlanned.structuredWorkout as any
 
       if (existingStruct?.exercises?.length > 0) {
-        // If new structure is empty or has no steps/exercises, assume it's a text-only sync
-        if (!newStruct || (!newStruct.steps?.length && !newStruct.exercises?.length)) {
+        // If new structure is empty or has no exercises (Intervals never sends exercises structure)
+        // We restore local exercises. Note: Intervals might send junk 'Rest' steps parsed from description, so we ignore steps check.
+        if (!newStruct || !newStruct.exercises?.length) {
           if (!normalizedPlanned.structuredWorkout) normalizedPlanned.structuredWorkout = {}
           const target = normalizedPlanned.structuredWorkout as any
 
