@@ -156,7 +156,8 @@ export const ingestStravaTask = task({
             activityId: activity.id
           },
           {
-            concurrencyKey: userId
+            concurrencyKey: userId,
+            tags: [`user:${userId}`]
           }
         )
         triggeredWorkoutIds.add(upsertedWorkout.id)

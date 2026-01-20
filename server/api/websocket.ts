@@ -1,13 +1,17 @@
 import { defineWebSocketHandler } from 'h3'
 import { runs } from '@trigger.dev/sdk/v3'
+import { verifyWsToken } from '../utils/ws-auth'
 
 // Map to store active subscriptions cancel functions per peer
 const subscriptions = new Map<any, Set<() => void>>()
+// Map to store peer authentication status
+const peerContext = new Map<any, { userId?: string }>()
 
 export default defineWebSocketHandler({
   open(peer) {
     peer.send(JSON.stringify({ type: 'welcome', message: 'Connected to Coach Watts WebSocket' }))
     subscriptions.set(peer, new Set())
+    peerContext.set(peer, {})
   },
 
   async message(peer, message) {
@@ -21,6 +25,26 @@ export default defineWebSocketHandler({
     try {
       const data = JSON.parse(text)
 
+      // Handle Authentication
+      if (data.type === 'authenticate') {
+        const userId = verifyWsToken(data.token)
+        if (userId) {
+          const ctx = peerContext.get(peer) || {}
+          ctx.userId = userId
+          peerContext.set(peer, ctx)
+          peer.send(JSON.stringify({ type: 'authenticated', userId }))
+        } else {
+          peer.send(
+            JSON.stringify({
+              type: 'error',
+              code: 'INVALID_TOKEN',
+              message: 'Invalid authentication token'
+            })
+          )
+        }
+        return
+      }
+
       if (data.type === 'subscribe_run') {
         const runId = data.runId
         if (!runId) return
@@ -29,9 +53,21 @@ export default defineWebSocketHandler({
       }
 
       if (data.type === 'subscribe_user') {
-        const userId = data.userId
-        if (!userId) return
+        // Enforce Authentication
+        const ctx = peerContext.get(peer)
+        if (!ctx?.userId) {
+          peer.send(
+            JSON.stringify({
+              type: 'error',
+              code: 'UNAUTHORIZED',
+              message: 'Authentication required'
+            })
+          )
+          return
+        }
 
+        // Use the authenticated user ID, ignore payload to prevent snooping
+        const userId = ctx.userId
         const tag = `user:${userId}`
         startSubscription(peer, () => runs.subscribeToRunsWithTag(tag), `tag:${tag}`)
       }
@@ -46,6 +82,7 @@ export default defineWebSocketHandler({
       peerSubs.forEach((cancel) => cancel())
       subscriptions.delete(peer)
     }
+    peerContext.delete(peer)
   },
 
   error(peer, error) {

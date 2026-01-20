@@ -110,16 +110,17 @@ export function useUserRuns() {
 
     ws = new WebSocket(url)
 
-    ws.onopen = () => {
+    ws.onopen = async () => {
       isConnected.value = true
       stopPolling()
       if (session.value?.user && (session.value.user as any).id) {
-        ws?.send(
-          JSON.stringify({
-            type: 'subscribe_user',
-            userId: (session.value.user as any).id
-          })
-        )
+        try {
+          const { token } = await $fetch<{ token: string }>('/api/auth/ws-token')
+          ws?.send(JSON.stringify({ type: 'authenticate', token }))
+          ws?.send(JSON.stringify({ type: 'subscribe_user' }))
+        } catch (e) {
+          console.error('WS Auth failed', e)
+        }
       }
     }
 

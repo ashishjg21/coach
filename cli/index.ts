@@ -14,6 +14,7 @@ import usersCommand from './users'
 import geminiCommand from './gemini'
 import llmCommand from './llm'
 import triggerCommand from './trigger'
+import monitorCommand from './monitor'
 
 const program = new Command()
 
@@ -31,6 +32,7 @@ program.addCommand(usersCommand)
 program.addCommand(geminiCommand)
 program.addCommand(llmCommand)
 program.addCommand(triggerCommand)
+program.addCommand(monitorCommand)
 
 program.parse(process.argv)
 
