@@ -270,6 +270,23 @@ export async function createPlannedWorkout(
       }
     }
 
+    // Trigger the structured workout generation task
+    try {
+      console.log('[createPlannedWorkout] 🚀 Triggering structured workout generation...', {
+        plannedWorkoutId: workout.id
+      })
+      await tasks.trigger('generate-structured-workout', {
+        plannedWorkoutId: workout.id
+      })
+      console.log('[createPlannedWorkout] ✅ Triggered generation task')
+    } catch (triggerError) {
+      console.error(
+        '[createPlannedWorkout] ⚠️ Failed to trigger structure generation:',
+        triggerError
+      )
+      // Don't fail the request, just log it. The user still has their workout shell.
+    }
+
     console.log('[createPlannedWorkout] 📤 Returning success response')
     return response
   } catch (error: any) {
