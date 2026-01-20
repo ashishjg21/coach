@@ -58,17 +58,7 @@
           >
             <span class="hidden sm:inline">Share</span>
           </UButton>
-          <UButton
-            v-if="workout"
-            icon="i-heroicons-chat-bubble-left-right"
-            color="primary"
-            variant="outline"
-            size="sm"
-            class="font-bold"
-            @click="chatAboutWorkout"
-          >
-            <span>Chat</span>
-          </UButton>
+
           <UButton
             v-if="workout && !workout.completed"
             size="sm"
@@ -79,7 +69,18 @@
             @click="markComplete"
           >
             <span class="hidden sm:inline">Mark Complete</span>
-            <span class="sm:hidden">Done</span>
+          </UButton>
+
+          <UButton
+            v-if="workout"
+            icon="i-heroicons-chat-bubble-left-right"
+            color="primary"
+            variant="outline"
+            size="sm"
+            class="font-bold"
+            @click="chatAboutWorkout"
+          >
+            <span>Chat</span>
           </UButton>
         </template>
       </UDashboardNavbar>
