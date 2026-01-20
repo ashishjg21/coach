@@ -301,28 +301,28 @@ export const WorkoutConverter = {
     // Handle Strength Exercises
     if (workout.exercises && workout.exercises.length > 0) {
       workout.exercises.forEach((ex) => {
-        let line = `- ${ex.name}`
+        // Line 1: Name (Bold)
+        lines.push(`- **${ex.name}**`)
 
-        // Add Sets/Reps/Weight details
-        const details = []
-        if (ex.sets) details.push(`${ex.sets} sets`)
-        if (ex.reps) details.push(`${ex.reps} reps`)
-        if (ex.weight) details.push(`@ ${ex.weight}`)
+        // Line 2: Details (Sets x Reps @ Weight)
+        let details = ''
+        if (ex.sets) details += `${ex.sets} sets`
+        if (ex.reps) details += ` x ${ex.reps} reps`
+        if (ex.weight) details += ` @ ${ex.weight}`
+        if (details) lines.push(`  ${details}`)
 
-        if (details.length > 0) {
-          line += `: ${details.join(' x ')}`
-        }
-
+        // Line 3: Rest
         if (ex.rest) {
-          line += `. Rest: ${ex.rest}`
+          lines.push(`  Rest: ${ex.rest}`)
         }
 
+        // Line 4: Note
         if (ex.notes) {
-          line += `\n  Note: ${ex.notes}`
+          lines.push(`  Note: ${ex.notes}`)
         }
 
-        lines.push(line)
-        lines.push('') // Empty line for spacing
+        // Spacer
+        lines.push('')
       })
 
       return lines.join('\n').trim()
