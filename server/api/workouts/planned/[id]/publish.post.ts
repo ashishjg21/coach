@@ -56,6 +56,7 @@ export default defineEventHandler(async (event) => {
       title: workout.title,
       description: workout.description || '',
       steps: (workout.structuredWorkout as any).steps || [],
+      exercises: (workout.structuredWorkout as any).exercises, // Add this
       messages: (workout.structuredWorkout as any).messages || [],
       ftp: (workout.user as any).ftp || 250
     }

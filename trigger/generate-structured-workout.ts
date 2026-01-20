@@ -353,6 +353,7 @@ export const generateStructuredWorkoutTask = task({
         title: updatedWorkout.title,
         description: updatedWorkout.description || '',
         steps: structure.steps || [],
+        exercises: structure.exercises, // Add this
         messages: [],
         ftp: workout.user.ftp || 250
       }

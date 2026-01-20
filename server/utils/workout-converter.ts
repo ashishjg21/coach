@@ -28,6 +28,7 @@ interface WorkoutData {
   description: string
   author?: string
   steps: WorkoutStep[]
+  exercises?: any[]
   messages?: WorkoutMessage[]
   ftp?: number // Optional, for calculating absolute watts if needed
 }
@@ -296,6 +297,36 @@ export const WorkoutConverter = {
 
   toIntervalsICU(workout: WorkoutData): string {
     const lines: string[] = []
+
+    // Handle Strength Exercises
+    if (workout.exercises && workout.exercises.length > 0) {
+      workout.exercises.forEach((ex) => {
+        let line = `- ${ex.name}`
+
+        // Add Sets/Reps/Weight details
+        const details = []
+        if (ex.sets) details.push(`${ex.sets} sets`)
+        if (ex.reps) details.push(`${ex.reps} reps`)
+        if (ex.weight) details.push(`@ ${ex.weight}`)
+
+        if (details.length > 0) {
+          line += `: ${details.join(' x ')}`
+        }
+
+        if (ex.rest) {
+          line += `. Rest: ${ex.rest}`
+        }
+
+        if (ex.notes) {
+          line += `\n  Note: ${ex.notes}`
+        }
+
+        lines.push(line)
+        lines.push('') // Empty line for spacing
+      })
+
+      return lines.join('\n').trim()
+    }
 
     // Group steps by type to create sections
     let currentType = ''

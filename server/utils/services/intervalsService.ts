@@ -438,6 +438,17 @@ export const IntervalsService = {
 
     const plannedWorkouts = await fetchIntervalsPlannedWorkouts(integration, startDate, endDate)
 
+    // Fetch existing workouts to preserve local structure (exercises) if remote is text-only
+    const externalIds = plannedWorkouts.map((p) => String(p.id))
+    const existingWorkouts = await prisma.plannedWorkout.findMany({
+      where: {
+        userId,
+        externalId: { in: externalIds }
+      },
+      select: { externalId: true, structuredWorkout: true }
+    })
+    const existingMap = new Map(existingWorkouts.map((w) => [w.externalId, w.structuredWorkout]))
+
     let plannedUpserted = 0
     let eventsUpserted = 0
     let notesUpserted = 0
@@ -487,6 +498,25 @@ export const IntervalsService = {
       }
 
       const normalizedPlanned = normalizeIntervalsPlannedWorkout(planned, userId)
+
+      // Preserve local exercises/instructions if remote has no structure (Text-only sync)
+      const existingStruct = existingMap.get(normalizedPlanned.externalId) as any
+      const newStruct = normalizedPlanned.structuredWorkout as any
+
+      if (existingStruct?.exercises?.length > 0) {
+        // If new structure is empty or has no steps/exercises, assume it's a text-only sync
+        if (!newStruct || (!newStruct.steps?.length && !newStruct.exercises?.length)) {
+          if (!normalizedPlanned.structuredWorkout) normalizedPlanned.structuredWorkout = {}
+          const target = normalizedPlanned.structuredWorkout as any
+
+          target.exercises = existingStruct.exercises
+
+          // Also preserve coach instructions if missing
+          if (existingStruct.coachInstructions && !target.coachInstructions) {
+            target.coachInstructions = existingStruct.coachInstructions
+          }
+        }
+      }
 
       await prisma.plannedWorkout.upsert({
         where: {
