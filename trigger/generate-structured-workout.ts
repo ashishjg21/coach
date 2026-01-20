@@ -306,6 +306,61 @@ export const generateStructuredWorkoutTask = task({
       })
     }
 
+    // Calculate metrics from Exercises (if present)
+    if (structure.exercises && Array.isArray(structure.exercises)) {
+      let gymDuration = 0
+      structure.exercises.forEach((ex: any) => {
+        let exDuration = 0
+
+        // If explicit duration
+        if (ex.duration) {
+          exDuration = ex.duration
+        } else {
+          // Estimate
+          const sets = ex.sets || 1
+          // Parse reps (could be '8-12' or 'AMRAP')
+          let reps = 10
+          if (typeof ex.reps === 'number') reps = ex.reps
+          else if (typeof ex.reps === 'string') {
+            const match = ex.reps.match(/\d+/)
+            if (match) reps = parseInt(match[0], 10)
+          }
+
+          const repDuration = 5 // seconds (controlled tempo)
+          const workTime = sets * reps * repDuration
+
+          // Rest
+          let restTimePerSet = 90 // seconds default (standard strength rest)
+          if (ex.rest) {
+            // Parse "90s", "2m", "1.5 min"
+            const restStr = String(ex.rest).toLowerCase()
+            if (restStr.includes('m') && !restStr.includes('ms')) {
+              const mins = parseFloat(restStr) || 0
+              restTimePerSet = mins * 60
+            } else {
+              const secs = parseFloat(restStr) || 90
+              restTimePerSet = secs
+            }
+          }
+
+          // Total time including transition
+          const totalRest = sets * restTimePerSet
+          exDuration = workTime + totalRest
+        }
+
+        gymDuration += exDuration
+      })
+
+      totalDuration += gymDuration
+
+      // Estimate TSS for Strength (approx 40 TSS/hr)
+      // Only add if no TSS calculated from steps (avoid double counting if mixed)
+      if (gymDuration > 0 && totalTSS === 0) {
+        const strengthTSS = (gymDuration / 3600) * 40
+        totalTSS += strengthTSS
+      }
+    }
+
     const updateData: any = {
       structuredWorkout: structure as any
     }
