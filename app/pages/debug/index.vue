@@ -81,11 +81,11 @@
         <div class="space-y-2 text-sm font-mono">
           <div>
             <span class="text-gray-500">Profile Timezone:</span>
-            <div class="font-bold">{{ user?.timezone || 'Not Set' }}</div>
+            <div class="font-bold">{{ (session?.user as any)?.timezone || 'Not Set' }}</div>
           </div>
           <div>
             <span class="text-gray-500">User ID:</span>
-            <div class="text-xs">{{ user?.id }}</div>
+            <div class="text-xs">{{ (session?.user as any)?.id }}</div>
           </div>
         </div>
       </UCard>
@@ -153,35 +153,49 @@
 </template>
 
 <script setup lang="ts">
-  const { data: user } = useAuth()
+  const { data: session } = useAuth()
 
   // Client Info
+
   const clientInfo = ref({
     timezone: '',
+
     time: '',
+
     iso: '',
+
     userAgent: ''
   })
 
   // Server Info
+
   const { data } = await useFetch('/api/debug/system')
 
   // Calendar Tests
+
   const testDate2026 = ref('')
+
   const testDate2027 = ref('')
 
   onMounted(() => {
     // Capture Client Info
+
     const now = new Date()
+
     clientInfo.value = {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+
       time: now.toString(),
+
       iso: now.toISOString(),
+
       userAgent: navigator.userAgent
     }
 
     // Run Calendar Logic Tests
+
     const d2026 = new Date('2026-01-18T12:00:00')
+
     testDate2026.value = d2026.toLocaleDateString(undefined, {
       weekday: 'long',
       year: 'numeric',
@@ -190,6 +204,7 @@
     })
 
     const d2027 = new Date('2027-01-18T12:00:00')
+
     testDate2027.value = d2027.toLocaleDateString(undefined, {
       weekday: 'long',
       year: 'numeric',
@@ -201,13 +216,18 @@
   const copyReport = () => {
     const report = {
       client: clientInfo.value,
+
       server: data.value,
+
       userProfile: {
-        timezone: user.value?.timezone,
-        id: user.value?.id
+        timezone: (session.value?.user as any)?.timezone,
+
+        id: (session.value?.user as any)?.id
       },
+
       calendarTest: {
         jan18_2026: testDate2026.value,
+
         jan18_2027: testDate2027.value
       }
     }
@@ -215,24 +235,33 @@
     navigator.clipboard.writeText(JSON.stringify(report, null, 2))
 
     const toast = useToast()
+
     toast.add({
       title: 'Report Copied',
+
       description: 'Paste this into the chat to help us debug.',
+
       color: 'success'
     })
   }
 
   function formatUptime(seconds: number) {
     const h = Math.floor(seconds / 3600)
+
     const m = Math.floor((seconds % 3600) / 60)
+
     return `${h}h ${m}m`
   }
 
   function formatBytes(bytes: number) {
     if (bytes === 0) return '0 B'
+
     const k = 1024
+
     const sizes = ['B', 'KB', 'MB', 'GB']
+
     const i = Math.floor(Math.log(bytes) / Math.log(k))
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 </script>
