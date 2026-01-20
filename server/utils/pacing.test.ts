@@ -131,7 +131,7 @@ describe('Pacing Utils', () => {
 
       const result = analyzePacingStrategy(splits)
       expect(result.strategy).toBe('positive_split')
-      expect(result.firstHalfPace).toBeLessThan(result.secondHalfPace)
+      expect(result.firstHalfPace!).toBeLessThan(result.secondHalfPace!)
     })
 
     it('identifies negative split (speeding up)', () => {
@@ -144,7 +144,7 @@ describe('Pacing Utils', () => {
 
       const result = analyzePacingStrategy(splits)
       expect(result.strategy).toBe('negative_split')
-      expect(result.firstHalfPace).toBeGreaterThan(result.secondHalfPace)
+      expect(result.firstHalfPace!).toBeGreaterThan(result.secondHalfPace!)
     })
   })
 
