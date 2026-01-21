@@ -83,6 +83,8 @@ export default defineEventHandler(async (event) => {
 
   // 4. Stream Text
   try {
+    const allToolResults: any[] = []
+
     const result = await streamText({
       model: google(modelName),
       system: systemInstruction,
@@ -101,12 +103,24 @@ export default defineEventHandler(async (event) => {
           toolResults.forEach((r) => {
             console.log(`[Chat API] Tool result (${r.toolName}):`, JSON.stringify(r, null, 2))
           })
+          allToolResults.push(...toolResults)
         }
       },
-      onFinish: async ({ text, toolResults, usage, finishReason }) => {
+      onFinish: async ({ text, toolResults: finalStepResults, usage, finishReason }) => {
         console.log(
           `[Chat API] Stream finished for room ${roomId}. Reason: ${finishReason}. Content length: ${text?.length || 0}`
         )
+
+        // Ensure we capture results if they only appear in onFinish (though onStepFinish usually catches them)
+        // If allToolResults is empty but finalStepResults has something, use that.
+        // But usually onStepFinish runs for every step.
+        // To be safe, let's rely on allToolResults, or merge if needed.
+        // Ideally onStepFinish captures everything.
+        // If onFinish is called *without* a preceding onStepFinish for the last step (unlikely), we might miss something.
+        // But for now, let's use allToolResults which we explicitly collected.
+
+        // fallback if onStepFinish didn't fire for some reason (e.g. single step?)
+        const resultsToSave = allToolResults.length > 0 ? allToolResults : finalStepResults || []
 
         // 1. Save AI Response to DB
         const aiMessage = await prisma.chatMessage.create({
@@ -182,7 +196,7 @@ export default defineEventHandler(async (event) => {
         }
 
         // 4. Handle tool calls and charts in metadata
-        const toolCallsUsed = toolResults.map((tr: any) => ({
+        const toolCallsUsed = resultsToSave.map((tr: any) => ({
           toolCallId: tr.toolCallId,
           name: tr.toolName,
           args: tr.args,
@@ -190,7 +204,7 @@ export default defineEventHandler(async (event) => {
           timestamp: new Date().toISOString()
         }))
 
-        const charts = toolResults
+        const charts = resultsToSave
           .filter((tr: any) => tr.toolName === 'create_chart' && tr.result?.success)
           .map((tr: any, index: number) => ({
             id: `chart-${aiMessage.id}-${index}`,
