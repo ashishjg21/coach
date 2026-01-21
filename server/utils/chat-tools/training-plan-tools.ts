@@ -275,9 +275,16 @@ export async function createPlannedWorkout(
       console.log('[createPlannedWorkout] 🚀 Triggering structured workout generation...', {
         plannedWorkoutId: workout.id
       })
-      await tasks.trigger('generate-structured-workout', {
-        plannedWorkoutId: workout.id
-      })
+      await tasks.trigger(
+        'generate-structured-workout',
+        {
+          plannedWorkoutId: workout.id
+        },
+        {
+          concurrencyKey: userId,
+          tags: [`user:${userId}`]
+        }
+      )
       console.log('[createPlannedWorkout] ✅ Triggered generation task')
     } catch (triggerError) {
       console.error(
@@ -404,9 +411,16 @@ export async function updatePlannedWorkout(
       console.log('[updatePlannedWorkout] 🚀 Triggering structured workout regeneration...', {
         plannedWorkoutId: workout.id
       })
-      await tasks.trigger('generate-structured-workout', {
-        plannedWorkoutId: workout.id
-      })
+      await tasks.trigger(
+        'generate-structured-workout',
+        {
+          plannedWorkoutId: workout.id
+        },
+        {
+          concurrencyKey: userId,
+          tags: [`user:${userId}`]
+        }
+      )
       console.log('[updatePlannedWorkout] ✅ Triggered generation task')
     } catch (triggerError) {
       console.error(
