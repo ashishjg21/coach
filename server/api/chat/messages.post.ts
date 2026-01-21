@@ -101,7 +101,8 @@ export default defineEventHandler(async (event) => {
             return {
               ...tr,
               args: tr.args || call?.args,
-              toolName: tr.toolName || call?.toolName
+              toolName: tr.toolName || call?.toolName,
+              result: tr.result || (tr as any).output // Handle 'output' property from Google provider
             }
           })
 
@@ -127,8 +128,6 @@ export default defineEventHandler(async (event) => {
 
         // fallback if onStepFinish didn't fire for some reason (e.g. single step?)
         const resultsToSave = allToolResults.length > 0 ? allToolResults : finalStepResults || []
-
-        console.log('[Chat API DEBUG] resultsToSave:', JSON.stringify(resultsToSave, null, 2))
 
         // 1. Save AI Response to DB
         const aiMessage = await prisma.chatMessage.create({
@@ -208,12 +207,15 @@ export default defineEventHandler(async (event) => {
           toolCallId: tr.toolCallId,
           name: tr.toolName,
           args: tr.args,
-          response: tr.result,
+          response: tr.result || tr.output,
           timestamp: new Date().toISOString()
         }))
 
         const charts = resultsToSave
-          .filter((tr: any) => tr.toolName === 'create_chart' && tr.result?.success)
+          .filter(
+            (tr: any) =>
+              tr.toolName === 'create_chart' && (tr.result?.success || tr.output?.success)
+          )
           .map((tr: any, index: number) => ({
             id: `chart-${aiMessage.id}-${index}`,
             ...tr.args
