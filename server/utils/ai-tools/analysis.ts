@@ -6,13 +6,13 @@ export const analysisTools = (userId: string, timezone: string) => ({
   analyze_training_load: tool({
     description:
       'Analyze training load (ATL, CTL, TSB) and progression over a time range. Use this to assess fatigue, fitness, and form.',
-    parameters: z.object({
+    inputSchema: z.object({
       start_date: z.string().describe('Start date (YYYY-MM-DD)'),
       end_date: z.string().optional().describe('End date (YYYY-MM-DD)')
     }),
-    execute: async (args: { start_date: string; end_date?: string }) => {
-      const start = new Date(args.start_date)
-      const end = args.end_date ? new Date(args.end_date) : new Date()
+    execute: async ({ start_date, end_date }) => {
+      const start = new Date(start_date)
+      const end = end_date ? new Date(end_date) : new Date()
 
       const workouts = await prisma.workout.findMany({
         where: {
@@ -32,7 +32,7 @@ export const analysisTools = (userId: string, timezone: string) => ({
       const avgTSS = totalTSS / (workouts.length || 1)
 
       return {
-        period: { start: args.start_date, end: args.end_date || 'now' },
+        period: { start: start_date, end: end_date || 'now' },
         total_workouts: workouts.length,
         total_tss: Math.round(totalTSS),
         avg_tss: Math.round(avgTSS),
@@ -44,7 +44,7 @@ export const analysisTools = (userId: string, timezone: string) => ({
 
   create_chart: tool({
     description: 'Generate a chart visualization for the chat UI.',
-    parameters: z.object({
+    inputSchema: z.object({
       type: z.enum(['line', 'bar', 'doughnut', 'scatter']).describe('Type of chart'),
       title: z.string(),
       labels: z.array(z.string()).describe('X-axis labels'),
@@ -57,7 +57,7 @@ export const analysisTools = (userId: string, timezone: string) => ({
         })
       )
     }),
-    execute: async (args: { type: string; title: string; labels: string[]; datasets: any[] }) => {
+    execute: async (args) => {
       return { success: true, ...args }
     }
   })

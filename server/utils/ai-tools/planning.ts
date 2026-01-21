@@ -7,7 +7,7 @@ import { tags } from '@trigger.dev/sdk/v3'
 export const planningTools = (userId: string, timezone: string) => ({
   create_planned_workout: tool({
     description: 'Create a future planned workout in the calendar.',
-    parameters: z.object({
+    inputSchema: z.object({
       date: z.string().describe('Date (YYYY-MM-DD)'),
       time_of_day: z.string().optional(),
       title: z.string(),
@@ -20,16 +20,7 @@ export const planningTools = (userId: string, timezone: string) => ({
         .optional()
         .describe('Intensity description (e.g. "Zone 2", "Intervals")')
     }),
-    execute: async (args: {
-      date: string
-      time_of_day?: string
-      title: string
-      description?: string
-      type: string
-      duration_minutes: number
-      tss?: number
-      intensity?: string
-    }) => {
+    execute: async (args) => {
       // Create a PlannedWorkout, not a Workout
       const workout = await prisma.plannedWorkout.create({
         data: {
@@ -49,8 +40,7 @@ export const planningTools = (userId: string, timezone: string) => ({
       try {
         await generateStructuredWorkoutTask.trigger(
           {
-            plannedWorkoutId: workout.id, // Pass plannedWorkoutId
-            userId: userId
+            plannedWorkoutId: workout.id // Pass plannedWorkoutId
           },
           {
             tags: [`user:${userId}`, `planned-workout:${workout.id}`]
@@ -70,7 +60,7 @@ export const planningTools = (userId: string, timezone: string) => ({
 
   update_planned_workout: tool({
     description: 'Update an existing planned workout.',
-    parameters: z.object({
+    inputSchema: z.object({
       workout_id: z.string(),
       date: z.string().optional(),
       title: z.string().optional(),
@@ -79,15 +69,7 @@ export const planningTools = (userId: string, timezone: string) => ({
       duration_minutes: z.number().optional(),
       tss: z.number().optional()
     }),
-    execute: async (args: {
-      workout_id: string
-      date?: string
-      title?: string
-      description?: string
-      type?: string
-      duration_minutes?: number
-      tss?: number
-    }) => {
+    execute: async (args) => {
       const data: any = {}
       if (args.title) data.title = args.title
       if (args.description) data.description = args.description
@@ -121,8 +103,7 @@ export const planningTools = (userId: string, timezone: string) => ({
       try {
         await generateStructuredWorkoutTask.trigger(
           {
-            plannedWorkoutId: workout.id,
-            userId: userId
+            plannedWorkoutId: workout.id
           },
           {
             tags: [`user:${userId}`, `planned-workout:${workout.id}`]
@@ -138,11 +119,11 @@ export const planningTools = (userId: string, timezone: string) => ({
 
   delete_workout: tool({
     description: 'Delete a workout (planned or completed).',
-    parameters: z.object({
+    inputSchema: z.object({
       workout_id: z.string(),
       reason: z.string().optional()
     }),
-    execute: async (args: { workout_id: string; reason?: string }) => {
+    execute: async (args) => {
       // Try deleting from both tables or check which one
       // For simplicity, try PlannedWorkout first
       try {
@@ -157,8 +138,8 @@ export const planningTools = (userId: string, timezone: string) => ({
 
   get_available_slots: tool({
     description: 'Find available time slots for training in the upcoming week.',
-    parameters: z.object({}),
-    execute: async (args: Record<string, unknown>) => {
+    inputSchema: z.object({}),
+    execute: async () => {
       // Mock implementation - would actually check calendar events + existing workouts
       return {
         slots: [
@@ -172,14 +153,14 @@ export const planningTools = (userId: string, timezone: string) => ({
 
   plan_week: tool({
     description: 'Generate a full training plan for the upcoming week.',
-    parameters: z.object({
+    inputSchema: z.object({
       days: z.number().optional().default(7),
       start_date: z.string().optional(),
       user_confirmed: z
         .boolean()
         .describe('Has the user explicitly asked to generate/confirm the plan?')
     }),
-    execute: async (args: { days?: number; start_date?: string; user_confirmed: boolean }) => {
+    execute: async (args) => {
       if (!args.user_confirmed) {
         return {
           needs_confirmation: true,

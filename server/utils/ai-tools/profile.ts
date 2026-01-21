@@ -5,8 +5,8 @@ import { prisma } from '../../utils/db'
 export const profileTools = (userId: string, timezone: string) => ({
   get_user_profile: tool({
     description: 'Get user profile details like FTP, Max HR, Weight, Age.',
-    parameters: z.object({}),
-    execute: async (args: Record<string, unknown>) => {
+    inputSchema: z.object({}),
+    execute: async () => {
       // Accessing the User model, not UserProfile
       const profile = await prisma.user.findUnique({
         where: { id: userId }, // Use 'id' for User model lookups by userId

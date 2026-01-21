@@ -5,7 +5,7 @@ import { prisma } from '../../utils/db'
 export const recommendationTools = (userId: string, timezone: string) => ({
   recommend_workout: tool({
     description: 'Recommend a specific workout based on the users goal and availability.',
-    parameters: z.object({
+    inputSchema: z.object({
       day_of_week: z.number().describe('0=Sunday, 1=Monday...'),
       morning: z.boolean().optional(),
       afternoon: z.boolean().optional(),
@@ -15,16 +15,7 @@ export const recommendationTools = (userId: string, timezone: string) => ({
       indoor_only: z.boolean().optional(),
       notes: z.string().optional()
     }),
-    execute: async (args: {
-      day_of_week: number
-      morning?: boolean
-      afternoon?: boolean
-      evening?: boolean
-      bike_access?: boolean
-      gym_access?: boolean
-      indoor_only?: boolean
-      notes?: string
-    }) => {
+    execute: async (args) => {
       // Logic to select a workout from a library or generate one
       return {
         recommendation: {
@@ -39,12 +30,12 @@ export const recommendationTools = (userId: string, timezone: string) => ({
 
   get_recommendation_details: tool({
     description: 'Get full details of a specific AI recommendation.',
-    parameters: z.object({
+    inputSchema: z.object({
       recommendation_id: z.string()
     }),
-    execute: async (args: { recommendation_id: string }) => {
+    execute: async ({ recommendation_id }) => {
       const rec = await prisma.recommendation.findUnique({
-        where: { id: args.recommendation_id }
+        where: { id: recommendation_id }
       })
       return rec || { error: 'Recommendation not found' }
     }
@@ -52,19 +43,19 @@ export const recommendationTools = (userId: string, timezone: string) => ({
 
   list_pending_recommendations: tool({
     description: 'List current pending recommendations for the user.',
-    parameters: z.object({
+    inputSchema: z.object({
       status: z.string().optional().default('ACTIVE'), // Changed default to ACTIVE as pending doesn't exist in schema defaults
       priority: z.string().optional(),
       limit: z.number().optional().default(5)
     }),
-    execute: async (args: { status?: string; priority?: string; limit?: number }) => {
+    execute: async ({ status = 'ACTIVE', priority, limit = 5 }) => {
       const recs = await prisma.recommendation.findMany({
         where: {
           userId,
-          status: args.status,
-          priority: args.priority
+          status,
+          priority
         },
-        take: args.limit
+        take: limit
       })
       return { count: recs.length, recommendations: recs }
     }

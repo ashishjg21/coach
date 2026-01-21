@@ -7,7 +7,7 @@ export const workoutTools = (userId: string, timezone: string) => ({
   get_recent_workouts: tool({
     description:
       'Get recent workouts with summary metrics (duration, TSS, intensity). Use this to see what the user has done recently.',
-    parameters: z.object({
+    inputSchema: z.object({
       limit: z.number().optional().default(5),
       type: z
         .string()
@@ -15,15 +15,7 @@ export const workoutTools = (userId: string, timezone: string) => ({
         .describe('Filter by sport type (Ride, Run, Swim, WeightTraining, etc)'),
       days: z.number().optional().describe('Number of days to look back')
     }),
-    execute: async ({
-      limit = 5,
-      type,
-      days
-    }: {
-      limit?: number
-      type?: string
-      days?: number
-    }) => {
+    execute: async ({ limit = 5, type, days }) => {
       const where: any = { userId }
 
       if (type) {
@@ -60,28 +52,22 @@ export const workoutTools = (userId: string, timezone: string) => ({
   search_workouts: tool({
     description:
       'Search for specific workouts by title, date, or unique characteristics. Useful for finding a specific session the user is referring to.',
-    parameters: z.object({
+    inputSchema: z.object({
       workout_id: z.string().optional().describe('Specific workout ID if known'),
       title_search: z.string().optional().describe('Partial title match'),
       type: z.string().optional(),
       date: z.string().optional().describe('Specific date (YYYY-MM-DD)'),
       relative_position: z.enum(['last', 'prev', 'next']).optional()
     }),
-    execute: async (args: {
-      workout_id?: string
-      title_search?: string
-      type?: string
-      date?: string
-      relative_position?: string
-    }) => {
+    execute: async ({ workout_id, title_search, type, date }) => {
       const where: any = { userId }
 
-      if (args.workout_id) where.id = args.workout_id
-      if (args.title_search) where.title = { contains: args.title_search, mode: 'insensitive' }
-      if (args.type) where.type = { contains: args.type, mode: 'insensitive' }
-      if (args.date) {
-        const start = new Date(args.date)
-        const end = new Date(args.date)
+      if (workout_id) where.id = workout_id
+      if (title_search) where.title = { contains: title_search, mode: 'insensitive' }
+      if (type) where.type = { contains: type, mode: 'insensitive' }
+      if (date) {
+        const start = new Date(date)
+        const end = new Date(date)
         end.setDate(end.getDate() + 1)
         where.date = { gte: start, lt: end }
       }
@@ -106,12 +92,12 @@ export const workoutTools = (userId: string, timezone: string) => ({
   get_activity_details: tool({
     description:
       'Get detailed metrics for a specific workout, including intervals, power curve, and heart rate data.',
-    parameters: z.object({
+    inputSchema: z.object({
       workout_id: z.string().describe('The ID of the workout to analyze')
     }),
-    execute: async (args: { workout_id: string }) => {
+    execute: async ({ workout_id }) => {
       const workout = await prisma.workout.findFirst({
-        where: { id: args.workout_id, userId }
+        where: { id: workout_id, userId }
       })
 
       if (!workout) return { error: 'Workout not found' }
@@ -128,7 +114,7 @@ export const workoutTools = (userId: string, timezone: string) => ({
   get_workout_streams: tool({
     description:
       'Get raw stream data (heart rate, power, cadence) for a workout. Use sparingly for deep analysis.',
-    parameters: z.object({
+    inputSchema: z.object({
       workout_id: z.string(),
       include_streams: z
         .array(z.string())
@@ -136,11 +122,7 @@ export const workoutTools = (userId: string, timezone: string) => ({
         .describe('List of streams: "watts", "heartrate", "cadence"'),
       sample_rate: z.number().optional().describe('Sample every N seconds (default 1)')
     }),
-    execute: async (args: {
-      workout_id: string
-      include_streams?: string[]
-      sample_rate?: number
-    }) => {
+    execute: async () => {
       return {
         message:
           'Stream access restricted for performance. Use get_activity_details for summary metrics.'
