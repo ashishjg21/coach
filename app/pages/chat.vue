@@ -112,17 +112,7 @@
   const onToolApproval = (approval: { approvalId: string; approved: boolean; result?: string }) => {
     console.log('[Chat] Tool Approval:', approval)
 
-    // Check if addToolResult exists (standard AI SDK UI method)
-    if (typeof (chat as any).addToolResult === 'function') {
-      console.log('[Chat] Calling addToolResult')
-      ;(chat as any).addToolResult({
-        toolCallId: approval.approvalId,
-        result: approval.result || (approval.approved ? 'Approved' : 'Denied')
-      })
-      return
-    }
-
-    // Fallback: Append message manually via sendMessage or append if available
+    // Construct the correct tool approval response part
     const responsePart = {
       type: 'tool-approval-response',
       toolCallId: approval.approvalId,
@@ -135,12 +125,14 @@
       content: [responsePart]
     }
 
-    console.log('[Chat] Attempting to send tool approval message:', message)
+    console.log('[Chat] Sending tool approval message:', message)
 
+    // Prefer append if available (standard in some SDK wrappers)
     if (typeof (chat as any).append === 'function') {
       ;(chat as any).append(message)
-    } else if (typeof (chat as any).sendMessage === 'function') {
-      // Try passing the message object directly to sendMessage
+    }
+    // Fallback to sendMessage if append is missing (legacy/custom wrappers)
+    else if (typeof (chat as any).sendMessage === 'function') {
       ;(chat as any).sendMessage(message)
     } else {
       console.error(
