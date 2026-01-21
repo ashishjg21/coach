@@ -244,7 +244,19 @@ export default defineEventHandler(async (event) => {
     console.warn(`Reached maximum tool call rounds (${MAX_ROUNDS}). Tools used:`, toolCallsUsed)
   }
 
-  const aiResponseText = response.text()
+  let aiResponseText = ''
+  try {
+    aiResponseText = response.text()
+  } catch (e) {
+    // response.text() might throw if there is no text part, which can happen if model only called tools and stopped
+    console.warn('[Chat] Failed to extract text from response:', e)
+  }
+
+  // Fallback if model used tools but returned no text
+  if (!aiResponseText && toolCallsUsed.length > 0) {
+    const actionNames = toolCallsUsed.map((t) => t.name.replace(/_/g, ' ')).join(', ')
+    aiResponseText = `Completed actions: ${actionNames}.`
+  }
 
   // Track LLM usage for debugging and cost monitoring
   try {

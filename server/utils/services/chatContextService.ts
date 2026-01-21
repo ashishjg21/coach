@@ -766,7 +766,13 @@ OR
 - Use questions or offers ("Want to...?" "Should we...?" "I can...")
 - Keep them relevant to what you just discussed
 - In the SAME LANGUAGE as the user
-- 2-3 options max - don't overwhelm them`
+- 2-3 options max - don't overwhelm them
+
+## Response Requirement
+**CRITICAL: ALWAYS provide a text response after using a tool.**
+- If you perform an action (create, update, delete), you MUST confirm it with text (e.g., "Deleted the workout.").
+- NEVER return an empty response after a tool call.
+- If you use multiple tools, summarize ALL actions in your final response.`
 
   return {
     context: athleteContext,
