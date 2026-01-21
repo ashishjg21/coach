@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import ChatToolCall from '~/components/ChatToolCall.vue'
+  import ChatChart from '~/components/ChatChart.vue'
 
   defineProps<{
     messages: any[]
@@ -78,6 +79,15 @@
             </div>
             <div v-else class="prose prose-sm dark:prose-invert max-w-none">
               <MDC :value="(message as any).content" />
+            </div>
+
+            <!-- Charts from Metadata -->
+            <div v-if="(message as any).metadata?.charts?.length" class="mt-4 space-y-4">
+              <ChatChart
+                v-for="chart in (message as any).metadata.charts"
+                :key="chart.id"
+                :chart-data="chart"
+              />
             </div>
           </template>
         </UChatMessages>
