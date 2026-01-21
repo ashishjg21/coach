@@ -2,6 +2,14 @@ import { tool } from 'ai'
 import { z } from 'zod'
 import { prisma } from '../../utils/db'
 import { generateStructuredWorkoutTask } from '../../../trigger/generate-structured-workout'
+import { adjustStructuredWorkoutTask } from '../../../trigger/adjust-structured-workout'
+import { syncPlannedWorkoutToIntervals } from '../../utils/intervals-sync'
+import { WorkoutConverter } from '../../utils/workout-converter'
+import {
+  cleanIntervalsDescription,
+  createIntervalsPlannedWorkout,
+  updateIntervalsPlannedWorkout
+} from '../../utils/intervals'
 import { tags } from '@trigger.dev/sdk/v3'
 
 export const planningTools = (userId: string, timezone: string) => ({
@@ -43,7 +51,8 @@ export const planningTools = (userId: string, timezone: string) => ({
             plannedWorkoutId: workout.id // Pass plannedWorkoutId
           },
           {
-            tags: [`user:${userId}`, `planned-workout:${workout.id}`]
+            tags: [`user:${userId}`, `planned-workout:${workout.id}`],
+            concurrencyKey: userId
           }
         )
       } catch (e) {
@@ -59,7 +68,7 @@ export const planningTools = (userId: string, timezone: string) => ({
   }),
 
   update_planned_workout: tool({
-    description: 'Update an existing planned workout.',
+    description: 'Update an existing planned workout (rename, reschedule, etc).',
     inputSchema: z.object({
       workout_id: z.string(),
       date: z.string().optional(),
@@ -85,11 +94,6 @@ export const planningTools = (userId: string, timezone: string) => ({
           select: { date: true }
         })
         if (existing) {
-          // PlannedWorkout date is just Date (YYYY-MM-DD), time is separate or implied?
-          // Schema says: date DateTime @db.Date
-          // So time is NOT stored in date.
-          // Schema has `startTime`? Yes: `startTime String?`.
-          // So we should update `date` with new date object.
           data.date = new Date(args.date)
         }
       }
@@ -106,7 +110,8 @@ export const planningTools = (userId: string, timezone: string) => ({
             plannedWorkoutId: workout.id
           },
           {
-            tags: [`user:${userId}`, `planned-workout:${workout.id}`]
+            tags: [`user:${userId}`, `planned-workout:${workout.id}`],
+            concurrencyKey: userId
           }
         )
       } catch (e) {
@@ -114,6 +119,150 @@ export const planningTools = (userId: string, timezone: string) => ({
       }
 
       return { success: true, workout_id: workout.id, status: 'QUEUED_FOR_SYNC' }
+    }
+  }),
+
+  adjust_planned_workout: tool({
+    description: 'Adjust a planned workout structure using AI instructions.',
+    inputSchema: z.object({
+      workout_id: z.string(),
+      instructions: z
+        .string()
+        .describe('Instructions for adjustment (e.g. "make it harder", "add intervals")'),
+      duration_minutes: z.number().optional(),
+      intensity: z.enum(['recovery', 'easy', 'moderate', 'hard', 'very_hard']).optional()
+    }),
+    execute: async ({ workout_id, instructions, duration_minutes, intensity }) => {
+      // Trigger adjustment task
+      try {
+        await adjustStructuredWorkoutTask.trigger(
+          {
+            plannedWorkoutId: workout_id,
+            adjustments: {
+              feedback: instructions,
+              durationMinutes: duration_minutes,
+              intensity: intensity
+            }
+          },
+          {
+            tags: [`user:${userId}`, `planned-workout:${workout_id}`],
+            concurrencyKey: userId
+          }
+        )
+        return { success: true, message: 'Workout adjustment started.' }
+      } catch (e) {
+        console.error('Failed to trigger workout adjustment:', e)
+        return { success: false, error: 'Failed to start adjustment task.' }
+      }
+    }
+  }),
+
+  regenerate_workout_structure: tool({
+    description: 'Regenerate the structured intervals for a planned workout.',
+    inputSchema: z.object({
+      workout_id: z.string()
+    }),
+    execute: async ({ workout_id }) => {
+      try {
+        await generateStructuredWorkoutTask.trigger(
+          { plannedWorkoutId: workout_id },
+          {
+            tags: [`user:${userId}`, `planned-workout:${workout_id}`],
+            concurrencyKey: userId
+          }
+        )
+        return { success: true, message: 'Structure regeneration started.' }
+      } catch (e) {
+        return { success: false, error: 'Failed to trigger regeneration.' }
+      }
+    }
+  }),
+
+  publish_planned_workout: tool({
+    description: 'Publish or update a planned workout to Intervals.icu.',
+    inputSchema: z.object({
+      workout_id: z.string()
+    }),
+    execute: async ({ workout_id }) => {
+      const workout = await prisma.plannedWorkout.findUnique({
+        where: { id: workout_id, userId },
+        include: { user: { select: { ftp: true } } }
+      })
+
+      if (!workout) return { error: 'Workout not found' }
+
+      // Logic copied from publish endpoint, simplified
+      // Ideally this should be in a service but for now we implement directly using utils
+      const integration = await prisma.integration.findFirst({
+        where: { userId, provider: 'intervals' }
+      })
+
+      if (!integration) return { error: 'Intervals.icu integration not found' }
+
+      const isLocal =
+        workout.syncStatus === 'LOCAL_ONLY' ||
+        workout.externalId.startsWith('ai_gen_') ||
+        workout.externalId.startsWith('ai-gen-') ||
+        workout.externalId.startsWith('adhoc-')
+
+      let workoutDoc = ''
+      if (workout.structuredWorkout) {
+        const workoutData = {
+          title: workout.title,
+          description: workout.description || '',
+          steps: (workout.structuredWorkout as any).steps || [],
+          exercises: (workout.structuredWorkout as any).exercises,
+          messages: (workout.structuredWorkout as any).messages || [],
+          ftp: (workout.user as any).ftp || 250
+        }
+        workoutDoc = WorkoutConverter.toIntervalsICU(workoutData)
+      }
+
+      const cleanDescription = cleanIntervalsDescription(workout.description || '')
+
+      try {
+        if (isLocal) {
+          const intervalsWorkout = await createIntervalsPlannedWorkout(integration, {
+            date: workout.date,
+            title: workout.title,
+            description: cleanDescription,
+            type: workout.type || 'Ride',
+            durationSec: workout.durationSec || 3600,
+            tss: workout.tss ?? undefined,
+            workout_doc: workoutDoc,
+            managedBy: workout.managedBy
+          })
+
+          await prisma.plannedWorkout.update({
+            where: { id: workout_id },
+            data: {
+              externalId: String(intervalsWorkout.id),
+              syncStatus: 'SYNCED',
+              lastSyncedAt: new Date()
+            }
+          })
+          return { success: true, message: 'Workout published to Intervals.icu.' }
+        } else {
+          await updateIntervalsPlannedWorkout(integration, workout.externalId, {
+            date: workout.date,
+            title: workout.title,
+            description: cleanDescription,
+            type: workout.type || 'Ride',
+            durationSec: workout.durationSec || 3600,
+            tss: workout.tss ?? undefined,
+            workout_doc: workoutDoc,
+            managedBy: workout.managedBy
+          })
+
+          await prisma.plannedWorkout.update({
+            where: { id: workout_id },
+            data: { syncStatus: 'SYNCED', lastSyncedAt: new Date() }
+          })
+          return { success: true, message: 'Workout updated on Intervals.icu.' }
+        }
+      } catch (e: any) {
+        return { success: false, error: e.message || 'Failed to publish.' }
+      }
     }
   }),
 
