@@ -128,57 +128,46 @@ export default defineEventHandler(async (event) => {
         }
       },
       onFinish: async (event) => {
-        const { text, toolResults: finalStepResults, usage, finishReason } = event
+        const { text, toolResults: finalStepResults, usage, finishReason, toolCalls } = event // Destructure toolCalls
 
         console.log(
           `[Chat API] Stream finished for room ${roomId}. Reason: ${finishReason}. Content length: ${text?.length || 0}`
         )
-        console.log('[Chat API] onFinish event keys:', Object.keys(event))
+        // ... (rest of code) ...
 
-        // 1. Save AI Response to DB immediately to ensure persistence
-        let aiMessage: any
+        // 2. Capture metadata
         try {
-          aiMessage = await prisma.chatMessage.create({
-            data: {
-              content: text || '',
-              roomId,
-              senderId: 'ai_agent',
-              seen: {}
-            }
-          })
-        } catch (dbErr) {
-          console.error('[Chat API] Failed to save AI message:', dbErr)
-          return
-        }
-
-        // 2. Capture metadata (Approvals, Tools, Charts)
-        try {
-          // Capture tool approval requests from the final message content
-          // We use the 'result' object from the outer scope
           const toolApprovals: any[] = []
 
           try {
-            const response = await result.response
-            const responseMessages = response.messages
-            const lastResponseMessage = responseMessages[responseMessages.length - 1]
+            // ... (response access) ...
 
             if (lastResponseMessage && Array.isArray(lastResponseMessage.content)) {
               lastResponseMessage.content.forEach((part: any) => {
                 if (part.type === 'tool-approval-request') {
-                  console.log(
-                    '[Chat API] Found approval request:',
-                    part.toolCallId || part.approvalId
-                  )
+                  const id = part.toolCallId || part.approvalId
+                  console.log('[Chat API] Found approval request:', id)
 
-                  // Handle various shapes of approval request parts
+                  // Lookup details in toolCalls if missing in part
                   const toolName = part.toolCall?.toolName || part.toolName
                   const args = part.toolCall?.args || part.args
 
-                  if (toolName) {
+                  let resolvedName = toolName
+                  let resolvedArgs = args
+
+                  if (!resolvedName && toolCalls) {
+                    const matchingCall = toolCalls.find((tc: any) => tc.toolCallId === id)
+                    if (matchingCall) {
+                      resolvedName = matchingCall.toolName
+                      resolvedArgs = matchingCall.args
+                    }
+                  }
+
+                  if (resolvedName) {
                     toolApprovals.push({
-                      toolCallId: part.toolCallId || part.approvalId,
-                      name: toolName,
-                      args: args,
+                      toolCallId: id,
+                      name: resolvedName,
+                      args: resolvedArgs,
                       timestamp: new Date().toISOString()
                     })
                   } else {
@@ -187,9 +176,8 @@ export default defineEventHandler(async (event) => {
                 }
               })
             }
-          } catch (resErr) {
-            console.warn('[Chat API] Failed to read result.response:', resErr)
-            // Fallback: If we can't read response, we might miss approvals.
+          } catch (resErr: any) {
+            logDebug(`Failed to read result.response: ${resErr.message}`)
           }
 
           // Ensure we capture results if they only appear in onFinish
