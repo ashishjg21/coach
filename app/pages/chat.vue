@@ -1,5 +1,6 @@
 <script setup lang="ts">
-  import { ref, computed } from 'vue'
+  import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+  import TriggerMonitorButton from '~/components/dashboard/TriggerMonitorButton.vue'
 
   definePageMeta({
     middleware: 'auth'
@@ -88,6 +89,11 @@
   const loadingRooms = ref(true)
   const isRoomListOpen = ref(false)
 
+  // WebSocket State
+  const ws = ref<WebSocket | null>(null)
+  const isWsConnected = ref(false)
+  const currentStreamMessageId = ref<string | null>(null)
+
   // Fetch session and initialize
   const { data: session } = await useFetch('/api/auth/session')
   const currentUserId = computed(() => (session.value?.user as any)?.id)
@@ -98,7 +104,164 @@
   // Load initial room and messages
   onMounted(async () => {
     await loadChat()
+    connectWebSocket()
   })
+
+  onUnmounted(() => {
+    if (ws.value) {
+      ws.value.close()
+      ws.value = null
+    }
+  })
+
+  // WebSocket Connection
+  async function connectWebSocket() {
+    if (ws.value) return
+    if (!session.value?.user) return
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const url = `${protocol}//${window.location.host}/api/websocket`
+
+    ws.value = new WebSocket(url)
+
+    ws.value.onopen = async () => {
+      isWsConnected.value = true
+      try {
+        const { token } = await $fetch<{ token: string }>('/api/websocket-token')
+        ws.value?.send(JSON.stringify({ type: 'authenticate', token }))
+      } catch (e) {
+        console.error('WS Auth failed', e)
+      }
+    }
+
+    ws.value.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+
+        // Filter messages for current room
+        if (data.roomId && data.roomId !== currentRoomId.value) return
+
+        handleWsMessage(data)
+      } catch (e) {
+        console.error('WS Parse error', e)
+      }
+    }
+
+    ws.value.onclose = () => {
+      isWsConnected.value = false
+      ws.value = null
+      // Auto-reconnect after delay
+      setTimeout(connectWebSocket, 3000)
+    }
+  }
+
+  function handleWsMessage(data: any) {
+    switch (data.type) {
+      case 'chat_message_saved': {
+        // Replace optimistic message
+        const tempIdx = messages.value.findIndex((m) => m.id.startsWith('temp-'))
+        if (tempIdx !== -1 && messages.value[tempIdx]) {
+          const original = messages.value[tempIdx]!
+          const updated: Message = {
+            ...original,
+            id: data.messageId,
+            metadata: {
+              ...original.metadata,
+              createdAt: new Date(data.createdAt)
+            }
+          }
+          messages.value[tempIdx] = updated
+        }
+        break
+      }
+
+      case 'chat_token': {
+        if (status.value !== 'streaming') status.value = 'streaming'
+
+        // Find or create assistant message
+        let lastMsg = messages.value[messages.value.length - 1]
+        if (
+          !lastMsg ||
+          lastMsg.role !== 'assistant' ||
+          lastMsg.id !== currentStreamMessageId.value
+        ) {
+          // New streaming message
+          const newId = `ai-stream-${Date.now()}`
+          currentStreamMessageId.value = newId
+          messages.value.push({
+            id: newId,
+            role: 'assistant',
+            parts: [{ type: 'text', id: `text-${newId}`, text: '' }]
+          })
+          lastMsg = messages.value[messages.value.length - 1]
+        }
+
+        // Append text
+        if (lastMsg && lastMsg.parts && lastMsg.parts[0]) {
+          lastMsg.parts[0].text += data.text
+        }
+        break
+      }
+
+      case 'tool_start': {
+        status.value = 'streaming'
+        // Optionally show "Using tool..." indicator
+        break
+      }
+
+      case 'chat_complete': {
+        status.value = 'ready'
+        currentStreamMessageId.value = null
+
+        // Update final message with metadata (charts, tools)
+        const finalIdx = messages.value.findIndex((m) => m.id.startsWith('ai-stream-'))
+        if (finalIdx !== -1 && messages.value[finalIdx]) {
+          const msg = messages.value[finalIdx]!
+          // Update ID to real DB ID
+          msg.id = data.messageId
+          msg.metadata = {
+            ...msg.metadata,
+            charts: data.metadata?.charts || [],
+            toolCalls: data.metadata?.toolCalls || [],
+            toolCallCount: data.metadata?.toolCalls?.length || 0
+          }
+          // Ensure content matches final
+          if (msg.parts && msg.parts[0]) msg.parts[0].text = data.content
+        } else {
+          // If we missed the stream (e.g. fast response), add full message
+          messages.value.push({
+            id: data.messageId,
+            role: 'assistant',
+            parts: [{ type: 'text', id: `text-${data.messageId}`, text: data.content }],
+            metadata: {
+              charts: data.metadata?.charts || [],
+              toolCalls: data.metadata?.toolCalls || [],
+              toolCallCount: data.metadata?.toolCalls?.length || 0
+            }
+          })
+        }
+
+        // Refresh room list to update last message/titles
+        loadRooms()
+        break
+      }
+
+      case 'room_renamed': {
+        // Update room name in list
+        const room = rooms.value.find((r) => r.roomId === data.roomId)
+        if (room) {
+          room.roomName = data.name
+        }
+        break
+      }
+
+      case 'error': {
+        status.value = 'error'
+        error.value = new Error(data.message)
+        break
+      }
+    }
+  }
 
   async function loadRooms() {
     try {
@@ -182,7 +345,7 @@
     const userMessage = input.value.trim()
     input.value = ''
 
-    // Add user message immediately
+    // Add optimistic user message
     const tempUserMessage: Message = {
       id: `temp-${Date.now()}`,
       role: 'user',
@@ -198,49 +361,46 @@
       }
     }
     messages.value.push(tempUserMessage)
+    status.value = 'submitted'
+    error.value = undefined
 
-    try {
-      status.value = 'submitted'
-      error.value = undefined
-
-      // Send message and get AI response
-      const response = await $fetch<Message>('/api/chat/messages', {
-        method: 'POST',
-        body: {
+    // Use WebSocket if connected
+    if (isWsConnected.value && ws.value) {
+      ws.value.send(
+        JSON.stringify({
+          type: 'chat_message',
           roomId: currentRoomId.value,
           content: userMessage
-        }
-      })
-
-      // Replace temp message with real one and add AI response
-      messages.value = messages.value.filter((m) => m.id !== tempUserMessage.id)
-      messages.value.push({
-        id: `user-${Date.now()}`,
-        role: 'user',
-        parts: [
-          {
-            type: 'text',
-            id: `text-user-${Date.now()}`,
-            text: userMessage
+        })
+      )
+    } else {
+      // Fallback to HTTP if WS failed
+      try {
+        const response = await $fetch<Message>('/api/chat/messages', {
+          method: 'POST',
+          body: {
+            roomId: currentRoomId.value,
+            content: userMessage
           }
-        ],
-        metadata: {
-          createdAt: new Date()
-        }
-      })
-      messages.value.push(response)
+        })
 
-      // Refresh rooms to update last message
-      await loadRooms()
-
-      status.value = 'ready'
-    } catch (err: any) {
-      console.error('Failed to send message:', err)
-      error.value = err
-      status.value = 'error'
-
-      // Remove temp message on error
-      messages.value = messages.value.filter((m) => m.id !== tempUserMessage.id)
+        // Replace temp message
+        messages.value = messages.value.filter((m) => m.id !== tempUserMessage.id)
+        messages.value.push({
+          id: `user-${Date.now()}`,
+          role: 'user',
+          parts: [{ type: 'text', id: `text-user-${Date.now()}`, text: userMessage }],
+          metadata: { createdAt: new Date() }
+        })
+        messages.value.push(response)
+        await loadRooms()
+        status.value = 'ready'
+      } catch (err: any) {
+        console.error('Failed to send message:', err)
+        error.value = err
+        status.value = 'error'
+        messages.value = messages.value.filter((m) => m.id !== tempUserMessage.id)
+      }
     }
   }
 
@@ -305,6 +465,7 @@
           />
         </template>
         <template #right>
+          <TriggerMonitorButton />
           <UButton
             to="/settings/ai"
             icon="i-heroicons-cog-6-tooth"
