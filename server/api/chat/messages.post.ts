@@ -100,7 +100,7 @@ export default defineEventHandler(async (event) => {
             const call = toolCalls?.find((tc) => tc.toolCallId === tr.toolCallId)
             return {
               ...tr,
-              args: tr.args || call?.args,
+              args: tr.args || (tr as any).input || call?.args || (call as any)?.input,
               toolName: tr.toolName || call?.toolName,
               result: tr.result || (tr as any).output // Handle 'output' property from Google provider
             }
@@ -119,14 +119,6 @@ export default defineEventHandler(async (event) => {
         )
 
         // Ensure we capture results if they only appear in onFinish (though onStepFinish usually catches them)
-        // If allToolResults is empty but finalStepResults has something, use that.
-        // But usually onStepFinish runs for every step.
-        // To be safe, let's rely on allToolResults, or merge if needed.
-        // Ideally onStepFinish captures everything.
-        // If onFinish is called *without* a preceding onStepFinish for the last step (unlikely), we might miss something.
-        // But for now, let's use allToolResults which we explicitly collected.
-
-        // fallback if onStepFinish didn't fire for some reason (e.g. single step?)
         const resultsToSave = allToolResults.length > 0 ? allToolResults : finalStepResults || []
 
         // 1. Save AI Response to DB
@@ -206,7 +198,7 @@ export default defineEventHandler(async (event) => {
         const toolCallsUsed = resultsToSave.map((tr: any) => ({
           toolCallId: tr.toolCallId,
           name: tr.toolName,
-          args: tr.args,
+          args: tr.args || tr.input,
           response: tr.result || tr.output,
           timestamp: new Date().toISOString()
         }))
