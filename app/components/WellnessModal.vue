@@ -115,16 +115,17 @@
                 >Recovery</span
               >
             </div>
-            <div class="text-2xl font-bold text-emerald-900 dark:text-emerald-50">
+            <div class="text-2xl font-bold text-emerald-900 dark:text-blue-50">
               {{ wellnessData.recoveryScore }}%
             </div>
-            <div class="mt-2">
-              <span
-                class="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-white/50 dark:bg-emerald-900/40"
-                :class="getRecoveryColor(wellnessData.recoveryScore)"
-              >
-                {{ getRecoveryLabel(wellnessData.recoveryScore) }}
-              </span>
+            <div v-if="trendData.length > 0" class="mt-2">
+              <TrendIndicator
+                :current="wellnessData.recoveryScore"
+                :previous="trendData.map((d) => d.recoveryScore).filter((v) => v != null)"
+                type="higher-is-better"
+                compact
+                show-value
+              />
             </div>
           </div>
 
@@ -147,6 +148,115 @@
               <TrendIndicator
                 :current="wellnessData.readiness"
                 :previous="trendData.map((d) => d.readiness).filter((v) => v != null)"
+                type="higher-is-better"
+                compact
+                show-value
+              />
+            </div>
+          </div>
+
+          <!-- Weight -->
+          <div
+            v-if="wellnessData.weight != null"
+            class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl ring-1 ring-inset ring-gray-200 dark:ring-gray-700"
+          >
+            <div class="flex items-center gap-2 mb-2">
+              <UIcon name="i-heroicons-scale" class="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              <span
+                class="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-tight"
+                >Weight</span
+              >
+            </div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-gray-50">
+              {{ wellnessData.weight.toFixed(1) }}
+              <span class="text-xs font-medium opacity-70">kg</span>
+            </div>
+            <div v-if="trendData.length > 0" class="mt-2">
+              <TrendIndicator
+                :current="wellnessData.weight"
+                :previous="trendData.map((d) => d.weight).filter((v) => v != null)"
+                type="neutral"
+                compact
+                show-value
+              />
+            </div>
+          </div>
+
+          <!-- SpO2 -->
+          <div
+            v-if="wellnessData.spO2 != null"
+            class="p-4 bg-cyan-50 dark:bg-cyan-900/20 rounded-xl ring-1 ring-inset ring-cyan-500/10"
+          >
+            <div class="flex items-center gap-2 mb-2">
+              <UIcon name="i-heroicons-cloud" class="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <span
+                class="text-xs font-bold text-cyan-900 dark:text-cyan-100 uppercase tracking-tight"
+                >SpO2</span
+              >
+            </div>
+            <div class="text-2xl font-bold text-cyan-900 dark:text-cyan-50">
+              {{ wellnessData.spO2.toFixed(0) }}
+              <span class="text-xs font-medium opacity-70">%</span>
+            </div>
+            <div v-if="trendData.length > 0" class="mt-2">
+              <TrendIndicator
+                :current="wellnessData.spO2"
+                :previous="trendData.map((d) => d.spO2).filter((v) => v != null)"
+                type="higher-is-better"
+                compact
+                show-value
+              />
+            </div>
+          </div>
+
+          <!-- Stress -->
+          <div
+            v-if="wellnessData.stress != null"
+            class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl ring-1 ring-inset ring-orange-500/10"
+          >
+            <div class="flex items-center gap-2 mb-2">
+              <UIcon name="i-heroicons-fire" class="w-4 h-4 text-orange-600 dark:text-orange-400" />
+              <span
+                class="text-xs font-bold text-orange-900 dark:text-orange-100 uppercase tracking-tight"
+                >Stress</span
+              >
+            </div>
+            <div class="text-2xl font-bold text-orange-900 dark:text-orange-50">
+              {{ wellnessData.stress }}/10
+            </div>
+            <div v-if="trendData.length > 0" class="mt-2">
+              <TrendIndicator
+                :current="wellnessData.stress"
+                :previous="trendData.map((d) => d.stress).filter((v) => v != null)"
+                type="lower-is-better"
+                compact
+                show-value
+              />
+            </div>
+          </div>
+
+          <!-- Mood -->
+          <div
+            v-if="wellnessData.mood != null"
+            class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl ring-1 ring-inset ring-yellow-500/10"
+          >
+            <div class="flex items-center gap-2 mb-2">
+              <UIcon
+                name="i-heroicons-face-smile"
+                class="w-4 h-4 text-yellow-600 dark:text-yellow-400"
+              />
+              <span
+                class="text-xs font-bold text-yellow-900 dark:text-yellow-100 uppercase tracking-tight"
+                >Mood</span
+              >
+            </div>
+            <div class="text-2xl font-bold text-yellow-900 dark:text-yellow-50">
+              {{ wellnessData.mood }}/10
+            </div>
+            <div v-if="trendData.length > 0" class="mt-2">
+              <TrendIndicator
+                :current="wellnessData.mood"
+                :previous="trendData.map((d) => d.mood).filter((v) => v != null)"
                 type="higher-is-better"
                 compact
                 show-value
@@ -196,10 +306,7 @@
             @click="navigateTo(`/fitness/${wellnessData.id}`)"
           >
             <div class="flex items-start gap-3">
-              <UIcon
-                name="i-heroicons-sparkles"
-                class="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0"
-              />
+              <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-indigo-500 flex-shrink-0" />
               <div class="space-y-3 w-full">
                 <div>
                   <div class="flex items-center justify-between">
@@ -241,15 +348,11 @@
           <!-- Analyze Action (Empty State) -->
           <button
             v-else
-            class="w-full text-left p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl ring-1 ring-inset ring-gray-200 dark:ring-gray-700 hover:ring-primary-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all group flex items-center gap-3"
+            class="w-full text-left p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl ring-1 ring-inset ring-gray-200 dark:ring-gray-700 hover:ring-primary-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all group flex items-start gap-3"
             :disabled="analyzingWellness"
             @click="analyzeWellness"
           >
-            <div
-              class="p-2 bg-white dark:bg-gray-900 rounded-lg shadow-sm ring-1 ring-gray-200 dark:ring-gray-700"
-            >
-              <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-primary-500" />
-            </div>
+            <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-primary-500 flex-shrink-0" />
             <div>
               <span class="font-bold text-gray-900 dark:text-white block">Analyze with AI</span>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -258,7 +361,7 @@
             </div>
             <UIcon
               name="i-heroicons-arrow-right"
-              class="w-4 h-4 text-gray-400 group-hover:text-primary-500 ml-auto"
+              class="w-4 h-4 text-gray-400 group-hover:text-primary-500 ml-auto mt-1"
             />
           </button>
         </div>
@@ -329,66 +432,120 @@
                 </div>
               </div>
             </div>
+
+            <!-- Resting HR Trend Chart -->
+            <div v-if="trendData.some((d) => d.restingHr != null)" class="space-y-3">
+              <div class="flex items-center justify-between px-1">
+                <span
+                  class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight"
+                  >Resting HR</span
+                >
+              </div>
+              <div
+                class="h-32 flex items-end justify-between gap-1.5 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl ring-1 ring-inset ring-gray-200 dark:ring-gray-700"
+              >
+                <div
+                  v-for="(day, idx) in trendData"
+                  :key="idx"
+                  class="flex-1 bg-rose-400/30 dark:bg-rose-500/20 rounded-lg hover:bg-rose-400 dark:hover:bg-rose-500 transition-all duration-300 relative group"
+                  :style="{
+                    height: day.restingHr
+                      ? `${Math.max((day.restingHr / maxRHR) * 100, 10)}%`
+                      : '4px'
+                  }"
+                >
+                  <div
+                    class="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] font-bold px-2 py-1 rounded shadow-xl whitespace-nowrap pointer-events-none z-10"
+                  >
+                    {{ formatDate(day.date, 'MMM d') }}:
+                    {{ day.restingHr ? day.restingHr + 'bpm' : 'N/A' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recovery Score Trend Chart -->
+            <div v-if="trendData.some((d) => d.recoveryScore != null)" class="space-y-3">
+              <div class="flex items-center justify-between px-1">
+                <span
+                  class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-tight"
+                  >Recovery Score</span
+                >
+              </div>
+              <div
+                class="h-32 flex items-end justify-between gap-1.5 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl ring-1 ring-inset ring-gray-200 dark:ring-gray-700"
+              >
+                <div
+                  v-for="(day, idx) in trendData"
+                  :key="idx"
+                  class="flex-1 bg-emerald-400/30 dark:bg-emerald-500/20 rounded-lg hover:bg-emerald-400 dark:hover:bg-emerald-500 transition-all duration-300 relative group"
+                  :style="{
+                    height: day.recoveryScore ? `${Math.max(day.recoveryScore, 10)}%` : '4px'
+                  }"
+                >
+                  <div
+                    class="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[10px] font-bold px-2 py-1 rounded shadow-xl whitespace-nowrap pointer-events-none z-10"
+                  >
+                    {{ formatDate(day.date, 'MMM d') }}:
+                    {{ day.recoveryScore ? day.recoveryScore + '%' : 'N/A' }}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Training Recommendations -->
         <div
-          class="p-5 bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-900/20 rounded-2xl"
+          v-if="wellnessData.id"
+          class="p-4 bg-primary-50 dark:bg-primary-900/10 rounded-xl ring-1 ring-inset ring-primary-200 dark:ring-primary-800/30 hover:bg-primary-100 dark:hover:bg-primary-900/20 transition-colors group/rec-card cursor-pointer relative"
+          @click="navigateTo(`/fitness/${wellnessData.id}`)"
         >
-          <div class="flex items-start gap-4">
-            <div
-              class="p-2.5 rounded-xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-primary-100 dark:ring-primary-900/30"
-            >
-              <UIcon
-                name="i-heroicons-sparkles"
-                class="w-6 h-6 text-primary-600 dark:text-primary-400 flex-shrink-0"
-              />
-            </div>
-            <div class="space-y-2 flex-1">
-              <h4 class="font-bold text-sm text-primary-900 dark:text-primary-100">
-                Coach Recommendation
-              </h4>
+          <div class="flex items-start gap-3">
+            <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-primary-500 flex-shrink-0" />
+            <div class="space-y-3 w-full">
+              <div>
+                <h4 class="font-bold text-primary-900 dark:text-primary-100">
+                  Coach Recommendation
+                </h4>
 
-              <!-- AI Recommendation -->
-              <div
-                v-if="
-                  wellnessData.aiAnalysisJson && wellnessData.aiAnalysisJson.recommendations?.length
-                "
-                class="space-y-3"
-              >
+                <!-- AI Recommendation -->
                 <div
-                  v-for="(rec, index) in wellnessData.aiAnalysisJson.recommendations.slice(0, 1)"
-                  :key="index"
+                  v-if="
+                    wellnessData.aiAnalysisJson &&
+                    wellnessData.aiAnalysisJson.recommendations?.length
+                  "
+                  class="mt-1"
                 >
-                  <p class="text-sm font-semibold text-primary-900 dark:text-primary-100">
-                    {{ rec.title }}
-                  </p>
-                  <p class="text-sm text-primary-800 dark:text-primary-200 leading-relaxed mt-1">
-                    {{ rec.description }}
-                  </p>
+                  <div
+                    v-for="(rec, index) in wellnessData.aiAnalysisJson.recommendations.slice(0, 1)"
+                    :key="index"
+                  >
+                    <p class="text-sm font-semibold text-primary-900 dark:text-primary-100">
+                      {{ rec.title }}
+                    </p>
+                    <p class="text-sm text-primary-800 dark:text-primary-200 leading-relaxed mt-1">
+                      {{ rec.description }}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <!-- Fallback Heuristic -->
-              <p
-                v-else
-                class="text-sm text-primary-800 dark:text-primary-200 leading-relaxed font-medium"
-              >
-                {{ getTrainingRecommendation() }}
-              </p>
-
-              <div v-if="wellnessData.id" class="flex justify-end mt-2">
-                <UButton
-                  :to="`/fitness/${wellnessData.id}`"
-                  variant="ghost"
-                  color="primary"
-                  size="xs"
-                  icon="i-heroicons-arrow-right"
-                  trailing
+                <!-- Fallback Heuristic -->
+                <p
+                  v-else
+                  class="text-sm text-primary-800 dark:text-primary-200 leading-relaxed font-medium mt-1"
                 >
-                  View Full Details
-                </UButton>
+                  {{ getTrainingRecommendation() }}
+                </p>
+
+                <div class="flex justify-end mt-2">
+                  <span
+                    class="text-[10px] font-bold text-primary-600 dark:text-primary-400 flex items-center gap-1 group-hover/rec-card:underline uppercase tracking-tight"
+                  >
+                    View Full Details
+                    <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -568,18 +725,10 @@
     return values.length > 0 ? Math.max(...values) : 100
   })
 
-  // Helper functions
-  function getRecoveryColor(score: number): string {
-    if (score >= 67) return 'text-green-600 dark:text-green-400'
-    if (score >= 34) return 'text-amber-600 dark:text-amber-400'
-    return 'text-red-600 dark:text-red-400'
-  }
-
-  function getRecoveryLabel(score: number): string {
-    if (score >= 67) return 'Well recovered'
-    if (score >= 34) return 'Moderate recovery'
-    return 'Low recovery'
-  }
+  const maxRHR = computed(() => {
+    const values = trendData.value.filter((d) => d.restingHr != null).map((d) => d.restingHr)
+    return values.length > 0 ? Math.max(...values) : 100
+  })
 
   function formatStatus(status: string) {
     if (!status) return ''

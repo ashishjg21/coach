@@ -31,7 +31,7 @@
         <!-- Wellness Metrics -->
         <button
           v-if="dayWellness"
-          class="flex items-center gap-1.5 text-[10px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer"
+          class="flex flex-wrap items-center gap-1.5 text-[10px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer"
           :title="'View wellness details'"
           @click="$emit('wellness-click', date)"
         >
@@ -49,7 +49,7 @@
           </span>
           <span v-if="dayWellness.weight != null" class="flex items-center gap-0.5">
             <UIcon name="i-heroicons-scale" class="w-2.5 h-2.5" />
-            <span class="font-medium">{{ dayWellness.weight.toFixed(2) }}</span>
+            <span class="font-medium">{{ Math.round(dayWellness.weight) }}</span>
           </span>
         </button>
       </div>
