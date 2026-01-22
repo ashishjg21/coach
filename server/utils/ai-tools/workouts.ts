@@ -2,6 +2,7 @@ import { tool } from 'ai'
 import { z } from 'zod'
 import { workoutRepository } from '../repositories/workoutRepository'
 import { getStartOfDaysAgoUTC, formatUserDate } from '../../utils/date'
+import { analyzeWorkoutTask } from '../../../trigger/analyze-workout'
 
 export const workoutTools = (userId: string, timezone: string) => ({
   get_recent_workouts: tool({
@@ -89,7 +90,7 @@ export const workoutTools = (userId: string, timezone: string) => ({
     }
   }),
 
-  get_activity_details: tool({
+  get_workout_details: tool({
     description:
       'Get detailed metrics for a specific workout, including intervals, power curve, and heart rate data.',
     inputSchema: z.object({
@@ -109,6 +110,61 @@ export const workoutTools = (userId: string, timezone: string) => ({
     }
   }),
 
+  analyze_activity: tool({
+    description:
+      'Force a deep AI analysis of a specific completed activity. Use this when the user asks for a more detailed breakdown or if the initial analysis was missing details.',
+    inputSchema: z.object({
+      workout_id: z.string().describe('The ID of the workout to analyze')
+    }),
+    needsApproval: true,
+    execute: async ({ workout_id }) => {
+      const workout = await workoutRepository.getById(workout_id, userId)
+      if (!workout) return { error: 'Workout not found' }
+
+      try {
+        await analyzeWorkoutTask.trigger(
+          { workoutId: workout_id },
+          {
+            tags: [`user:${userId}`, `workout:${workout_id}`],
+            concurrencyKey: userId
+          }
+        )
+        return {
+          success: true,
+          message: 'Workout re-analysis has been queued and will be ready in a few moments.'
+        }
+      } catch (e: any) {
+        return { error: `Failed to trigger analysis: ${e.message}` }
+      }
+    }
+  }),
+
+  update_workout_notes: tool({
+    description:
+      'Update the personal notes/memos for a specific workout. Use this when the user wants to add, correct, or update their personal thoughts about a session.',
+    inputSchema: z.object({
+      workout_id: z.string().describe('The ID of the workout to update notes for'),
+      notes: z.string().describe('The new notes content (Markdown supported)')
+    }),
+    execute: async ({ workout_id, notes }) => {
+      const workout = await workoutRepository.getById(workout_id, userId)
+      if (!workout) return { error: 'Workout not found' }
+
+      try {
+        await workoutRepository.update(workout_id, {
+          notes,
+          notesUpdatedAt: new Date()
+        })
+        return {
+          success: true,
+          message: 'Workout notes have been updated successfully.'
+        }
+      } catch (e: any) {
+        return { error: `Failed to update notes: ${e.message}` }
+      }
+    }
+  }),
+
   get_workout_streams: tool({
     description:
       'Get raw stream data (heart rate, power, cadence) for a workout. Use sparingly for deep analysis.',
@@ -123,7 +179,7 @@ export const workoutTools = (userId: string, timezone: string) => ({
     execute: async () => {
       return {
         message:
-          'Stream access restricted for performance. Use get_activity_details for summary metrics.'
+          'Stream access restricted for performance. Use get_workout_details for summary metrics.'
       }
     }
   })

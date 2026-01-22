@@ -11,6 +11,8 @@ import {
   updateIntervalsPlannedWorkout
 } from '../../utils/intervals'
 import { tags } from '@trigger.dev/sdk/v3'
+import { plannedWorkoutRepository } from '../repositories/plannedWorkoutRepository'
+import { workoutRepository } from '../repositories/workoutRepository'
 
 export const planningTools = (userId: string, timezone: string) => ({
   create_planned_workout: tool({
@@ -30,18 +32,16 @@ export const planningTools = (userId: string, timezone: string) => ({
     }),
     execute: async (args) => {
       // Create a PlannedWorkout, not a Workout
-      const workout = await prisma.plannedWorkout.create({
-        data: {
-          userId,
-          date: new Date(args.date),
-          title: args.title,
-          description: args.description || args.intensity,
-          type: args.type,
-          durationSec: args.duration_minutes * 60,
-          tss: args.tss,
-          externalId: `ai-gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID
-          completionStatus: 'PENDING'
-        }
+      const workout = await plannedWorkoutRepository.create({
+        userId,
+        date: new Date(args.date),
+        title: args.title,
+        description: args.description || args.intensity,
+        type: args.type,
+        durationSec: args.duration_minutes * 60,
+        tss: args.tss,
+        externalId: `ai-gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID
+        completionStatus: 'PENDING'
       })
 
       // Trigger structured workout generation
@@ -89,8 +89,7 @@ export const planningTools = (userId: string, timezone: string) => ({
       if (args.tss) data.tss = args.tss
       if (args.date) {
         // Preserve time if possible, otherwise default
-        const existing = await prisma.plannedWorkout.findUnique({
-          where: { id: args.workout_id },
+        const existing = await plannedWorkoutRepository.getById(args.workout_id, userId, {
           select: { date: true }
         })
         if (existing) {
@@ -98,10 +97,7 @@ export const planningTools = (userId: string, timezone: string) => ({
         }
       }
 
-      const workout = await prisma.plannedWorkout.update({
-        where: { id: args.workout_id, userId },
-        data
-      })
+      const workout = await plannedWorkoutRepository.update(args.workout_id, userId, data)
 
       // Trigger regeneration of structured intervals
       try {
@@ -157,8 +153,8 @@ export const planningTools = (userId: string, timezone: string) => ({
     }
   }),
 
-  regenerate_workout_structure: tool({
-    description: 'Regenerate the structured intervals for a planned workout.',
+  generate_planned_workout_structure: tool({
+    description: 'Generate or update the structured intervals for a planned workout.',
     inputSchema: z.object({
       workout_id: z.string()
     }),
@@ -185,10 +181,10 @@ export const planningTools = (userId: string, timezone: string) => ({
     }),
     needsApproval: true,
     execute: async ({ workout_id }) => {
-      const workout = await prisma.plannedWorkout.findUnique({
-        where: { id: workout_id, userId },
+      // Use repository to find the workout
+      const workout = (await plannedWorkoutRepository.getById(workout_id, userId, {
         include: { user: { select: { ftp: true } } }
-      })
+      })) as any // Cast because of complex include
 
       if (!workout) return { error: 'Workout not found' }
 
@@ -234,13 +230,10 @@ export const planningTools = (userId: string, timezone: string) => ({
             managedBy: workout.managedBy
           })
 
-          await prisma.plannedWorkout.update({
-            where: { id: workout_id },
-            data: {
-              externalId: String(intervalsWorkout.id),
-              syncStatus: 'SYNCED',
-              lastSyncedAt: new Date()
-            }
+          await plannedWorkoutRepository.update(workout_id, userId, {
+            externalId: String(intervalsWorkout.id),
+            syncStatus: 'SYNCED',
+            lastSyncedAt: new Date()
           })
           return { success: true, message: 'Workout published to Intervals.icu.' }
         } else {
@@ -255,9 +248,9 @@ export const planningTools = (userId: string, timezone: string) => ({
             managedBy: workout.managedBy
           })
 
-          await prisma.plannedWorkout.update({
-            where: { id: workout_id },
-            data: { syncStatus: 'SYNCED', lastSyncedAt: new Date() }
+          await plannedWorkoutRepository.update(workout_id, userId, {
+            syncStatus: 'SYNCED',
+            lastSyncedAt: new Date()
           })
           return { success: true, message: 'Workout updated on Intervals.icu.' }
         }
@@ -276,7 +269,7 @@ export const planningTools = (userId: string, timezone: string) => ({
     needsApproval: true,
     execute: async ({ workout_id }) => {
       try {
-        await prisma.plannedWorkout.delete({ where: { id: workout_id, userId } })
+        await plannedWorkoutRepository.delete(workout_id, userId)
         return { success: true, message: 'Planned workout deleted.' }
       } catch (e: any) {
         return { success: false, error: e.message || 'Failed to delete planned workout.' }
@@ -295,12 +288,12 @@ export const planningTools = (userId: string, timezone: string) => ({
       // Try deleting from both tables or check which one
       // For simplicity, try PlannedWorkout first
       try {
-        await prisma.plannedWorkout.delete({ where: { id: args.workout_id, userId } })
+        await plannedWorkoutRepository.delete(args.workout_id, userId)
         return { success: true, message: 'Planned workout deleted.' }
       } catch (e) {
         // If failed, try Workout
         try {
-          await prisma.workout.delete({ where: { id: args.workout_id, userId } })
+          await workoutRepository.delete(args.workout_id, userId)
           return { success: true, message: 'Completed workout deleted.' }
         } catch (e2: any) {
           return { success: false, error: e2.message || 'Failed to delete workout.' }
