@@ -124,24 +124,29 @@ We use a specific set of labels to categorize issues. Please apply at least one 
 - `priority: medium`: Standard priority.
 - `priority: low`: Nice to have, minor issue.
 
-### Status Labels (Optional - Managed via Board)
+### Status Labels
 
-- `status: pending`: Waiting for triage.
+- `status: needs-info`: Waiting for user or more details.
 - `status: in-progress`: Currently being worked on.
 - `status: blocked`: Waiting on something else.
 - `status: review`: Pull request submitted.
 
-### Functional Area Labels
+### Area Labels (Technical)
 
-- `dashboard`: Main dashboard.
-- `activities`: Activities list/details.
-- `performance`: Analytics and charts.
-- `training-plan`: Planning features.
-- `workouts`: Workout execution and details.
-- `integrations`: External APIs (Strava, Whoop, etc.).
-- `ai`: Gemini/LLM related logic.
-- `ui/ux`: Visual design and user experience.
-- `backend`: Server-side logic and database.
+- `ui/ux`: Visual design, Vue components, and frontend logic.
+- `backend`: API endpoints, server-side logic, and authentication.
+- `data`: Database schema, ingestion pipelines, and synchronization.
+- `infra`: Docker, CI/CD, CLI tools, and environment configuration.
+- `ai`: Gemini/LLM prompts, agents, and AI logic.
+
+### Feature Labels (Functional)
+
+- `dashboard`: Main landing page and widgets.
+- `activities`: Activities list, calendar, and summary.
+- `workouts`: Workout execution, details, and intervals.
+- `planning`: Training blocks, weekly plans, and scheduling.
+- `wellness`: Sleep, HRV, weight, and readiness metrics.
+- `integrations`: External services (Strava, Intervals.icu, etc.).
 
 ## 4. Best Practices
 
