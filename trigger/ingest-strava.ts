@@ -130,8 +130,8 @@ export const ingestStravaTask = task({
           userId,
           'strava',
           workout.externalId,
-          workout,
-          workout
+          workout as any,
+          workout as any
         )
         workoutsUpserted++
 

@@ -458,9 +458,7 @@ function buildWorkoutAnalysisData(workout: any) {
   if (workout.lrBalance) data.lr_balance = workout.lrBalance
 
   // Exercises (for Strength/Hevy workouts)
-  // @ts-expect-error - exercises included in fetch above
   if (workout.exercises && workout.exercises.length > 0) {
-    // @ts-expect-error - types might be out of sync
     data.exercises = workout.exercises.map((we: any) => ({
       name: we.exercise.title,
       type: we.exercise.type,

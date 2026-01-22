@@ -121,7 +121,12 @@ export const ingestWithingsTask = task({
           }
         }
 
-        await wellnessRepository.upsert(userId, wellness.date, cleanWellness, cleanWellness)
+        await wellnessRepository.upsert(
+          userId,
+          wellness.date,
+          cleanWellness as any,
+          cleanWellness as any
+        )
         upsertedCount++
 
         // Also update the User profile weight if this is the most recent measurement
@@ -187,7 +192,12 @@ export const ingestWithingsTask = task({
           // If we already have resting HR from measures (e.g. smart scale standing heart rate), we might want to keep that or prefer sleep.
           // Generally, sleeping HR is "true" resting HR.
 
-          await wellnessRepository.upsert(userId, wellness.date, cleanWellness, cleanWellness)
+          await wellnessRepository.upsert(
+            userId,
+            wellness.date,
+            cleanWellness as any,
+            cleanWellness as any
+          )
           sleepUpsertCount++
         }
       } catch (error) {
@@ -304,8 +314,8 @@ export const ingestWithingsTask = task({
             userId,
             'withings',
             normalizedWorkout.externalId,
-            normalizedWorkout,
-            normalizedWorkout
+            normalizedWorkout as any,
+            normalizedWorkout as any
           )
           workoutUpsertCount++
 

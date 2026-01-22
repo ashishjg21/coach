@@ -125,7 +125,7 @@ export const ingestAllTask = task({
       logger.log(`Starting ingestion for ${integration?.provider || item.task.id}...`)
 
       try {
-        const run = await item.task.triggerAndWait(item.payload, {
+        const run = await (item.task as any).triggerAndWait(item.payload as any, {
           concurrencyKey: userId
         })
 

@@ -91,7 +91,7 @@ export const ingestWhoopTask = task({
           continue
         }
 
-        await wellnessRepository.upsert(userId, wellness.date, wellness, wellness)
+        await wellnessRepository.upsert(userId, wellness.date, wellness as any, wellness as any)
         upsertedCount++
       }
 
@@ -135,8 +135,8 @@ export const ingestWhoopTask = task({
             userId,
             'whoop',
             normalizedWorkout.externalId,
-            normalizedWorkout,
-            normalizedWorkout
+            normalizedWorkout as any,
+            normalizedWorkout as any
           )
           workoutUpsertCount++
 

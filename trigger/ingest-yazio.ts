@@ -107,9 +107,9 @@ export const ingestYazioTask = task({
           // Recent dates should always be re-synced to catch new meals added throughout the day
           const dateObj = new Date(
             Date.UTC(
-              parseInt(date.split('-')[0]),
-              parseInt(date.split('-')[1]) - 1,
-              parseInt(date.split('-')[2])
+              parseInt(date.split('-')[0]!),
+              parseInt(date.split('-')[1]!) - 1,
+              parseInt(date.split('-')[2]!)
             )
           )
           const today = new Date()
@@ -250,34 +250,39 @@ export const ingestYazioTask = task({
 
           // Upsert to database
           // When updating, clear AI analysis since the underlying data has changed
-          const result = await nutritionRepository.upsert(userId, nutrition.date, nutrition, {
-            ...nutrition,
-            // Clear AI analysis fields since nutrition data has changed
-            aiAnalysis: null,
-            aiAnalysisJson: null,
-            aiAnalysisStatus: 'NOT_STARTED',
-            aiAnalyzedAt: null,
-            // Clear scores
-            overallScore: null,
-            macroBalanceScore: null,
-            qualityScore: null,
-            adherenceScore: null,
-            hydrationScore: null,
-            // Clear score explanations
-            nutritionalBalanceExplanation: null,
-            calorieAdherenceExplanation: null,
-            macroDistributionExplanation: null,
-            hydrationStatusExplanation: null,
-            timingOptimizationExplanation: null
-          })
+          const result = await nutritionRepository.upsert(
+            userId,
+            nutrition.date,
+            nutrition as any,
+            {
+              ...nutrition,
+              // Clear AI analysis fields since nutrition data has changed
+              aiAnalysis: null,
+              aiAnalysisJson: null,
+              aiAnalysisStatus: 'NOT_STARTED',
+              aiAnalyzedAt: null,
+              // Clear scores
+              overallScore: null,
+              macroBalanceScore: null,
+              qualityScore: null,
+              adherenceScore: null,
+              hydrationScore: null,
+              // Clear score explanations
+              nutritionalBalanceExplanation: null,
+              calorieAdherenceExplanation: null,
+              macroDistributionExplanation: null,
+              hydrationStatusExplanation: null,
+              timingOptimizationExplanation: null
+            } as any
+          )
 
           upsertedCount++
           logger.log(`[${date}] ✅ Synced successfully (ID: ${result.id})`)
           logger.log('')
-        } catch (error) {
+        } catch (error: any) {
           errorCount++
-          logger.error(`[${date}] ❌ ERROR:`, error)
-          logger.error(`[${date}] Stack:`, error instanceof Error ? error.stack : 'N/A')
+          logger.error(`[${date}] ❌ ERROR:`, { error: error?.message || String(error) })
+          logger.error(`[${date}] Stack:`, { stack: error instanceof Error ? error.stack : 'N/A' })
           logger.log('')
           // Continue with other dates
         }
