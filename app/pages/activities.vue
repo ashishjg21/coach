@@ -365,7 +365,9 @@
 
                       <!-- Actual activities -->
                       <div
-                        v-for="activity in day.activities.filter((a) => a.id)"
+                        v-for="activity in day.activities.filter(
+                          (a) => a.id && a.type !== 'wellness'
+                        )"
                         :key="activity.id"
                         class="p-2 rounded-lg border dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm flex items-center justify-between gap-3"
                         @click="openActivity(activity)"
@@ -1386,9 +1388,10 @@
   const sortedActivities = computed(() => {
     if (!activities.value) return []
 
-    let result = [...activities.value].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
+    // Filter out wellness dummy entries from the list view
+    let result = activities.value.filter((a) => a.type !== 'wellness')
+
+    result = [...result].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     if (tableSearch.value) {
       const q = tableSearch.value.toLowerCase()

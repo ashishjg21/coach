@@ -56,7 +56,7 @@
     <!-- Activities (flex-1 to push nutrition to bottom) -->
     <div class="space-y-1 flex-1">
       <button
-        v-for="activity in activities"
+        v-for="activity in displayActivities"
         :key="activity.id"
         class="w-full text-left px-2 py-1 rounded text-xs hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group relative cursor-pointer overflow-hidden"
         :class="{
@@ -458,6 +458,11 @@
     return (
       formatDateUTC(props.date, 'yyyy-MM-dd') === formatDateUTC(getUserLocalDate(), 'yyyy-MM-dd')
     )
+  })
+
+  // Filter out wellness dummy activities for display in the activity list
+  const displayActivities = computed(() => {
+    return props.activities.filter((a) => a.type !== 'wellness')
   })
 
   // Get nutrition data from any activity on this day (they all have same nutrition data)
