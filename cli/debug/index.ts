@@ -1,5 +1,6 @@
 import { Command } from 'commander'
 import webhookCommand from './webhook'
+import testWebhookCommand from './test-webhook'
 import triggerCommand from './webhook-trigger'
 import profileCommand from './profile'
 import workoutCommand from './workout'
@@ -23,6 +24,7 @@ import calendarCommand from './calendar'
 const debugCommand = new Command('debug').description('Debugging utilities')
 
 debugCommand.addCommand(webhookCommand)
+debugCommand.addCommand(testWebhookCommand)
 debugCommand.addCommand(triggerCommand)
 debugCommand.addCommand(profileCommand)
 debugCommand.addCommand(workoutCommand)

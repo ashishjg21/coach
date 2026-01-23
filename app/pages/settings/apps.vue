@@ -36,7 +36,7 @@
   const router = useRouter()
   const route = useRoute()
 
-  const intervalsStravaWarningDismissed = useCookie('intervals-strava-warning-dismissed', {
+  const intervalsStravaWarningDismissed = useCookie<boolean>('intervals-strava-warning-dismissed', {
     maxAge: 60 * 60 * 24 * 365
   })
 

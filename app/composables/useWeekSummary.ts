@@ -1,5 +1,4 @@
-
-import type { CalendarActivity } from '~/types/calendar'
+import type { CalendarActivity } from '../../types/calendar'
 
 export function getWeekSummary(weekDays: { activities: CalendarActivity[] }[]) {
   let lastCTL: number | null = null
@@ -30,7 +29,7 @@ export function getWeekSummary(weekDays: { activities: CalendarActivity[] }[]) {
         ...acc,
         ctl: lastCTL,
         atl: lastATL,
-        tsb: lastTSB,
+        tsb: lastTSB
       }
     },
     {
@@ -42,7 +41,7 @@ export function getWeekSummary(weekDays: { activities: CalendarActivity[] }[]) {
       plannedTss: 0,
       ctl: null as number | null,
       atl: null as number | null,
-      tsb: null as number | null,
+      tsb: null as number | null
     }
   )
 }

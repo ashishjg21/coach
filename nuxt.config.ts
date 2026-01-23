@@ -83,7 +83,7 @@ export default defineNuxtConfig({
     '@nuxtjs/mdc',
     '@pinia/nuxt',
     'nuxt-gtag',
-    'nuxt-rate-limit',
+    'nuxt-api-shield',
     '@sentry/nuxt/module',
     '@nuxt/eslint'
   ],
@@ -96,7 +96,8 @@ export default defineNuxtConfig({
   nitro: {
     experimental: {
       openAPI: true,
-      websocket: true
+      websocket: true,
+      tasks: true
     },
     openAPI: {
       production: 'runtime',
@@ -119,6 +120,16 @@ export default defineNuxtConfig({
     // Ensure unhead is properly bundled/traced
     externals: {
       inline: ['unhead']
+    },
+    // Rate limit storage
+    storage: {
+      shield: {
+        driver: 'memory'
+      }
+    },
+    scheduledTasks: {
+      '*/15 * * * *': ['shield:cleanBans'],
+      '0 0 * * *': ['shield:cleanIpData']
     }
   },
 
@@ -201,22 +212,20 @@ export default defineNuxtConfig({
     client: 'hidden'
   },
 
-  rateLimit: {
-    exclude: ['/_nuxt/*', '/_ipx/*'],
-    redis: process.env.REDIS_URL,
-    routes: {
-      '/api/integrations/withings/webhook': {
-        max: parseInt(process.env.WEBHOOK_RATE_LIMIT_MAX || '100', 10),
-        ttl: parseInt(process.env.WEBHOOK_RATE_LIMIT_TTL || '60', 10)
-      },
-      '/api/integrations/whoop/webhook': {
-        max: parseInt(process.env.WEBHOOK_RATE_LIMIT_MAX || '100', 10),
-        ttl: parseInt(process.env.WEBHOOK_RATE_LIMIT_TTL || '60', 10)
-      },
-      '/api/integrations/intervals/webhook': {
-        max: parseInt(process.env.WEBHOOK_RATE_LIMIT_MAX || '100', 10),
-        ttl: parseInt(process.env.WEBHOOK_RATE_LIMIT_TTL || '60', 10)
-      }
-    }
+  nuxtApiShield: {
+    limit: {
+      max: parseInt(process.env.WEBHOOK_RATE_LIMIT_MAX || '1000', 10),
+      duration: parseInt(process.env.WEBHOOK_RATE_LIMIT_TTL || '60', 10),
+      ban: 3600
+    },
+    security: {
+      trustXForwardedFor: true
+    },
+    routes: [
+      '/api/integrations/withings/webhook',
+      '/api/integrations/whoop/webhook',
+      '/api/integrations/intervals/webhook'
+    ],
+    retryAfterHeader: true
   }
 })
