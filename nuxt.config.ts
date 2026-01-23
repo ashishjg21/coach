@@ -216,7 +216,7 @@ export default defineNuxtConfig({
     limit: {
       max: parseInt(process.env.WEBHOOK_RATE_LIMIT_MAX || '1000', 10),
       duration: parseInt(process.env.WEBHOOK_RATE_LIMIT_TTL || '60', 10),
-      ban: 3600
+      ban: 300
     },
     security: {
       trustXForwardedFor: true
