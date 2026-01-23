@@ -6,6 +6,12 @@ User input: {{args}}
 
 # Workflow
 
+0.  **Ensure Clean State (CRITICAL):**
+    - Run `git status --porcelain` to check for uncommitted changes.
+    - If there are local changes, **STOP** and ask the user if they want to commit them *before* proceeding with the merge.
+    - If the user agrees, run `git add . && git commit -m "chore: save local changes before merging PR"` (or ask for a specific message).
+    - **DO NOT** attempt to merge if the working directory is not clean, as this can lead to data loss or conflict complexities.
+
 1.  **Identify the Pull Request:**
     - Parse `{{args}}` to find a PR number or URL.
     - If no PR is specified, list open PRs using `search_pull_requests` (filtered by `state:open`) or `gh pr list --json number,title,author -L 10` to help the user choose.
