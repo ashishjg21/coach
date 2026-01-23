@@ -55,18 +55,25 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Room ID required' })
   }
 
-  // Verify user is in the room
+  // Verify user is in the room and room is not deleted
   const participant = await prisma.chatParticipant.findUnique({
     where: {
       userId_roomId: {
         userId,
         roomId
       }
+    },
+    include: {
+      room: {
+        select: {
+          deletedAt: true
+        }
+      }
     }
   })
 
-  if (!participant) {
-    throw createError({ statusCode: 403, message: 'Access denied' })
+  if (!participant || participant.room.deletedAt) {
+    throw createError({ statusCode: 404, message: 'Room not found or access denied' })
   }
 
   const messages = await prisma.chatMessage.findMany({
@@ -85,11 +92,11 @@ export default defineEventHandler(async (event) => {
   return messages.map((msg) => {
     const parts: any[] = []
 
-    // Add text part if content exists
-    if (msg.content) {
+    // Add text part if content exists or if it's an assistant message (to avoid empty content)
+    if (msg.content || msg.senderId === 'ai_agent') {
       parts.push({
         type: 'text',
-        text: msg.content
+        text: msg.content || ' '
       })
     }
 
@@ -120,10 +127,10 @@ export default defineEventHandler(async (event) => {
     }
 
     if (metadata.toolCalls && Array.isArray(metadata.toolCalls)) {
-      metadata.toolCalls.forEach((tc: any) => {
+      metadata.toolCalls.forEach((tc: any, index: number) => {
         parts.push({
           type: 'tool-invocation',
-          toolCallId: tc.toolCallId || `call-${Math.random().toString(36).substring(7)}`,
+          toolCallId: tc.toolCallId || `call-${msg.id}-${index}`,
           toolName: tc.name,
           args: tc.args,
           state: 'result',

@@ -245,6 +245,32 @@
     }
   }
 
+  async function deleteRoom(roomId: string) {
+    try {
+      await $fetch(`/api/chat/rooms/${roomId}`, {
+        method: 'DELETE'
+      })
+
+      // If we are in the room being deleted, switch to another one
+      const wasCurrentRoom = currentRoomId.value === roomId
+
+      // Reload rooms
+      await loadRooms(wasCurrentRoom)
+
+      useToast().add({
+        title: 'Chat room deleted',
+        color: 'success'
+      })
+    } catch (err: any) {
+      console.error('Failed to delete room:', err)
+      useToast().add({
+        title: 'Error',
+        description: 'Failed to delete chat room',
+        color: 'error'
+      })
+    }
+  }
+
   // Get current room name
   const currentRoomName = computed(() => {
     const room = rooms.value.find((r) => r.roomId === currentRoomId.value)
@@ -306,6 +332,7 @@
           :current-room-id="currentRoomId"
           :loading="loadingRooms"
           @select="selectRoom"
+          @delete="deleteRoom"
         />
 
         <!-- Chat Area -->

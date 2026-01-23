@@ -41,6 +41,27 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Room ID and content required' })
   }
 
+  // Verify user is in the room and room is not deleted
+  const participant = await prisma.chatParticipant.findUnique({
+    where: {
+      userId_roomId: {
+        userId,
+        roomId
+      }
+    },
+    include: {
+      room: {
+        select: {
+          deletedAt: true
+        }
+      }
+    }
+  })
+
+  if (!participant || participant.room.deletedAt) {
+    throw createError({ statusCode: 404, message: 'Room not found or access denied' })
+  }
+
   // 1. Save User/Tool Message to DB if it's not already persisted
   // The AI SDK sends a unique ID for each message. We can use this to prevent duplicates.
   const userMessageId = lastMessage.id
@@ -113,34 +134,107 @@ export default defineEventHandler(async (event) => {
       historyMessages.map((m: any) => m.role)
     )
 
-    const uiMessages = historyMessages.filter((m: any) => m.role !== 'tool')
+    // 4. Robust conversion to CoreMessages that handles interleaving and merges tool results correctly
+    const coreMessages: any[] = []
 
-    console.log(
-      '[Chat API] UI messages roles (filtered):',
-      uiMessages.map((m: any) => m.role)
-    )
+    // Map approval IDs to tool call IDs to ensure consistency
+    const approvalIdMap = new Map<string, string>()
+    for (const m of historyMessages) {
+      if (m.role === 'assistant' && Array.isArray(m.parts)) {
+        m.parts.forEach((p: any) => {
+          if (p.type === 'tool-approval-request' && p.approvalId && p.toolCallId) {
+            approvalIdMap.set(p.approvalId, p.toolCallId)
+          }
+        })
+      }
+    }
 
-    const toolMessages = historyMessages.filter((m: any) => m.role === 'tool')
+    for (const msg of historyMessages) {
+      if (msg.role === 'tool') {
+        // Correctly interleave tool messages
+        // Extract results from tool response part or content
+        const parts = Array.isArray(msg.content) ? msg.content : msg.parts || []
+        const results = parts
+          .filter(
+            (p: any) =>
+              p.type === 'tool-result' ||
+              p.type === 'tool-invocation' ||
+              p.type === 'tool-approval-response'
+          )
+          .map((p: any) => {
+            const resolvedId = p.toolCallId || approvalIdMap.get(p.approvalId) || p.approvalId
+            return {
+              type: 'tool-result',
+              toolCallId: resolvedId,
+              toolName: p.toolName || p.name || 'unknown',
+              result: p.result || (p.approved ? 'User confirmed action.' : 'User denied action.')
+            }
+          })
 
-    const coreMessages = [
-      ...(await convertToModelMessages(uiMessages)),
+        if (results.length > 0) {
+          coreMessages.push({
+            role: 'tool',
+            content: results
+          })
+        }
+        continue
+      }
 
-      ...toolMessages.map((m: any) => ({
-        role: 'tool',
+      // Use SDK helper for user/assistant messages but post-process assistant results
+      const converted = await convertToModelMessages([msg])
 
-        content: m.content || m.parts // Fallback to parts if content is empty (loaded from DB)
-      }))
-    ] as any
+      for (const coreMsg of converted) {
+        // Ensure no empty assistant messages
+        if (
+          coreMsg.role === 'assistant' &&
+          (!coreMsg.content || (Array.isArray(coreMsg.content) && coreMsg.content.length === 0))
+        ) {
+          coreMsg.content = [{ type: 'text', text: ' ' }]
+        }
+
+        if (coreMsg.role === 'assistant' && Array.isArray(coreMsg.content)) {
+          // If the Assistant message contains tool-invocation parts with state: 'result',
+          // we need to move them to a separate Tool message to satisfy Gemini requirements.
+          const uiParts = (msg.parts || []) as any[]
+          const toolResultParts = uiParts.filter(
+            (p) => p.type === 'tool-invocation' && p.state === 'result'
+          )
+
+          if (toolResultParts.length > 0) {
+            // Fix tool names in assistant content if they were converted to "invocation"
+            coreMsg.content = coreMsg.content.map((p: any) => {
+              if (p.type === 'tool-call' && (p.toolName === 'invocation' || !p.toolName)) {
+                const originalPart = uiParts.find((op) => op.toolCallId === p.toolCallId)
+                if (originalPart) {
+                  return { ...p, toolName: originalPart.toolName }
+                }
+              }
+              return p
+            })
+
+            coreMessages.push(coreMsg)
+
+            // Add a Tool message with the results
+            coreMessages.push({
+              role: 'tool',
+              content: toolResultParts.map((p) => ({
+                type: 'tool-result',
+                toolCallId: p.toolCallId,
+                toolName: p.toolName,
+                result: p.result
+              }))
+            })
+          } else {
+            coreMessages.push(coreMsg)
+          }
+        } else {
+          coreMessages.push(coreMsg)
+        }
+      }
+    }
 
     // Manual Tool Execution for Approvals
-
-    // Iterate through ALL tool messages to handle potential duplicates or multi-step approvals
-
-    // We process from oldest to newest to maintain order, but for execution we might want to be careful.
-
-    // Actually, if we have multiple approvals for same ID, we should probably only execute once.
-
-    const executedToolCallIds = new Set<string>()
+    // ... rest of the code remains same, using coreMessages ...
 
     for (const msg of coreMessages) {
       if (msg.role === 'tool' && Array.isArray(msg.content)) {

@@ -9,7 +9,7 @@
   }>()
 
   const emit = defineEmits<{
-    (e: 'select', roomId: string): void
+    (e: 'select' | 'delete', roomId: string): void
     (e: 'update:isOpen', value: boolean): void
   }>()
 </script>
@@ -30,6 +30,7 @@
       :current-room-id="currentRoomId"
       :loading="loading"
       @select="emit('select', $event)"
+      @delete="emit('delete', $event)"
     />
   </div>
 
@@ -46,6 +47,7 @@
         :current-room-id="currentRoomId"
         :loading="loading"
         @select="emit('select', $event)"
+        @delete="emit('delete', $event)"
       />
     </template>
   </USlideover>

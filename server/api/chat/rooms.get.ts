@@ -42,6 +42,7 @@ export default defineEventHandler(async (event) => {
   // Find existing rooms for the user
   let rooms = await prisma.chatRoom.findMany({
     where: {
+      deletedAt: null,
       users: {
         some: {
           userId: userId
