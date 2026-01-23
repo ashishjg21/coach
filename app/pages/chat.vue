@@ -247,14 +247,17 @@
 
   async function deleteRoom(roomId: string) {
     try {
+      // If we are in the room being deleted, we need to clear it first
+      const wasCurrentRoom = currentRoomId.value === roomId
+      if (wasCurrentRoom) {
+        currentRoomId.value = ''
+      }
+
       await $fetch(`/api/chat/rooms/${roomId}`, {
         method: 'DELETE'
       })
 
-      // If we are in the room being deleted, switch to another one
-      const wasCurrentRoom = currentRoomId.value === roomId
-
-      // Reload rooms
+      // Reload rooms. If wasCurrentRoom is true, loadRooms will auto-select the first available one
       await loadRooms(wasCurrentRoom)
 
       useToast().add({
