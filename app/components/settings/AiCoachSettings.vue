@@ -73,6 +73,22 @@
         </div>
       </div>
 
+      <!-- Data & Privacy Settings -->
+      <div>
+        <label class="block text-sm font-medium mb-2">Data & Privacy</label>
+        <p class="text-sm text-muted mb-3">
+          Control what data the AI coach can access for analysis
+        </p>
+        <div class="space-y-3">
+          <USwitch
+            v-model="localSettings.nutritionTrackingEnabled"
+            label="Enable Nutrition Analysis"
+            description="Allow the AI to analyze your nutrition data and provide feedback"
+            @update:model-value="handleChange"
+          />
+        </div>
+      </div>
+
       <!-- Save Button -->
       <div class="flex justify-end">
         <UButton :loading="saving" @click="saveSettings"> Save Changes </UButton>
@@ -88,6 +104,7 @@
       aiModelPreference: string
       aiAutoAnalyzeWorkouts: boolean
       aiAutoAnalyzeNutrition: boolean
+      nutritionTrackingEnabled: boolean
     }
   }>()
 

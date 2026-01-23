@@ -242,6 +242,21 @@ export const analyzeNutritionTask = task({
       const timezone = await getUserTimezone(nutrition.userId)
       const aiSettings = await getUserAiSettings(nutrition.userId)
 
+      // Check if nutrition tracking is disabled
+      if (!aiSettings.nutritionTrackingEnabled) {
+        logger.log('Nutrition tracking is disabled for this user. Skipping analysis.', {
+          nutritionId,
+          userId: nutrition.userId
+        })
+        // Optionally, update status to 'SKIPPED' or similar
+        await nutritionRepository.updateStatus(nutritionId, 'COMPLETED') // Mark as completed to avoid re-queueing
+        return {
+          success: true,
+          skipped: true,
+          reason: 'Nutrition tracking disabled'
+        }
+      }
+
       logger.log('Using AI settings', {
         model: aiSettings.aiModelPreference,
         persona: aiSettings.aiPersona

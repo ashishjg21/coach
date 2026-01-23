@@ -45,7 +45,8 @@ export default defineEventHandler(async (event) => {
       aiPersona: true,
       aiModelPreference: true,
       aiAutoAnalyzeWorkouts: true,
-      aiAutoAnalyzeNutrition: true
+      aiAutoAnalyzeNutrition: true,
+      nutritionTrackingEnabled: true
     }
   })
 

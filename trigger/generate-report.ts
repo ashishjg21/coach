@@ -48,6 +48,23 @@ export const generateReportTask = task({
       // 2. Fetch Context Data based on template configuration
       const context = await fetchReportContext(userId, template.inputConfig)
 
+      // Check if this is a nutrition report and if nutrition tracking is disabled
+      const isNutritionReport = template.name.toLowerCase().includes('nutrition')
+      if (isNutritionReport && !context.user?.nutritionTrackingEnabled) {
+        logger.log('Skipping nutrition report because tracking is disabled', {
+          userId,
+          reportId
+        })
+        await prisma.report.update({
+          where: { id: reportId },
+          data: {
+            status: 'COMPLETED', // Mark as complete to avoid re-runs
+            markdown: 'Nutrition tracking is disabled. This report cannot be generated.'
+          }
+        })
+        return { success: true, skipped: true, reason: 'Nutrition tracking disabled' }
+      }
+
       // 3. Render Prompt Template
       const prompt = renderPrompt((template.outputConfig as any).promptTemplate, context)
       const schema = (template.outputConfig as any).schema

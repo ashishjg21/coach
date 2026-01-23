@@ -5,8 +5,9 @@ import { ingestAllTask } from '../../../trigger/ingest-all'
 import { generateReportTask } from '../../../trigger/generate-report'
 import { prisma } from '../../utils/db'
 import { getStartOfDaysAgoUTC, formatUserDate } from '../../utils/date'
+import { AiSettings } from '../ai-settings'
 
-export const analysisTools = (userId: string, timezone: string) => ({
+export const analysisTools = (userId: string, timezone: string, settings: AiSettings) => ({
   analyze_training_load: tool({
     description:
       'Analyze training load (ATL, CTL, TSB) and progression over a time range. Use this to assess fatigue, fitness, and form.',
@@ -78,11 +79,28 @@ export const analysisTools = (userId: string, timezone: string) => ({
       'Trigger the generation of a detailed analysis report. Use this when the user wants a structured summary of their progress.',
     inputSchema: z.object({
       type: z
-        .enum(['WEEKLY_TRAINING', 'LAST_3_WORKOUTS', 'LAST_3_NUTRITION', 'WEEKLY_NUTRITION'])
+        .enum(
+          settings.nutritionTrackingEnabled
+            ? [
+                'WEEKLY_TRAINING',
+                'LAST_3_WORKOUTS',
+                'LAST_3_NUTRITION',
+                'WEEKLY_NUTRITION'
+              ]
+            : ['WEEKLY_TRAINING', 'LAST_3_WORKOUTS']
+        )
         .describe('The type of report to generate')
     }),
     needsApproval: true,
     execute: async ({ type }) => {
+      // Final check in case the model hallucinates a disabled option
+      if (type.includes('NUTRITION') && !settings.nutritionTrackingEnabled) {
+        return {
+          error:
+            'Nutrition tracking is currently disabled. Please enable it in your settings to generate nutrition reports.'
+        }
+      }
+
       const TEMPLATE_MAP: Record<string, string> = {
         LAST_3_WORKOUTS: '00000000-0000-0000-0000-000000000001',
         WEEKLY_TRAINING: '00000000-0000-0000-0000-000000000002',

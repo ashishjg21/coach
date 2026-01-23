@@ -30,7 +30,8 @@ export async function fetchReportContext(userId: string, inputConfig: any) {
         aiPersona: true,
         aiModelPreference: true,
         dob: true,
-        sex: true
+        sex: true,
+        nutritionTrackingEnabled: true
       }
     })
   }
@@ -96,18 +97,26 @@ export async function fetchReportContext(userId: string, inputConfig: any) {
           break
 
         case 'nutrition':
-          data = await nutritionRepository.getForUser(userId, {
-            startDate,
-            endDate,
-            limit: source.limit,
-            orderBy: source.orderBy || { date: 'desc' }
-          })
+          // Only fetch nutrition data if enabled
+          if (context.user?.nutritionTrackingEnabled) {
+            data = await nutritionRepository.getForUser(userId, {
+              startDate,
+              endDate,
+              limit: source.limit,
+              orderBy: source.orderBy || { date: 'desc' }
+            })
 
-          // Filter days with data
-          data = data.filter((n: any) => n.calories != null)
+            // Filter days with data
+            data = data.filter((n: any) => n.calories != null)
 
-          context[key] = data
-          context[`${key}_summary`] = buildNutritionSummary(data, timezone)
+            context[key] = data
+            context[`${key}_summary`] = buildNutritionSummary(data, timezone)
+          } else {
+            // If disabled, provide empty/placeholder values
+            context[key] = []
+            context[`${key}_summary`] =
+              'Nutrition tracking is disabled. No nutrition data to display.'
+          }
           break
 
         case 'sport_settings': {

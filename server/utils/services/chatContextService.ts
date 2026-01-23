@@ -40,6 +40,7 @@ export async function buildAthleteContext(userId: string): Promise<{
         aiModelPreference: true,
         aiAutoAnalyzeWorkouts: true,
         aiAutoAnalyzeNutrition: true,
+        nutritionTrackingEnabled: true,
         currentFitnessScore: true,
         recoveryCapacityScore: true,
         nutritionComplianceScore: true,
@@ -399,22 +400,24 @@ export async function buildAthleteContext(userId: string): Promise<{
   }
 
   // Recent Nutrition Summary
-  if (recentNutrition.length > 0) {
-    athleteContext += `\n### Nutrition (${recentNutrition.length} days logged)\n`
-    for (const nutrition of recentNutrition) {
-      athleteContext += `- **${formatUserDate(nutrition.date, userTimezone)}**: `
-      athleteContext += `${nutrition.calories || 0} kcal`
-      if (nutrition.protein) athleteContext += ` | Protein: ${Math.round(nutrition.protein)}g`
-      if (nutrition.carbs) athleteContext += ` | Carbs: ${Math.round(nutrition.carbs)}g`
-      if (nutrition.fat) athleteContext += ` | Fat: ${Math.round(nutrition.fat)}g`
-      athleteContext += '\n'
+  if (userProfile?.nutritionTrackingEnabled) {
+    if (recentNutrition.length > 0) {
+      athleteContext += `\n### Nutrition (${recentNutrition.length} days logged)\n`
+      for (const nutrition of recentNutrition) {
+        athleteContext += `- **${formatUserDate(nutrition.date, userTimezone)}**: `
+        athleteContext += `${nutrition.calories || 0} kcal`
+        if (nutrition.protein) athleteContext += ` | Protein: ${Math.round(nutrition.protein)}g`
+        if (nutrition.carbs) athleteContext += ` | Carbs: ${Math.round(nutrition.carbs)}g`
+        if (nutrition.fat) athleteContext += ` | Fat: ${Math.round(nutrition.fat)}g`
+        athleteContext += '\n'
 
-      if (nutrition.aiAnalysisJson) {
-        athleteContext += `  - AI Analysis: ${JSON.stringify(nutrition.aiAnalysisJson)}\n`
+        if (nutrition.aiAnalysisJson) {
+          athleteContext += `  - AI Analysis: ${JSON.stringify(nutrition.aiAnalysisJson)}\n`
+        }
       }
+    } else {
+      athleteContext += '\n### Nutrition\nNo nutrition data in the last 7 days\n'
     }
-  } else {
-    athleteContext += '\n### Nutrition\nNo nutrition data in the last 7 days\n'
   }
 
   // Recent Wellness Summary

@@ -19,7 +19,8 @@ defineRouteMeta({
               },
               aiModelPreference: { type: 'string', enum: ['flash', 'pro'] },
               aiAutoAnalyzeWorkouts: { type: 'boolean' },
-              aiAutoAnalyzeNutrition: { type: 'boolean' }
+              aiAutoAnalyzeNutrition: { type: 'boolean' },
+              nutritionTrackingEnabled: { type: 'boolean' }
             }
           }
         }
@@ -64,7 +65,13 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const { aiPersona, aiModelPreference, aiAutoAnalyzeWorkouts, aiAutoAnalyzeNutrition } = body
+  const {
+    aiPersona,
+    aiModelPreference,
+    aiAutoAnalyzeWorkouts,
+    aiAutoAnalyzeNutrition,
+    nutritionTrackingEnabled
+  } = body
 
   // Validate inputs
   const validPersonas = ['Analytical', 'Supportive', 'Drill Sergeant', 'Motivational']
@@ -90,13 +97,15 @@ export default defineEventHandler(async (event) => {
       ...(aiPersona !== undefined && { aiPersona }),
       ...(aiModelPreference !== undefined && { aiModelPreference }),
       ...(aiAutoAnalyzeWorkouts !== undefined && { aiAutoAnalyzeWorkouts }),
-      ...(aiAutoAnalyzeNutrition !== undefined && { aiAutoAnalyzeNutrition })
+      ...(aiAutoAnalyzeNutrition !== undefined && { aiAutoAnalyzeNutrition }),
+      ...(nutritionTrackingEnabled !== undefined && { nutritionTrackingEnabled })
     },
     select: {
       aiPersona: true,
       aiModelPreference: true,
       aiAutoAnalyzeWorkouts: true,
-      aiAutoAnalyzeNutrition: true
+      aiAutoAnalyzeNutrition: true,
+      nutritionTrackingEnabled: true
     }
   })
 
