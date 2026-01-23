@@ -5,7 +5,6 @@
     <strong>Your Open Source AI-Powered Endurance Coach</strong>
   </p>
 
-
   <p align="center">
     <a href="https://nuxt.com"><img src="https://img.shields.io/badge/Nuxt-4.2-00DC82?style=flat-square&logo=nuxt.js&logoColor=white" alt="Nuxt 4" /></a>
     <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
@@ -19,6 +18,7 @@
     <a href="#quick-start">Quick Start</a> •
     <a href="#integrations">Integrations</a> •
     <a href="./docs/INDEX.md">Documentation</a> •
+    <a href="./public/content/releases">Release Notes</a> •
     <a href="./ACKNOWLEDGEMENTS.md">Acknowledgements</a>
   </p>
 </div>
@@ -127,6 +127,7 @@ We have extensive documentation available in the [`docs/`](./docs) directory:
 
 - [**Architecture**](./docs/01-architecture/system-overview.md): System design and data flow.
 - [**Database Schema**](./docs/01-architecture/database-schema.md): Detailed Prisma models.
+- [**Release Notes**](./public/content/releases): Detailed change logs for each version.
 - **Feature Guides**:
   - [AI Chat System](./docs/02-features/chat/overview.md)
   - [Scoring System](./docs/02-features/analytics/scoring-system.md)
@@ -151,6 +152,7 @@ Distributed under the MIT License. See [`LICENSE`](./LICENSE) for more informati
 - **Discord:** [Join our Server](https://discord.gg/dPYkzg49T9)
 - **GitHub:** [Star us on GitHub](https://github.com/newpush/coach)
 - **Issues:** [Report a Bug](https://github.com/newpush/coach/issues)
+
 ---
 
 <p align="center">
