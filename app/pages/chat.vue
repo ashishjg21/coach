@@ -247,18 +247,37 @@
 
   async function deleteRoom(roomId: string) {
     try {
-      // If we are in the room being deleted, we need to clear it first
+      // If we are in the room being deleted, we need to clear state immediately
       const wasCurrentRoom = currentRoomId.value === roomId
+
+      // Determine the next room to select if we are deleting the current one
+      let nextRoomId = ''
       if (wasCurrentRoom) {
-        currentRoomId.value = ''
+        const currentIndex = rooms.value.findIndex((r) => r.roomId === roomId)
+        if (currentIndex !== -1 && rooms.value.length > 1) {
+          // Select next room, or previous if deleting the last one
+          const nextRoom = rooms.value[currentIndex + 1] || rooms.value[currentIndex - 1]
+          nextRoomId = nextRoom.roomId
+        }
       }
 
       await $fetch(`/api/chat/rooms/${roomId}`, {
         method: 'DELETE'
       })
 
-      // Reload rooms. If wasCurrentRoom is true, loadRooms will auto-select the first available one
-      await loadRooms(wasCurrentRoom)
+      if (wasCurrentRoom) {
+        if (nextRoomId) {
+          await selectRoom(nextRoomId)
+          await loadRooms(false)
+        } else {
+          // No more rooms left, create a fresh one
+          await createNewChat()
+          await loadRooms(false)
+        }
+      } else {
+        // Just refresh the list if we deleted a background room
+        await loadRooms(false)
+      }
 
       useToast().add({
         title: 'Chat room deleted',
@@ -274,15 +293,19 @@
     }
   }
 
-  // Get current room name
+  // Get current room info
+  const currentRoom = computed(() => rooms.value.find((r) => r.roomId === currentRoomId.value))
+
+  const isCurrentRoomReadOnly = computed(() => currentRoom.value?.isReadOnly || false)
+
   const currentRoomName = computed(() => {
-    const room = rooms.value.find((r) => r.roomId === currentRoomId.value)
-    return room?.roomName || 'Coach Watts'
+    return currentRoom.value?.roomName || 'Coach Watts'
   })
 </script>
 
 <template>
   <UDashboardPanel id="chat" :ui="{ body: 'p-0' }">
+    <!-- ... header remains same ... -->
     <template #header>
       <UDashboardNavbar :title="currentRoomName">
         <template #leading>
@@ -340,6 +363,30 @@
 
         <!-- Chat Area -->
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <!-- Read-only Banner -->
+          <div
+            v-if="isCurrentRoomReadOnly"
+            class="p-2 sm:p-4 border-b border-warning-200 bg-warning-50 dark:border-warning-900/50 dark:bg-warning-950/20"
+          >
+            <UAlert
+              color="warning"
+              variant="subtle"
+              icon="i-heroicons-information-circle"
+              title="Legacy Chat"
+              description="This chat was created before the AI engine update and is now read-only. Please start a new chat to continue the conversation."
+            >
+              <template #actions>
+                <UButton
+                  color="warning"
+                  variant="outline"
+                  size="xs"
+                  label="New Chat"
+                  @click="createNewChat"
+                />
+              </template>
+            </UAlert>
+          </div>
+
           <!-- Messages -->
           <ChatMessageList
             :messages="chatMessages as any"
@@ -349,7 +396,13 @@
           />
 
           <!-- Input -->
-          <ChatInput v-model="input" :status="chatStatus" :error="chat.error" @submit="onSubmit" />
+          <ChatInput
+            v-model="input"
+            :status="chatStatus"
+            :error="chat.error"
+            :disabled="isCurrentRoomReadOnly"
+            @submit="onSubmit"
+          />
         </div>
       </div>
     </template>
