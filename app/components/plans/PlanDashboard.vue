@@ -296,26 +296,39 @@
       >
         <h3 class="font-semibold text-lg">{{ selectedBlock.name }} - Overview</h3>
 
-        <div v-if="selectedBlock.weeks?.length > 0" class="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div
+          v-if="selectedBlock.weeks?.length > 0"
+          class="flex flex-wrap gap-2 w-full sm:w-auto items-center"
+        >
           <UTooltip text="Show independent workouts not part of this plan">
             <UButton
-              :icon="showIndependentWorkouts ? 'i-heroicons-eye' : 'i-heroicons-eye-slash'"
               :color="showIndependentWorkouts ? 'primary' : 'neutral'"
               variant="ghost"
               size="xs"
+              class="sm:flex-none justify-center"
               :loading="fetchingIndependent"
               @click="showIndependentWorkouts = !showIndependentWorkouts"
-            />
+            >
+              <template #leading>
+                <UIcon
+                  :name="showIndependentWorkouts ? 'i-heroicons-eye' : 'i-heroicons-eye-slash'"
+                  class="w-4 h-4"
+                />
+              </template>
+              <span class="hidden sm:inline ml-1">Independent</span>
+            </UButton>
           </UTooltip>
           <UButton
             size="xs"
             color="primary"
             variant="soft"
-            icon="i-heroicons-sparkles"
-            class="flex-1 sm:flex-none justify-center"
+            class="sm:flex-none justify-center"
             @click="showAIPlanModal = true"
           >
-            Plan with AI
+            <template #leading>
+              <UIcon name="i-heroicons-sparkles" class="w-4 h-4" />
+            </template>
+            <span class="hidden sm:inline ml-1">Plan with AI</span>
           </UButton>
           <div class="flex overflow-x-auto pb-1 sm:pb-0 gap-1 flex-1 sm:flex-none">
             <UButton
@@ -681,97 +694,108 @@
             <div
               v-for="workout in visibleWorkouts"
               :key="workout.id"
-              class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 flex items-center gap-2.5 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700 w-full"
+              class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700 w-full"
               :class="{ 'bg-independent-stripes border-dashed': workout.isIndependent }"
               @click="navigateToWorkout(workout.id)"
             >
-              <div
-                class="p-2 rounded-full bg-gray-50 dark:bg-gray-900 border flex-shrink-0"
-                :class="getSportColorClass(workout.type)"
-              >
-                <UIcon
-                  :name="getWorkoutIcon(workout.type)"
-                  class="w-5 h-5"
-                  :class="getIconColorClass(workout.type)"
-                />
-              </div>
+              <div class="flex items-start gap-3">
+                <!-- Sport Icon & Color Strip -->
+                <div
+                  class="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-900 border flex-shrink-0 flex items-center justify-center border-l-4"
+                  :class="getSportColorClass(workout.type)"
+                >
+                  <UIcon
+                    :name="getWorkoutIcon(workout.type)"
+                    class="w-5 h-5"
+                    :class="getIconColorClass(workout.type)"
+                  />
+                </div>
 
-              <div class="flex-1 min-w-0">
-                <div class="flex justify-between items-center mb-1">
-                  <span class="text-xs font-semibold text-gray-500">{{
-                    formatDay(workout.date)
-                  }}</span>
-                  <div class="flex items-center gap-2">
-                    <UButton
-                      v-if="workout.isIndependent"
-                      icon="i-heroicons-link-slash"
-                      color="neutral"
-                      variant="ghost"
-                      size="xs"
-                      @click.stop="linkWorkout(workout)"
-                    />
-                    <UButton
-                      v-else
-                      icon="i-heroicons-link"
-                      color="neutral"
-                      variant="ghost"
-                      size="xs"
-                      @click.stop="unlinkWorkout(workout)"
-                    />
-                    <UBadge
-                      :color="workout.completed ? 'success' : 'neutral'"
-                      size="xs"
-                      variant="subtle"
+                <!-- Info Column -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-start mb-0.5">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                      {{ formatDay(workout.date) }}
+                    </span>
+                    <div class="flex items-center gap-1.5 ml-2">
+                      <UButton
+                        v-if="workout.isIndependent"
+                        icon="i-heroicons-link-slash"
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                        @click.stop="linkWorkout(workout)"
+                      />
+                      <UButton
+                        v-else
+                        icon="i-heroicons-link"
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                        @click.stop="unlinkWorkout(workout)"
+                      />
+                      <UBadge
+                        :color="workout.completed ? 'success' : 'neutral'"
+                        size="xs"
+                        variant="subtle"
+                        class="text-[10px]"
+                      >
+                        {{ workout.completed ? 'Done' : 'Planned' }}
+                      </UBadge>
+                      <UButton
+                        v-if="workout.type !== 'Rest' && workout.type !== 'Active Recovery'"
+                        size="xs"
+                        color="neutral"
+                        variant="ghost"
+                        :icon="
+                          isLocalWorkout(workout)
+                            ? 'i-heroicons-cloud-arrow-up'
+                            : 'i-heroicons-arrow-path'
+                        "
+                        :loading="publishingId === workout.id"
+                        @click.stop="publishWorkout(workout)"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="font-bold text-sm text-gray-900 dark:text-white leading-snug">
+                    {{ workout.title }}
+                  </div>
+
+                  <div class="text-xs text-muted mt-1 flex flex-wrap items-center gap-x-1.5">
+                    <span v-if="workout.type === 'Ride' || workout.type === 'VirtualRide'"
+                      >{{ Math.round(workout.durationSec / 60) }}m</span
                     >
-                      {{ workout.completed ? 'Done' : 'Planned' }}
-                    </UBadge>
+                    <span v-else-if="workout.type === 'Run'"
+                      >{{ Math.round(workout.durationSec / 60) }}m
+                      <span v-if="workout.distanceMeters"
+                        >/ {{ Math.round((workout.distanceMeters / 1000) * 10) / 10 }} km</span
+                      ></span
+                    >
+                    <span v-else>{{ Math.round(workout.durationSec / 60) }}m</span>
+                    <span class="text-gray-300 dark:text-gray-600">•</span>
+                    <span class="font-medium">{{ workout.type }}</span>
+                  </div>
+
+                  <!-- Mini Chart / Secondary Info Row -->
+                  <div v-if="workout.structuredWorkout" class="mt-2.5" @click.stop>
+                    <MiniWorkoutChart :workout="workout.structuredWorkout" class="h-10 w-full" />
+                  </div>
+                  <div
+                    v-else-if="workout.type !== 'Rest' && workout.type !== 'Active Recovery'"
+                    class="mt-2 text-left"
+                  >
                     <UButton
-                      v-if="workout.type !== 'Rest' && workout.type !== 'Active Recovery'"
                       size="xs"
                       color="neutral"
                       variant="ghost"
-                      :icon="
-                        isLocalWorkout(workout)
-                          ? 'i-heroicons-cloud-arrow-up'
-                          : 'i-heroicons-arrow-path'
-                      "
-                      :loading="publishingId === workout.id"
-                      @click.stop="publishWorkout(workout)"
+                      label="AI structure"
+                      icon="i-heroicons-sparkles"
+                      :loading="generatingStructureForWorkoutId === workout.id"
+                      @click.stop="generateStructureForWorkout(workout.id)"
                     />
                   </div>
                 </div>
-                <div class="font-bold truncate text-sm">{{ workout.title }}</div>
-                <div class="text-xs text-muted mt-0.5 truncate">
-                  <span v-if="workout.type === 'Ride' || workout.type === 'VirtualRide'"
-                    >{{ Math.round(workout.durationSec / 60) }}m</span
-                  >
-                  <span v-else-if="workout.type === 'Run'"
-                    >{{ Math.round(workout.durationSec / 60) }}m
-                    <span v-if="workout.distanceMeters"
-                      >/ {{ Math.round((workout.distanceMeters / 1000) * 10) / 10 }} km</span
-                    ></span
-                  >
-                  <span v-else>{{ Math.round(workout.durationSec / 60) }}m</span>
-                  <span class="mx-1">•</span>
-                  <span>{{ workout.type }}</span>
-                </div>
-              </div>
-
-              <div class="flex-shrink-0" @click.stop>
-                <MiniWorkoutChart
-                  v-if="workout.structuredWorkout"
-                  :workout="workout.structuredWorkout"
-                  class="w-12 h-8"
-                />
-                <UButton
-                  v-else
-                  size="xs"
-                  color="neutral"
-                  variant="ghost"
-                  icon="i-heroicons-sparkles"
-                  :loading="generatingStructureForWorkoutId === workout.id"
-                  @click.stop="generateStructureForWorkout(workout.id)"
-                />
               </div>
             </div>
           </div>
@@ -879,7 +903,7 @@
   const toast = useToast()
 
   // Independent Workouts Logic
-  const showIndependentWorkouts = ref(true)
+  const showIndependentWorkouts = ref(false)
   const independentWorkouts = ref<any[]>([])
   const fetchingIndependent = ref(false)
 
