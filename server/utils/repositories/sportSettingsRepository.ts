@@ -107,28 +107,48 @@ export const sportSettingsRepository = {
       }
 
       // Logic to find existing record
-      let existing = null
       if (setting.id) {
-        existing = await prisma.sportSettings.findUnique({ where: { id: setting.id } })
-      } else if (setting.externalId && setting.source) {
-        existing = await prisma.sportSettings.findUnique({
+        const existing = await prisma.sportSettings.findUnique({ where: { id: setting.id } })
+        if (existing) {
+          const updated = await prisma.sportSettings.update({
+            where: { id: existing.id },
+            data: {
+              name: setting.name,
+              types: setting.types,
+              ftp: setting.ftp,
+              indoorFtp: setting.indoorFtp,
+              wPrime: setting.wPrime,
+              powerZones: setting.powerZones || undefined,
+              eFtp: setting.eFtp,
+              pMax: setting.pMax,
+              powerSpikeThreshold: setting.powerSpikeThreshold,
+              lthr: setting.lthr,
+              maxHr: setting.maxHr,
+              hrZones: setting.hrZones || undefined,
+              restingHr: setting.restingHr,
+              hrLoadType: setting.hrLoadType,
+              thresholdPace: setting.thresholdPace,
+              warmupTime: setting.warmupTime,
+              cooldownTime: setting.cooldownTime,
+              loadPreference: setting.loadPreference
+            }
+          })
+          results.push(updated)
+          continue
+        }
+      }
+
+      if (setting.externalId && setting.source) {
+        // Use upsert to handle race conditions
+        const upserted = await prisma.sportSettings.upsert({
           where: {
             userId_source_externalId: {
               userId,
               source: setting.source,
               externalId: setting.externalId
             }
-          }
-        })
-      }
-
-      if (existing) {
-        // Update
-        // Safety: If updating Default, ensure types remains empty [] or handle logic?
-        // User might want to assign types to Default? No, Default implies "everything else".
-        const updated = await prisma.sportSettings.update({
-          where: { id: existing.id },
-          data: {
+          },
+          update: {
             name: setting.name,
             types: setting.types,
             ftp: setting.ftp,
@@ -147,24 +167,28 @@ export const sportSettingsRepository = {
             warmupTime: setting.warmupTime,
             cooldownTime: setting.cooldownTime,
             loadPreference: setting.loadPreference
-          }
-        })
-        results.push(updated)
-      } else {
-        // Create
-        // Safety: Ensure not creating a second Default?
-        // If payload says isDefault=true, check if one exists?
-        // We rely on unique constraints or logic.
-        const created = await prisma.sportSettings.create({
-          data: {
+          },
+          create: {
             userId,
             ...setting,
-            source: setting.source || 'manual',
-            externalId: setting.externalId || `manual_${Date.now()}`
+            source: setting.source,
+            externalId: setting.externalId
           }
         })
-        results.push(created)
+        results.push(upserted)
+        continue
       }
+
+      // Create new (Fallback)
+      const created = await prisma.sportSettings.create({
+        data: {
+          userId,
+          ...setting,
+          source: setting.source || 'manual',
+          externalId: setting.externalId || `manual_${Date.now()}`
+        }
+      })
+      results.push(created)
     }
 
     // Optional: Delete removed profiles?
