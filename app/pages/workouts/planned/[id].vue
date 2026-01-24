@@ -18,30 +18,8 @@
         </template>
         <template #right>
           <TriggerMonitorButton />
-          <UButton
-            v-if="workout"
-            color="error"
-            variant="outline"
-            size="sm"
-            class="font-bold"
-            icon="i-heroicons-trash"
-            @click="showDeleteModal = true"
-          >
-            <span class="hidden sm:inline">Delete</span>
-          </UButton>
 
-          <UButton
-            v-if="workout?.structuredWorkout"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            class="font-bold"
-            icon="i-heroicons-arrow-down-tray"
-            @click="showDownloadModal = true"
-          >
-            <span class="hidden sm:inline">Download</span>
-          </UButton>
-
+          <!-- Primary Actions -->
           <UButton
             v-if="workout"
             color="neutral"
@@ -51,46 +29,22 @@
             :icon="isLocalWorkout ? 'i-heroicons-cloud-arrow-up' : 'i-heroicons-arrow-path'"
             @click="showPublishModal = true"
           >
-            <span class="hidden sm:inline">{{
-              isLocalWorkout ? 'Publish' : 'Update Intervals'
-            }}</span>
+            <span class="hidden sm:inline">{{ isLocalWorkout ? 'Publish' : 'Update' }}</span>
           </UButton>
 
-          <UButton
-            v-if="workout?.trainingWeekId"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            class="font-bold"
-            icon="i-heroicons-link-slash"
-            @click="showEjectModal = true"
+          <!-- Secondary Actions Dropdown -->
+          <UDropdownMenu
+            v-if="secondaryMenuItems[0]?.length"
+            :items="secondaryMenuItems"
+            :popper="{ placement: 'bottom-end' }"
           >
-            <span class="hidden sm:inline">Eject</span>
-          </UButton>
-
-          <UButton
-            v-if="workout"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            class="font-bold"
-            icon="i-heroicons-share"
-            @click="isShareModalOpen = true"
-          >
-            <span class="hidden sm:inline">Share</span>
-          </UButton>
-
-          <UButton
-            v-if="workout && !workout.completed"
-            size="sm"
-            color="primary"
-            variant="outline"
-            class="font-bold"
-            icon="i-heroicons-check"
-            @click="markComplete"
-          >
-            <span class="hidden sm:inline">Mark Complete</span>
-          </UButton>
+            <UButton
+              icon="i-heroicons-ellipsis-vertical"
+              color="neutral"
+              variant="outline"
+              size="sm"
+            />
+          </UDropdownMenu>
 
           <UButton
             v-if="workout"
@@ -101,7 +55,7 @@
             class="font-bold"
             @click="chatAboutWorkout"
           >
-            <span>Chat</span>
+            <span class="hidden sm:inline">Chat</span>
           </UButton>
         </template>
       </UDashboardNavbar>
@@ -725,6 +679,68 @@
   // Eject logic
   const showEjectModal = ref(false)
   const ejecting = ref(false)
+
+  const secondaryMenuItems = computed(() => {
+    const items = []
+
+    // Mark Complete action
+    if (workout.value && !workout.value.completed) {
+      items.push({
+        label: 'Mark Complete',
+        icon: 'i-heroicons-check',
+        onSelect: () => {
+          markComplete()
+        }
+      })
+    }
+
+    // Download action
+    if (workout.value?.structuredWorkout) {
+      items.push({
+        label: 'Download',
+        icon: 'i-heroicons-arrow-down-tray',
+        onSelect: () => {
+          showDownloadModal.value = true
+        }
+      })
+    }
+
+    // Eject action
+    if (workout.value?.trainingWeekId) {
+      items.push({
+        label: 'Eject from Plan',
+        icon: 'i-heroicons-link-slash',
+        onSelect: () => {
+          showEjectModal.value = true
+        }
+      })
+    }
+
+    // Share action
+    if (workout.value) {
+      items.push({
+        label: 'Share Workout',
+        icon: 'i-heroicons-share',
+        onSelect: () => {
+          isShareModalOpen.value = true
+        }
+      })
+    }
+
+    // Delete action (always last, potentially in a separate group if we wanted)
+    if (workout.value) {
+      items.push({
+        label: 'Delete',
+        icon: 'i-heroicons-trash',
+        color: 'error' as const,
+        onSelect: () => {
+          showDeleteModal.value = true
+        }
+      })
+    }
+
+    return [items]
+  })
 
   // Listeners
   onTaskCompleted('generate-workout-messages', async (run) => {
