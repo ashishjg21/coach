@@ -281,6 +281,14 @@ ${profile.planning_context?.opportunities?.length ? `Opportunities: ${profile.pl
     logger.log('[GenerateBlock] Calendar schedules generated', { count: weekSchedules.length })
 
     // 3. Build Prompt
+    const rhythmLabel =
+      {
+        2: '1:1 (Return to Play)',
+        3: '2:1 (Masters/High-Stress)',
+        4: '3:1 (Standard)',
+        5: '4:1 (Professional)'
+      }[block.plan.recoveryRhythm as 2 | 3 | 4 | 5] || '3:1 (Standard)'
+
     const eventsList =
       block.plan.goal.events && block.plan.goal.events.length > 0
         ? block.plan.goal.events
@@ -338,6 +346,7 @@ ${eventsList}
 
 TRAINING PLAN OVERVIEW (Macrocycle):
 Total Duration: ${totalPlanWeeks} weeks
+Training Rhythm: ${rhythmLabel}
 ${planOverview}
 
 CURRENT BLOCK CONTEXT:
@@ -348,7 +357,7 @@ CURRENT BLOCK CONTEXT:
 - Global Timeline: Weeks ${globalWeekStart}-${globalWeekEnd} of ${totalPlanWeeks}
 - Start Date: ${formatUserDate(block.startDate, timezone)}
 - Progression Logic: ${block.progressionLogic || 'Standard linear progression'}
-- Recovery Week: Week ${block.recoveryWeekIndex || 4} is a recovery week.
+- Recovery Week: Week ${block.recoveryWeekIndex || block.plan.recoveryRhythm} is a recovery week.
 
 VOLUME TARGETS (Baseline from Plan Wizard):
 ${volumeTargets}
@@ -372,8 +381,12 @@ ${
 
 INSTRUCTIONS:
 Generate a detailed daily training plan for each week in this block (${block.durationWeeks} weeks).
+- **TRAINING RHYTHM**: The athlete is on a ${block.plan.recoveryRhythm === 3 ? '2:1' : '3:1'} rhythm. 
+  - For LOADING weeks: Focus on progressive overload, increasing difficulty slightly each week.
+  - For RECOVERY weeks: Focus on shedding fatigue with significantly reduced volume and low intensity.
 - **WEEK NUMBERING**: You MUST use block-relative week numbers (1, 2, 3...) in your response, matching the numbering in the "WEEKLY SCHEDULE CONSTRAINTS" below.
 - **RESPECT LOCKED WORKOUTS**: You MUST include the "LOCKED/ANCHOR WORKOUTS" in your plan on their specific days. Do not schedule conflicting workouts on those days unless it's a multi-session day. Account for their TSS.
+- **B-RACE HANDLING**: If the block focus includes "_WITH_RACE", implement a "Mini-Taper" on the 2 days prior to the race date while maintaining the overall block goal.
 - ONLY use the "Allowed Workout Types" listed above, UNLESS the athlete's custom instructions explicitly request otherwise (Custom Instructions take precedence).
 - Ensure progressive overload from week 1 to ${block.durationWeeks - 1}.
 - Ensure the recovery week (if applicable) has significantly reduced volume and intensity.
@@ -407,7 +420,8 @@ Return valid JSON matching the schema provided.`
         userId,
         operation: 'generate_training_block',
         entityType: 'TrainingBlock',
-        entityId: blockId
+        entityId: blockId,
+        has_mini_taper: block.primaryFocus.includes('_WITH_RACE')
       }
     )
 

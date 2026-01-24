@@ -16,7 +16,8 @@ const initializePlanSchema = z.object({
     .enum(['LINEAR', 'UNDULATING', 'BLOCK', 'POLARIZED', 'REVERSE', 'MAINTENANCE'])
     .default('LINEAR'),
   preferredActivityTypes: z.array(z.string()).default(['Ride']),
-  customInstructions: z.string().optional()
+  customInstructions: z.string().optional(),
+  recoveryRhythm: z.number().int().min(2).max(5).default(4) // 4 = 3:1 ratio, 3 = 2:1 ratio
 })
 
 export default defineEventHandler(async (event) => {
@@ -40,7 +41,8 @@ export default defineEventHandler(async (event) => {
     volumeHours,
     strategy,
     preferredActivityTypes,
-    customInstructions
+    customInstructions,
+    recoveryRhythm
   } = validation.data
   const userId = (session.user as any).id
 
@@ -76,7 +78,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // 4. Define Blocks
-  const blocks = calculateBlocks(start, totalWeeks, strategy, goal)
+  const blocks = calculateBlocks(start, totalWeeks, strategy, recoveryRhythm, goal)
 
   // 5. Create Plan Skeleton
   const plan = await trainingPlanRepository.create(
@@ -89,6 +91,7 @@ export default defineEventHandler(async (event) => {
       status: 'DRAFT',
       activityTypes: preferredActivityTypes,
       customInstructions,
+      recoveryRhythm,
       blocks: {
         create: blocks.map((block) => ({
           order: block.order,
@@ -173,268 +176,116 @@ export default defineEventHandler(async (event) => {
 })
 
 // Helper function to calculate block structure
-function calculateBlocks(startDate: Date, totalWeeks: number, strategy: string, goal?: any) {
+function calculateBlocks(
+  startDate: Date,
+  totalWeeks: number,
+  strategy: string,
+  recoveryRhythm: number,
+  goal?: any
+) {
   const blocks = []
-  const currentDate = new Date(startDate)
 
   // 1. Analyze Event Demands
   const event = goal?.events?.[0]
-  let buildFocus = 'THRESHOLD' // Default
+  let buildFocus = 'THRESHOLD'
   let peakFocus = 'RACE_SPECIFIC'
 
   if (event) {
-    // Terrain / Event Type Analysis
     if (event.terrain === 'Mountainous' || (event.elevation && event.elevation > 2000)) {
-      buildFocus = 'SWEET_SPOT' // Focus on Muscular Endurance for long climbs
+      buildFocus = 'SWEET_SPOT'
     } else if (['Criterium', 'Cyclocross', 'MTB (XC)'].includes(event.subType)) {
-      buildFocus = 'VO2_MAX' // Focus on high intensity repeatability
+      buildFocus = 'VO2_MAX'
       peakFocus = 'ANAEROBIC_CAPACITY'
     } else if (event.expectedDuration && event.expectedDuration > 6) {
-      buildFocus = 'TEMPO' // Focus on efficiency and fatigue resistance
+      buildFocus = 'TEMPO'
     }
   }
 
-  // 2. Strategy Logic
-  if (strategy === 'BLOCK') {
-    // Block Periodization: Concentrated loads (shorter blocks)
-    // Structure: Accumulation (High Vol) -> Transmutation (High Int) -> Realization (Taper)
-    // Typically 2-3 week blocks with high focus
+  // 2. BACKWARD PLANNING LOGIC
+  // We plan backward from the target date to ensure the peak is perfectly timed.
+  const taperWeeks = 2
+  const trainingWeeks = totalWeeks - taperWeeks
 
-    // Taper
-    const taperWeeks = 2
-    const workingWeeks = totalWeeks - taperWeeks
+  // Calculate block configurations based on strategy
+  // We use the recoveryRhythm (e.g. 4 for 3:1) to determine builds
+  const mesocycleWeeks = recoveryRhythm
 
-    // 3-week blocks are standard for "Block" style
-    const blockDuration = 3
-    let remainingWeeks = workingWeeks
-    let order = 1
+  let remainingWeeks = trainingWeeks
+  const buildSegments = []
 
-    // General Preparation (Aerobic)
-    if (remainingWeeks > 6) {
-      const baseWeeks = Math.floor(remainingWeeks * 0.4)
-      const numBlocks = Math.ceil(baseWeeks / blockDuration)
-      for (let i = 0; i < numBlocks; i++) {
-        const weeks = Math.min(blockDuration, remainingWeeks)
-        blocks.push({
-          order: order++,
-          name: `Accumulation ${i + 1}`,
-          type: 'BASE',
-          primaryFocus: 'AEROBIC_ENDURANCE',
-          startDate: new Date(currentDate),
-          durationWeeks: weeks,
-          recoveryWeekIndex: 3 // Recovery every 3rd week in Block usually means 2 ON / 1 OFF or 3 ON / 1 OFF. Let's do 3 week blocks where last week is lighter? No, Block is usually continuous. Let's stick to 3:1 rhythm for simplicity or 2:1.
-        })
-        currentDate.setUTCDate(currentDate.getUTCDate() + weeks * 7)
-        remainingWeeks -= weeks
-      }
-    }
-
-    // Specific (Intensity)
+  // Split into segments based on strategy
+  if (strategy === 'MAINTENANCE') {
     while (remainingWeeks > 0) {
-      const weeks = Math.min(blockDuration, remainingWeeks)
-      blocks.push({
-        order: order++,
-        name: `Transmutation ${Math.ceil(order / 2)}`,
-        type: 'BUILD',
-        primaryFocus: buildFocus,
-        startDate: new Date(currentDate),
-        durationWeeks: weeks,
-        recoveryWeekIndex: 3
-      })
-      currentDate.setUTCDate(currentDate.getUTCDate() + weeks * 7)
-      remainingWeeks -= weeks
-    }
-
-    // Taper
-    blocks.push({
-      order: order++,
-      name: 'Realization',
-      type: 'PEAK',
-      primaryFocus: peakFocus,
-      startDate: new Date(currentDate),
-      durationWeeks: taperWeeks,
-      recoveryWeekIndex: 2
-    })
-  } else if (strategy === 'UNDULATING') {
-    // Undulating: Mixes intensities within the week, flat progression
-    // Logic: Similar block structure to Linear, but the 'Focus' passed to AI will trigger mixed workouts
-    // We handle this mainly in the Prompt later, but structure is similar to Linear
-
-    const taperWeeks = 2
-    const trainingWeeks = totalWeeks - taperWeeks
-
-    // Even split
-    const phase1 = Math.floor(trainingWeeks / 2)
-    const phase2 = trainingWeeks - phase1
-
-    let order = 1
-
-    blocks.push({
-      order: order++,
-      name: 'General Phase',
-      type: 'BASE',
-      primaryFocus: 'MIXED', // Prompt will interpret this as DUP
-      startDate: new Date(currentDate),
-      durationWeeks: phase1,
-      recoveryWeekIndex: 4
-    })
-    currentDate.setUTCDate(currentDate.getUTCDate() + phase1 * 7)
-
-    blocks.push({
-      order: order++,
-      name: 'Specific Phase',
-      type: 'BUILD',
-      primaryFocus: buildFocus, // Specific focus for event
-      startDate: new Date(currentDate),
-      durationWeeks: phase2,
-      recoveryWeekIndex: 4
-    })
-    currentDate.setUTCDate(currentDate.getUTCDate() + phase2 * 7)
-
-    blocks.push({
-      order: order++,
-      name: 'Taper',
-      type: 'PEAK',
-      primaryFocus: 'RACE_SPECIFIC',
-      startDate: new Date(currentDate),
-      durationWeeks: taperWeeks,
-      recoveryWeekIndex: 2
-    })
-  } else if (strategy === 'REVERSE') {
-    // Reverse Periodization: Build (Speed) -> Base (Endurance) -> Peak (Specific)
-    // Common for long-distance events (Ironman, Ultras)
-    const taperWeeks = 2
-    const trainingWeeks = totalWeeks - taperWeeks
-
-    let buildWeeks = Math.floor(trainingWeeks * 0.4)
-    let baseWeeks = trainingWeeks - buildWeeks
-    let order = 1
-    let buildCount = 1
-    let baseCount = 1
-
-    // Build Phase first (Intensity)
-    while (buildWeeks > 0) {
-      const duration = buildWeeks > 6 ? 4 : buildWeeks
-      blocks.push({
-        order: order++,
-        name: `Build Phase ${buildCount++}`,
-        type: 'BUILD',
-        primaryFocus: buildFocus,
-        startDate: new Date(currentDate),
-        durationWeeks: duration,
-        recoveryWeekIndex: 4
-      })
-      buildWeeks -= duration
-      currentDate.setUTCDate(currentDate.getUTCDate() + duration * 7)
-    }
-
-    // Base Phase second (Aerobic Specificity)
-    while (baseWeeks > 0) {
-      const duration = baseWeeks > 6 ? 4 : baseWeeks
-      blocks.push({
-        order: order++,
-        name: `Base Phase ${baseCount++}`,
-        type: 'BASE',
-        primaryFocus: 'AEROBIC_ENDURANCE',
-        startDate: new Date(currentDate),
-        durationWeeks: duration,
-        recoveryWeekIndex: 4
-      })
-      baseWeeks -= duration
-      currentDate.setUTCDate(currentDate.getUTCDate() + duration * 7)
-    }
-
-    // Peak/Taper
-    blocks.push({
-      order: order++,
-      name: 'Peak & Taper',
-      type: 'PEAK',
-      primaryFocus: peakFocus,
-      startDate: new Date(currentDate),
-      durationWeeks: taperWeeks,
-      recoveryWeekIndex: 2
-    })
-  } else if (strategy === 'MAINTENANCE') {
-    // Maintenance: Continuous Base/Tempo load, no tapering
-    let remainingWeeks = totalWeeks
-    let order = 1
-    let count = 1
-
-    while (remainingWeeks > 0) {
-      const duration = remainingWeeks > 6 ? 4 : remainingWeeks
-      blocks.push({
-        order: order++,
-        name: `Maintenance Phase ${count++}`,
-        type: 'BASE',
-        primaryFocus: 'SWEET_SPOT',
-        startDate: new Date(currentDate),
-        durationWeeks: duration,
-        recoveryWeekIndex: 4
-      })
+      const duration = remainingWeeks >= mesocycleWeeks + 2 ? mesocycleWeeks : remainingWeeks
+      buildSegments.push({ type: 'BASE', focus: 'SWEET_SPOT', weeks: duration })
       remainingWeeks -= duration
-      currentDate.setUTCDate(currentDate.getUTCDate() + duration * 7)
+    }
+  } else if (strategy === 'REVERSE') {
+    // Reverse: Speed (BUILD) then Endurance (BASE)
+    let buildPool = Math.floor(trainingWeeks * 0.4)
+    let basePool = trainingWeeks - buildPool
+
+    while (buildPool > 0) {
+      const duration = buildPool >= mesocycleWeeks + 2 ? mesocycleWeeks : buildPool
+      buildSegments.push({ type: 'BUILD', focus: buildFocus, weeks: duration })
+      buildPool -= duration
+    }
+    while (basePool > 0) {
+      const duration = basePool >= mesocycleWeeks + 2 ? mesocycleWeeks : basePool
+      buildSegments.push({ type: 'BASE', focus: 'AEROBIC_ENDURANCE', weeks: duration })
+      basePool -= duration
     }
   } else {
-    // Default: LINEAR / POLARIZED
-    // (Polarized structure is same as Linear, just intensity distribution differs in execution)
+    // Standard LINEAR / POLARIZED / BLOCK
+    let basePool = Math.floor(trainingWeeks * 0.6)
+    let buildPool = trainingWeeks - basePool
 
-    const taperWeeks = 2
-    const trainingWeeks = totalWeeks - taperWeeks
-
-    // Base / Build Split (Approx 60/40)
-    let baseWeeks = Math.floor(trainingWeeks * 0.6)
-    let buildWeeks = trainingWeeks - baseWeeks
-
-    let order = 1
-    let baseCount = 1
-    let buildCount = 1
-
-    // Base Phase
-    while (baseWeeks > 0) {
-      // If remaining is 5 or 6, just make one block instead of a 4 and a 1/2
-      const duration = baseWeeks > 6 ? 4 : baseWeeks
-      blocks.push({
-        order: order++,
-        name: `Base Phase ${baseCount++}`,
+    while (basePool > 0) {
+      const duration = basePool >= mesocycleWeeks + 2 ? mesocycleWeeks : basePool
+      buildSegments.push({
         type: 'BASE',
-        primaryFocus: strategy === 'POLARIZED' ? 'AEROBIC_ENDURANCE' : 'SWEET_SPOT',
-        startDate: new Date(currentDate),
-        durationWeeks: duration,
-        recoveryWeekIndex: 4
+        focus: strategy === 'POLARIZED' ? 'AEROBIC_ENDURANCE' : 'SWEET_SPOT',
+        weeks: duration
       })
-      baseWeeks -= duration
-      currentDate.setUTCDate(currentDate.getUTCDate() + duration * 7)
+      basePool -= duration
     }
-
-    // Build Phase
-    while (buildWeeks > 0) {
-      const duration = buildWeeks > 6 ? 4 : buildWeeks
-      blocks.push({
-        order: order++,
-        name: `Build Phase ${buildCount++}`,
-        type: 'BUILD',
-        primaryFocus: buildFocus,
-        startDate: new Date(currentDate),
-        durationWeeks: duration,
-        recoveryWeekIndex: 4
-      })
-      buildWeeks -= duration
-      currentDate.setUTCDate(currentDate.getUTCDate() + duration * 7)
+    while (buildPool > 0) {
+      const duration = buildPool >= mesocycleWeeks + 2 ? mesocycleWeeks : buildPool
+      buildSegments.push({ type: 'BUILD', focus: buildFocus, weeks: duration })
+      buildPool -= duration
     }
-
-    // Peak/Taper
-    blocks.push({
-      order: order++,
-      name: 'Peak & Taper',
-      type: 'PEAK',
-      primaryFocus: peakFocus,
-      startDate: new Date(currentDate),
-      durationWeeks: taperWeeks,
-      recoveryWeekIndex: 2
-    })
   }
 
-  // 2.5 Clean up names: if only one block of a certain name exists, remove the number
+  // 3. Assemble Chronologically
+  const currentDate = new Date(startDate)
+  let order = 1
+  const counts: Record<string, number> = { BASE: 1, BUILD: 1, PEAK: 1 }
+
+  for (const segment of buildSegments) {
+    blocks.push({
+      order: order++,
+      name: `${segment.type === 'BASE' ? 'Base' : 'Build'} Phase ${counts[segment.type]++}`,
+      type: segment.type,
+      primaryFocus: segment.focus,
+      startDate: new Date(currentDate),
+      durationWeeks: segment.weeks,
+      recoveryWeekIndex: segment.weeks >= 3 ? recoveryRhythm : null // Only recovery if block is long enough
+    })
+    currentDate.setUTCDate(currentDate.getUTCDate() + segment.weeks * 7)
+  }
+
+  // Final Peak & Taper
+  blocks.push({
+    order: order++,
+    name: 'Peak & Taper',
+    type: 'PEAK',
+    primaryFocus: peakFocus,
+    startDate: new Date(currentDate),
+    durationWeeks: taperWeeks,
+    recoveryWeekIndex: 2 // Taper week is always recovery
+  })
+
+  // 4. Clean up names
   const nameCounts: Record<string, number> = {}
   for (const b of blocks) {
     const baseName = b.name.replace(/ \d+$/, '')
@@ -448,7 +299,7 @@ function calculateBlocks(startDate: Date, totalWeeks: number, strategy: string, 
     }
   }
 
-  // 3. Tag blocks with events
+  // 5. Tag blocks with events
   if (goal?.events && goal.events.length > 0) {
     for (const block of blocks) {
       const blockStart = block.startDate.getTime()
@@ -456,20 +307,12 @@ function calculateBlocks(startDate: Date, totalWeeks: number, strategy: string, 
 
       const eventsInBlock = goal.events.filter((e: any) => {
         const eDate = new Date(e.date).getTime()
-        // Check if event is within this block's window
         return eDate >= blockStart && eDate < blockEnd
       })
 
       if (eventsInBlock.length > 0) {
-        // Sort by priority or date
-        // Just take the first one or join names
         const eventNames = eventsInBlock.map((e: any) => e.title).join(', ')
-
-        // Update block metadata to inform AI
         block.name += ` [Race: ${eventNames}]`
-
-        // If this isn't the final Peak block, marking it as having a race
-        // allows the AI (in generate-training-block) to schedule a mini-taper
         if (block.type !== 'PEAK') {
           block.primaryFocus += '_WITH_RACE'
         }
