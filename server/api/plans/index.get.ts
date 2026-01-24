@@ -1,5 +1,6 @@
 import { getServerSession } from '../../utils/session'
 import { prisma } from '../../utils/db'
+import { trainingPlanRepository } from '../../utils/repositories/trainingPlanRepository'
 
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
@@ -19,38 +20,20 @@ export default defineEventHandler(async (event) => {
 
   const userId = user.id
 
-  const plans = await prisma.trainingPlan.findMany({
-    where: {
-      userId: userId,
-      // We fetch everything except the currently active one?
-      // Or just everything and let the UI filter?
-      // Let's fetch everything that is NOT active (since active is on /plan)
-      // OR fetch templates separately?
-      // Let's fetch all non-active plans + templates
-      OR: [{ status: { not: 'ACTIVE' } }, { isTemplate: true }]
-    },
-    orderBy: { createdAt: 'desc' },
+  const plans = await trainingPlanRepository.list(userId, {
+    // Custom filter for this specific list view
     include: {
-      goal: {
-        select: { title: true }
-      },
+      goal: { select: { title: true } },
       blocks: {
         select: {
           id: true,
-          _count: {
-            select: {
-              weeks: true
-            }
-          }
+          _count: { select: { weeks: true } }
         }
       },
-      _count: {
-        select: {
-          blocks: true
-        }
-      }
+      _count: { select: { blocks: true } }
     }
   })
 
-  return plans
+  // Filter for non-active plans + templates as in original logic
+  return plans.filter((p) => p.status !== 'ACTIVE' || p.isTemplate)
 })

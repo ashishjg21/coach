@@ -1,6 +1,7 @@
 import { getServerSession } from '../../../utils/session'
 import { prisma } from '../../../utils/db'
 import { getUserLocalDate, getUserTimezone } from '../../../utils/date'
+import { trainingPlanRepository } from '../../../utils/repositories/trainingPlanRepository'
 
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
@@ -9,41 +10,21 @@ export default defineEventHandler(async (event) => {
   }
 
   const userId = (session.user as any).id
-  const planId = event.context.params?.id
+  const planId = getRouterParam(event, 'id')
 
   if (!planId) {
     throw createError({ statusCode: 400, message: 'Plan ID required' })
   }
 
   // 1. Verify ownership
-  const plan = await prisma.trainingPlan.findUnique({
-    where: { id: planId },
-    include: {
-      blocks: {
-        include: {
-          weeks: {
-            include: {
-              workouts: true
-            }
-          }
-        }
-      }
-    }
-  })
+  const plan = await trainingPlanRepository.getById(planId, userId)
 
   if (!plan) {
     throw createError({ statusCode: 404, message: 'Plan not found' })
   }
 
-  if (plan.userId !== userId) {
-    throw createError({ statusCode: 403, message: 'Not authorized' })
-  }
-
   // 2. Mark as ABANDONED
-  await prisma.trainingPlan.update({
-    where: { id: planId },
-    data: { status: 'ABANDONED' }
-  })
+  await trainingPlanRepository.update(planId, userId, { status: 'ABANDONED' })
 
   // 3. Handle future planned workouts
   // We identify "future" by date > today in the user's local calendar context

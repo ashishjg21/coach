@@ -1,6 +1,6 @@
-import { prisma } from '../../utils/db'
 import { tasks } from '@trigger.dev/sdk/v3'
 import { getServerSession } from '../../utils/session'
+import { trainingPlanRepository } from '../../utils/repositories/trainingPlanRepository'
 
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
@@ -9,18 +9,14 @@ export default defineEventHandler(async (event) => {
   }
 
   const { planId, adaptationType } = await readBody(event)
+  const userId = (session.user as any).id
 
   if (!planId || !adaptationType) {
     throw createError({ statusCode: 400, message: 'Plan ID and Adaptation Type are required' })
   }
 
   // Verify ownership
-  const plan = await prisma.trainingPlan.findFirst({
-    where: {
-      id: planId,
-      userId: (session.user as any).id
-    }
-  })
+  const plan = await trainingPlanRepository.getById(planId, userId)
 
   if (!plan) {
     throw createError({ statusCode: 404, message: 'Plan not found' })
@@ -29,12 +25,12 @@ export default defineEventHandler(async (event) => {
   const handle = await tasks.trigger(
     'adapt-training-plan',
     {
-      userId: (session.user as any).id,
+      userId,
       planId: planId,
       adaptationType
     },
     {
-      tags: [`user:${(session.user as any).id}`]
+      tags: [`user:${userId}`]
     }
   )
 

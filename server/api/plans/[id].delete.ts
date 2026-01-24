@@ -1,5 +1,5 @@
-import { prisma } from '../../utils/db'
 import { getServerSession } from '../../utils/session'
+import { trainingPlanRepository } from '../../utils/repositories/trainingPlanRepository'
 
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
@@ -10,16 +10,12 @@ export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
   const userId = (session.user as any).id
 
-  const plan = await (prisma as any).trainingPlan.findUnique({
-    where: { id }
-  })
+  if (!id) throw createError({ statusCode: 400, message: 'Plan ID required' })
+
+  const plan = await trainingPlanRepository.getById(id, userId)
 
   if (!plan) {
     throw createError({ statusCode: 404, message: 'Plan not found' })
-  }
-
-  if (plan.userId !== userId) {
-    throw createError({ statusCode: 403, message: 'Forbidden' })
   }
 
   // Allow deleting DRAFT plans and Templates
@@ -31,9 +27,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  await (prisma as any).trainingPlan.delete({
-    where: { id }
-  })
+  await trainingPlanRepository.delete(id, userId)
 
   return { success: true }
 })

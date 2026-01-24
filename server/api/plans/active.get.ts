@@ -1,5 +1,6 @@
 import { prisma } from '../../utils/db'
 import { getServerSession } from '../../utils/session'
+import { trainingPlanRepository } from '../../utils/repositories/trainingPlanRepository'
 
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
@@ -16,13 +17,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: 'User not found' })
   }
 
-  const plan = await prisma.trainingPlan.findFirst({
-    where: {
-      userId: user.id,
-      status: 'ACTIVE'
-    },
+  const plan = await trainingPlanRepository.getActive(user.id, {
     include: {
-      goal: true,
+      goal: {
+        include: { events: true }
+      },
       blocks: {
         orderBy: { order: 'asc' },
         include: {

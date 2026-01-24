@@ -1,5 +1,6 @@
 import { getServerSession } from '../../../utils/session'
 import { prisma } from '../../../utils/db'
+import { trainingPlanRepository } from '../../../utils/repositories/trainingPlanRepository'
 
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
@@ -18,25 +19,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const userId = user.id
-
   const planId = getRouterParam(event, 'id')
 
   if (!planId) {
     throw createError({ statusCode: 400, message: 'Plan ID is required' })
   }
 
-  const plan = await prisma.trainingPlan.findFirst({
-    where: {
-      id: planId,
-      userId: userId
-    },
+  const plan = await trainingPlanRepository.getById(planId, userId, {
     include: {
       goal: {
-        select: {
-          id: true,
-          title: true,
-          description: true
-        }
+        include: { events: true }
       },
       blocks: {
         orderBy: { order: 'asc' },
@@ -47,9 +39,7 @@ export default defineEventHandler(async (event) => {
               workouts: {
                 orderBy: { date: 'asc' },
                 include: {
-                  completedWorkouts: {
-                    select: { id: true }
-                  }
+                  completedWorkouts: { select: { id: true } }
                 }
               }
             }
