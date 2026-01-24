@@ -62,6 +62,8 @@ export default defineEventHandler(async (event) => {
       if (deltaWeeks > 0) {
         // 1. Add new weeks
         const lastWeek = existingBlock.weeks[existingBlock.weeks.length - 1]
+        if (!lastWeek)
+          throw createError({ statusCode: 500, message: 'Block has no weeks to extend from' })
         const targets = calculateWeekTargets(type || existingBlock.type)
 
         for (let i = 1; i <= deltaWeeks; i++) {

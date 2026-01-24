@@ -29,7 +29,7 @@
             label="Taking too long? Click to retry"
             variant="link"
             size="xs"
-            color="gray"
+            color="neutral"
             @click="fetchToday()"
           />
         </div>

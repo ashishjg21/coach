@@ -2,10 +2,10 @@ import { prisma } from '../db'
 import type { Prisma } from '@prisma/client'
 
 export const trainingWeekRepository = {
-  async getById(
+  async getById<T extends Prisma.TrainingWeekInclude>(
     id: string,
     options: {
-      include?: Prisma.TrainingWeekInclude
+      include?: T
       select?: Prisma.TrainingWeekSelect
     } = {}
   ) {
@@ -18,7 +18,7 @@ export const trainingWeekRepository = {
     return prisma.trainingWeek.findUnique({
       where: { id },
       include: options.include
-    })
+    }) as unknown as Promise<Prisma.TrainingWeekGetPayload<{ include: T }> | null>
   },
 
   async create(

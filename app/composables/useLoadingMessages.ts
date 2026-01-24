@@ -75,7 +75,9 @@ export function useLoadingMessages(context: LoadingContext = 'general', interval
     const pool = MESSAGE_POOLS[context] || MESSAGE_POOLS.general
     // Shuffle the pool
     availableMessages.value = [...pool].sort(() => Math.random() - 0.5)
-    currentMessage.value = availableMessages.value[0]
+    if (availableMessages.value.length > 0) {
+      currentMessage.value = availableMessages.value[0]!
+    }
   }
 
   const nextMessage = () => {

@@ -130,7 +130,7 @@
     <UModal
       v-model:open="showTimelineEditor"
       title="Edit Plan Structure"
-      :ui="{ width: 'sm:max-w-2xl' }"
+      :ui="{ content: 'sm:max-w-2xl' }"
     >
       <template #body>
         <div class="p-4 sm:p-6">

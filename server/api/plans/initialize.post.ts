@@ -151,7 +151,7 @@ export default defineEventHandler(async (event) => {
   // 6. Trigger background generation for all blocks
   if (plan.blocks && plan.blocks.length > 0) {
     for (let i = 0; i < plan.blocks.length; i++) {
-      const block = plan.blocks[i]
+      const block = plan.blocks[i]!
       await tasks.trigger(
         'generate-training-block',
         {
@@ -264,7 +264,7 @@ function calculateBlocks(
   for (const segment of buildSegments) {
     blocks.push({
       order: order++,
-      name: `${segment.type === 'BASE' ? 'Base' : 'Build'} Phase ${counts[segment.type]++}`,
+      name: `${segment.type === 'BASE' ? 'Base' : 'Build'} Phase ${counts[segment.type]!++}`,
       type: segment.type,
       primaryFocus: segment.focus,
       startDate: new Date(currentDate),

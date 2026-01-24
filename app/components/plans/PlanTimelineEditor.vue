@@ -119,7 +119,7 @@
   const { formatDateUTC } = useFormat()
   const toast = useToast()
 
-  const localBlocks = ref(
+  const localBlocks = ref<any[]>(
     JSON.parse(JSON.stringify(props.blocks)).sort((a: any, b: any) => a.order - b.order)
   )
   const saving = ref(false)

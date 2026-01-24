@@ -2,11 +2,11 @@ import { prisma } from '../db'
 import type { Prisma } from '@prisma/client'
 
 export const trainingPlanRepository = {
-  async getById(
+  async getById<T extends Prisma.TrainingPlanInclude>(
     id: string,
     userId: string,
     options: {
-      include?: Prisma.TrainingPlanInclude
+      include?: T
       select?: Prisma.TrainingPlanSelect
     } = {}
   ) {
@@ -16,33 +16,34 @@ export const trainingPlanRepository = {
         select: options.select
       })
     }
+    // We cast the return to allow T to drive the result type, leveraging Prisma's automatic inference
     return prisma.trainingPlan.findFirst({
       where: { id, userId },
       include: options.include
-    })
+    }) as unknown as Promise<Prisma.TrainingPlanGetPayload<{ include: T }> | null>
   },
 
-  async getActive(
+  async getActive<T extends Prisma.TrainingPlanInclude>(
     userId: string,
     options: {
-      include?: Prisma.TrainingPlanInclude
+      include?: T
     } = {}
   ) {
     return prisma.trainingPlan.findFirst({
       where: { userId, status: 'ACTIVE' },
       include: options.include,
       orderBy: { createdAt: 'desc' }
-    })
+    }) as unknown as Promise<Prisma.TrainingPlanGetPayload<{ include: T }> | null>
   },
 
-  async create(
+  async create<T extends Prisma.TrainingPlanInclude>(
     data: Prisma.TrainingPlanUncheckedCreateInput,
-    include?: Prisma.TrainingPlanInclude
+    include?: T
   ) {
     return prisma.trainingPlan.create({
       data,
       include
-    })
+    }) as unknown as Promise<Prisma.TrainingPlanGetPayload<{ include: T }>>
   },
 
   async update(id: string, userId: string, data: Prisma.TrainingPlanUpdateInput) {
@@ -58,12 +59,12 @@ export const trainingPlanRepository = {
     })
   },
 
-  async list(
+  async list<T extends Prisma.TrainingPlanInclude>(
     userId: string,
     options: {
       status?: string
       isTemplate?: boolean
-      include?: Prisma.TrainingPlanInclude
+      include?: T
     } = {}
   ) {
     return prisma.trainingPlan.findMany({
@@ -74,7 +75,7 @@ export const trainingPlanRepository = {
       },
       include: options.include,
       orderBy: { createdAt: 'desc' }
-    })
+    }) as unknown as Promise<Array<Prisma.TrainingPlanGetPayload<{ include: T }>>>
   },
 
   async archiveAllExcept(userId: string, exceptId: string) {

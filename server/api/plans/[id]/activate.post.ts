@@ -167,7 +167,7 @@ export default defineEventHandler(async (event) => {
 
   // 4. Trigger Generation for First Block
   if (plan.blocks.length > 0 && !plan.isTemplate) {
-    const firstBlock = plan.blocks[0]
+    const firstBlock = plan.blocks[0]!
     await tasks.trigger(
       'generate-training-block',
       {

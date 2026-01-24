@@ -385,7 +385,7 @@
               v-for="event in selectedEvents"
               :key="event.id"
               class="p-4 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-800/80 rounded-xl border border-gray-200 dark:border-gray-700 relative overflow-hidden cursor-pointer transition-colors group/event"
-              @click="window.open(`/events/${event.id}`, '_blank')"
+              @click="openEventUrl(event.id)"
             >
               <div class="absolute top-0 right-0 p-2 opacity-10">
                 <UIcon name="i-heroicons-calendar" class="w-12 h-12" />
@@ -701,6 +701,10 @@
     } else {
       step.value = 3
     }
+  }
+
+  function openEventUrl(eventId: string) {
+    window.open(`/events/${eventId}`, '_blank')
   }
 
   async function saveGoal() {

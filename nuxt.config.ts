@@ -218,6 +218,7 @@ export default defineNuxtConfig({
       duration: parseInt(process.env.WEBHOOK_RATE_LIMIT_TTL || '60', 10),
       ban: 300
     },
+    // @ts-expect-error: Type definition mismatch in module
     security: {
       trustXForwardedFor: true
     },

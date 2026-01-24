@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  if (!week || (week.block.plan as any).userId !== user.id) {
+  if (!week || (week.block as any).plan.userId !== user.id) {
     throw createError({ statusCode: 404, message: 'Week not found' })
   }
 

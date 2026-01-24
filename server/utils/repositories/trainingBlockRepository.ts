@@ -2,10 +2,10 @@ import { prisma } from '../db'
 import type { Prisma } from '@prisma/client'
 
 export const trainingBlockRepository = {
-  async getById(
+  async getById<T extends Prisma.TrainingBlockInclude>(
     id: string,
     options: {
-      include?: Prisma.TrainingBlockInclude
+      include?: T
       select?: Prisma.TrainingBlockSelect
     } = {}
   ) {
@@ -18,7 +18,7 @@ export const trainingBlockRepository = {
     return prisma.trainingBlock.findUnique({
       where: { id },
       include: options.include
-    })
+    }) as unknown as Promise<Prisma.TrainingBlockGetPayload<{ include: T }> | null>
   },
 
   async create(
@@ -64,17 +64,17 @@ export const trainingBlockRepository = {
     })
   },
 
-  async list(
+  async list<T extends Prisma.TrainingBlockInclude>(
     planId: string,
     options: {
       orderBy?: Prisma.TrainingBlockOrderByWithRelationInput
-      include?: Prisma.TrainingBlockInclude
+      include?: T
     } = {}
   ) {
     return prisma.trainingBlock.findMany({
       where: { trainingPlanId: planId },
       orderBy: options.orderBy || { order: 'asc' },
       include: options.include
-    })
+    }) as unknown as Promise<Array<Prisma.TrainingBlockGetPayload<{ include: T }>>>
   }
 }
