@@ -22,6 +22,15 @@
         <div class="flex gap-2 justify-end mt-0 sm:mt-1">
           <UButton
             size="xs"
+            color="neutral"
+            variant="ghost"
+            icon="i-heroicons-list-bullet"
+            @click="showOverview = true"
+          >
+            <span class="hidden sm:inline">Overview</span>
+          </UButton>
+          <UButton
+            size="xs"
             color="primary"
             variant="ghost"
             icon="i-heroicons-squares-plus"
@@ -194,6 +203,9 @@
       :end-date="selectedWeek?.endDate"
       @generate="generatePlanWithAI"
     />
+
+    <!-- Plan Overview Modal -->
+    <PlanOverviewModal v-model:open="showOverview" :plan="plan" />
 
     <!-- Plan Timeline (Proportional) -->
     <div class="space-y-2">
@@ -884,6 +896,7 @@
   import MiniWorkoutChart from '~/components/workouts/MiniWorkoutChart.vue'
   import WeeklyZoneSummary from '~/components/ui/WeeklyZoneSummary.vue'
   import PlanAIModal from '~/components/plans/PlanAIModal.vue'
+  import PlanOverviewModal from '~/components/plans/PlanOverviewModal.vue'
   import PlanTimelineEditor from '~/components/plans/PlanTimelineEditor.vue'
   import { TRAINING_BLOCK_FOCUSES } from '~/utils/training-constants'
   import {
@@ -910,6 +923,7 @@
   const showTimelineEditor = ref(false)
   const showAbandonModal = ref(false)
   const showAIPlanModal = ref(false)
+  const showOverview = ref(false)
   const templateName = ref('')
   const templateDescription = ref('')
   const savingTemplate = ref(false)

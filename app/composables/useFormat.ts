@@ -135,6 +135,17 @@ export const useFormat = () => {
     }
   }
 
+  const formatDuration = (seconds: number) => {
+    if (!seconds) return '-'
+    const hours = Math.floor(seconds / 3600)
+    const mins = Math.round((seconds % 3600) / 60)
+
+    if (hours > 0) {
+      return `${hours}h ${mins}m`
+    }
+    return `${mins}m`
+  }
+
   return {
     formatDate,
     formatDateUTC,
@@ -146,6 +157,7 @@ export const useFormat = () => {
     getUserLocalTime,
     getUserDateFromLocal,
     calculateAge,
+    formatDuration,
     timezone
   }
 }
