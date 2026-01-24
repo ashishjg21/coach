@@ -11,7 +11,7 @@
       color="warning"
       variant="soft"
       :close="{ color: 'warning', variant: 'link', label: 'Dismiss' }"
-      description="Activities synced from Strava to Intervals.icu cannot be automatically imported. Please connect Strava directly or upload FIT files manually."
+      description="Activities synced from Strava to Intervals.icu cannot be automatically imported. Please upload FIT files manually (direct Strava connection is coming soon)."
       @update:open="intervalsStravaWarningDismissed = true"
     />
     <SettingsConnectedApps
