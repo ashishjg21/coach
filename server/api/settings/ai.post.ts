@@ -20,7 +20,8 @@ defineRouteMeta({
               aiModelPreference: { type: 'string', enum: ['flash', 'pro'] },
               aiAutoAnalyzeWorkouts: { type: 'boolean' },
               aiAutoAnalyzeNutrition: { type: 'boolean' },
-              aiContext: { type: 'string', nullable: true }
+              aiContext: { type: 'string', nullable: true },
+              nutritionTrackingEnabled: { type: 'boolean' }
             }
           }
         }
@@ -42,7 +43,8 @@ defineRouteMeta({
                     aiModelPreference: { type: 'string' },
                     aiAutoAnalyzeWorkouts: { type: 'boolean' },
                     aiAutoAnalyzeNutrition: { type: 'boolean' },
-                    aiContext: { type: 'string', nullable: true }
+                    aiContext: { type: 'string', nullable: true },
+                    nutritionTrackingEnabled: { type: 'boolean' }
                   }
                 }
               }
@@ -71,7 +73,8 @@ export default defineEventHandler(async (event) => {
     aiModelPreference,
     aiAutoAnalyzeWorkouts,
     aiAutoAnalyzeNutrition,
-    aiContext
+    aiContext,
+    nutritionTrackingEnabled
   } = body
 
   // Validate inputs
@@ -99,14 +102,16 @@ export default defineEventHandler(async (event) => {
       ...(aiModelPreference !== undefined && { aiModelPreference }),
       ...(aiAutoAnalyzeWorkouts !== undefined && { aiAutoAnalyzeWorkouts }),
       ...(aiAutoAnalyzeNutrition !== undefined && { aiAutoAnalyzeNutrition }),
-      ...(aiContext !== undefined && { aiContext })
+      ...(aiContext !== undefined && { aiContext }),
+      ...(nutritionTrackingEnabled !== undefined && { nutritionTrackingEnabled })
     },
     select: {
       aiPersona: true,
       aiModelPreference: true,
       aiAutoAnalyzeWorkouts: true,
       aiAutoAnalyzeNutrition: true,
-      aiContext: true
+      aiContext: true,
+      nutritionTrackingEnabled: true
     }
   })
 

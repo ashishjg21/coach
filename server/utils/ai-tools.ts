@@ -3,13 +3,15 @@ import { planningTools } from './ai-tools/planning'
 import { recommendationTools } from './ai-tools/recommendations'
 import { analysisTools } from './ai-tools/analysis'
 import { profileTools } from './ai-tools/profile'
+import type { AiSettings } from './ai-settings'
+import { getUserAiSettings } from './ai-settings'
 
-export const getToolsWithContext = (userId: string, timezone: string) => {
+export const getToolsWithContext = (userId: string, timezone: string, settings: AiSettings) => {
   return {
     ...workoutTools(userId, timezone),
     ...planningTools(userId, timezone),
     ...recommendationTools(userId, timezone),
-    ...analysisTools(userId, timezone),
+    ...analysisTools(userId, timezone, settings),
     ...profileTools(userId, timezone)
   }
 }

@@ -6,6 +6,7 @@ import { generateCoachAnalysis, MODEL_NAMES } from '../../utils/gemini'
 import { buildAthleteContext } from '../../utils/services/chatContextService'
 import { prisma } from '../../utils/db'
 import { getUserTimezone } from '../../utils/date'
+import { getUserAiSettings } from '../../utils/ai-settings'
 
 export default defineEventHandler(async (event) => {
   const session = await getServerSession(event)
@@ -126,14 +127,14 @@ export default defineEventHandler(async (event) => {
   // 2. Build Athlete Context (Extracted to Service)
   const { userProfile, systemInstruction } = await buildAthleteContext(userId)
   const timezone = await getUserTimezone(userId)
+  const aiSettings = await getUserAiSettings(userId)
 
   // 3. Initialize Model and Tools
   const google = createGoogleGenerativeAI({
     apiKey: process.env.GEMINI_API_KEY
   })
-  const modelType = userProfile?.aiModelPreference === 'flash' ? 'flash' : 'pro'
-  const modelName = MODEL_NAMES[modelType]
-  const tools = getToolsWithContext(userId, timezone)
+  const modelName = MODEL_NAMES[aiSettings.aiModelPreference]
+  const tools = getToolsWithContext(userId, timezone, aiSettings)
 
   // 4. Stream Text
   try {

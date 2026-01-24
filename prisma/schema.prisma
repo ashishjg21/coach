@@ -67,6 +67,7 @@ model User {
   aiAutoAnalyzeWorkouts Boolean @default(false) // Auto-analyze workouts on sync
   aiAutoAnalyzeNutrition Boolean @default(false) // Auto-analyze nutrition logs on sync
   aiContext            String?  @db.Text
+  nutritionTrackingEnabled Boolean @default(true) // User can disable nutrition tracking
 
   // Athlete Profile Scores (1-10 scale, updated periodically from profile generation)
   currentFitnessScore       Int?      // Current overall fitness level

@@ -12,7 +12,14 @@ vi.mock('../../../../../server/utils/repositories/workoutRepository', () => ({
 describe('analysisTools', () => {
   const userId = 'user-123'
   const timezone = 'UTC'
-  const tools = analysisTools(userId, timezone)
+  const mockSettings = {
+    aiPersona: 'Supportive',
+    aiModelPreference: 'flash',
+    aiAutoAnalyzeWorkouts: false,
+    aiAutoAnalyzeNutrition: false,
+    nutritionTrackingEnabled: true
+  }
+  const tools = analysisTools(userId, timezone, mockSettings)
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -39,6 +46,23 @@ describe('analysisTools', () => {
         avg_tss: 75,
         metrics: expect.any(String)
       })
+    })
+  })
+
+  describe('generate_report', () => {
+    it('should only include nutrition reports when enabled', () => {
+      const settingsWithNutrition = { ...mockSettings, nutritionTrackingEnabled: true }
+      const toolsWithNutrition = analysisTools(userId, timezone, settingsWithNutrition)
+      const schemaWithNutrition = (toolsWithNutrition.generate_report.inputSchema as any).shape.type
+      expect(() => schemaWithNutrition.parse('WEEKLY_NUTRITION')).not.toThrow()
+      expect(() => schemaWithNutrition.parse('LAST_3_NUTRITION')).not.toThrow()
+
+      const settingsWithoutNutrition = { ...mockSettings, nutritionTrackingEnabled: false }
+      const toolsWithoutNutrition = analysisTools(userId, timezone, settingsWithoutNutrition)
+      const schemaWithoutNutrition = (toolsWithoutNutrition.generate_report.inputSchema as any)
+        .shape.type
+      expect(() => schemaWithoutNutrition.parse('WEEKLY_NUTRITION')).toThrow()
+      expect(() => schemaWithoutNutrition.parse('LAST_3_NUTRITION')).toThrow()
     })
   })
 
