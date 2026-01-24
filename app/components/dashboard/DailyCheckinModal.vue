@@ -30,7 +30,7 @@
             v-if="checkin?.openingRemark"
             class="text-sm text-gray-600 dark:text-gray-300 italic bg-primary-50 dark:bg-primary-900/10 p-3 rounded-md border border-primary-100 dark:border-primary-800"
           >
-            "{{ checkin.openingRemark }}"
+            {{ checkin.openingRemark }}
           </p>
 
           <UCard
