@@ -198,6 +198,39 @@
                     <UIcon name="i-heroicons-calendar" class="w-4 h-4" />
                     Target: {{ formatDate(goal.eventDate || goal.targetDate) }}
                   </div>
+
+                  <!-- Events List -->
+                  <div v-if="goal.events?.length > 0" class="mt-3 space-y-1.5">
+                    <div class="text-[10px] uppercase font-bold text-muted tracking-wider">
+                      Associated Events
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                      <div
+                        v-for="event in goal.events"
+                        :key="event.id"
+                        class="flex items-center gap-1.5 px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                      >
+                        <UIcon
+                          name="i-heroicons-flag"
+                          class="w-3 h-3"
+                          :class="event.priority === 'A' ? 'text-amber-500' : 'text-gray-400'"
+                        />
+                        <span class="text-[10px] font-medium">{{ event.title }}</span>
+                        <span class="text-[10px] text-muted"
+                          >• {{ formatDateUTC(event.date, 'MMM d') }}</span
+                        >
+                        <UBadge
+                          v-if="event.priority"
+                          size="xs"
+                          variant="soft"
+                          :color="event.priority === 'A' ? 'warning' : 'neutral'"
+                          class="text-[8px] px-1 py-0 h-3"
+                        >
+                          {{ event.priority }}
+                        </UBadge>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <UBadge :color="getPriorityColor(goal.priority)">{{ goal.priority }}</UBadge>
               </div>
@@ -870,7 +903,7 @@
 
   const emit = defineEmits(['close', 'plan-created'])
   const toast = useToast()
-  const { formatDate, getUserLocalDate, timezone, calculateAge } = useFormat()
+  const { formatDate, formatDateUTC, getUserLocalDate, timezone, calculateAge } = useFormat()
   const userStore = useUserStore()
 
   // State
