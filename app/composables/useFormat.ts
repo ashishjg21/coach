@@ -119,6 +119,22 @@ export const useFormat = () => {
     }
   }
 
+  const calculateAge = (dob: Date | string | null | undefined): number => {
+    if (!dob) return 0
+    try {
+      const birthDate = new Date(dob)
+      const today = new Date()
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const m = today.getMonth() - birthDate.getMonth()
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--
+      }
+      return age
+    } catch (e) {
+      return 0
+    }
+  }
+
   return {
     formatDate,
     formatDateUTC,
@@ -129,6 +145,7 @@ export const useFormat = () => {
     getUserLocalDate,
     getUserLocalTime,
     getUserDateFromLocal,
+    calculateAge,
     timezone
   }
 }

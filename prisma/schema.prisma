@@ -68,6 +68,7 @@ model User {
   aiAutoAnalyzeNutrition Boolean @default(false) // Auto-analyze nutrition logs on sync
   aiContext            String?  @db.Text
   nutritionTrackingEnabled Boolean @default(true) // User can disable nutrition tracking
+  recoverySensitivity String? @default("MEDIUM") // "LOW", "MEDIUM", "HIGH"
 
   // Athlete Profile Scores (1-10 scale, updated periodically from profile generation)
   currentFitnessScore       Int?      // Current overall fitness level
@@ -1368,6 +1369,7 @@ model TrainingPlan {
   strategy    String   @default("LINEAR") // LINEAR, UNDULATING, BLOCK, POLARIZED
   activityTypes Json?  // Preferred workout types: ["Ride", "Run", "Gym", "Swim"]
   customInstructions String? @db.Text
+  recoveryRhythm Int @default(4) // Total weeks in a cycle (e.g., 4 = 3 build + 1 recovery)
   status      String   @default("ACTIVE") // DRAFT, ACTIVE, COMPLETED, ARCHIVED, ABANDONED
   
   currentBlockId String? // Shortcut to current block for quick UI access
