@@ -432,14 +432,24 @@
           </UButton>
         </div>
         <div v-else class="flex items-center gap-2">
-          <UBadge color="success" variant="soft" size="sm">Connected</UBadge>
           <UButton
-            color="error"
-            variant="ghost"
+            color="success"
+            variant="solid"
             size="sm"
-            icon="i-heroicons-trash"
-            @click="$emit('disconnect', 'telegram')"
-          />
+            class="font-bold"
+            icon="i-heroicons-check-circle"
+          >
+            Connected
+          </UButton>
+
+          <UDropdownMenu :items="telegramActions">
+            <UButton
+              color="neutral"
+              variant="outline"
+              size="sm"
+              icon="i-heroicons-ellipsis-vertical"
+            />
+          </UDropdownMenu>
         </div>
       </div>
     </UCard>
@@ -600,6 +610,17 @@
         icon: 'i-heroicons-trash',
         color: 'error' as const,
         onSelect: () => emit('disconnect', 'strava')
+      }
+    ]
+  ])
+
+  const telegramActions = computed(() => [
+    [
+      {
+        label: 'Disconnect',
+        icon: 'i-heroicons-trash',
+        color: 'error' as const,
+        onSelect: () => emit('disconnect', 'telegram')
       }
     ]
   ])
