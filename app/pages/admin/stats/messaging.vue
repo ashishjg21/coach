@@ -56,7 +56,7 @@
     if (!stats.value?.dailyVolume) return { labels: [], datasets: [] }
     return {
       labels: stats.value.dailyVolume.map((d) =>
-        new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+        new Date(d.date as string).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
       ),
       datasets: [
         {

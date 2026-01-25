@@ -159,6 +159,7 @@ export default defineEventHandler(async (event) => {
       system: systemInstruction,
       messages: coreMessages as any,
       tools: tools as any,
+      // @ts-expect-error - maxSteps is valid in AI SDK v6 but types are finicky with 'any' tools
       maxSteps: 5 // Allow multi-step tool use
     })
 
