@@ -225,7 +225,8 @@ export default defineNuxtConfig({
     routes: [
       '/api/integrations/withings/webhook',
       '/api/integrations/whoop/webhook',
-      '/api/integrations/intervals/webhook'
+      '/api/integrations/intervals/webhook',
+      '/api/integrations/fitbit/webhook'
     ],
     retryAfterHeader: true
   }

@@ -16,6 +16,11 @@ export default defineEventHandler(async (event) => {
   const verifyCode = query.verify
   const expectedCode = process.env.FITBIT_SUBSCRIBER_VERIFICATION_CODE
 
+  console.log('[Fitbit Webhook] Verification request:', {
+    received: verifyCode,
+    expected: expectedCode ? '***' + expectedCode.slice(-4) : 'NOT_SET'
+  })
+
   if (!expectedCode) {
     console.warn('[Fitbit Webhook] FITBIT_SUBSCRIBER_VERIFICATION_CODE not set')
     throw createError({ statusCode: 404 })
