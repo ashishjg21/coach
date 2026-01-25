@@ -32,6 +32,7 @@ Special thanks to everyone who has contributed code, documentation, or feedback 
 - **Wayne_Hadley** - Encouragement and comparative feedback on AI coaching effectiveness.
 - **David_Camilo_Chaves** - Feedback on AI insights and recommendations.
 - **Manuel_Oberti** - Initial testing and UI feedback.
+- **red_one** - Implemented Fitbit integration including nutrition syncing and webhook handling.
 - **Clive_King**, **Back2Basics**, **Jacob_Pescini**, **koldoc**, **Cooper**, **Arnel_Almazan** - For their encouragement, testing, and spreading the word.
 
 ## 🛠️ Built With
