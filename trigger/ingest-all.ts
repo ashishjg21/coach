@@ -6,6 +6,7 @@ import { ingestWhoopTask } from './ingest-whoop'
 import { ingestWithingsTask } from './ingest-withings'
 import { ingestIntervalsTask } from './ingest-intervals'
 import { ingestYazioTask } from './ingest-yazio'
+import { ingestFitbitTask } from './ingest-fitbit'
 import { ingestHevyTask } from './ingest-hevy'
 import { generateAthleteProfileTask } from './generate-athlete-profile'
 import { processSyncQueueTask } from './process-sync-queue'
@@ -95,6 +96,12 @@ export const ingestAllTask = task({
             payload: taskPayload
           })
           break
+        case 'fitbit':
+          tasksTrigger.push({
+            task: ingestFitbitTask,
+            payload: taskPayload
+          })
+          break
         case 'hevy':
           tasksTrigger.push({
             task: ingestHevyTask,
@@ -130,6 +137,7 @@ export const ingestAllTask = task({
         if (item.task.id === 'ingest-withings' && i.provider === 'withings') return true
         if (item.task.id === 'ingest-intervals' && i.provider === 'intervals') return true
         if (item.task.id === 'ingest-yazio' && i.provider === 'yazio') return true
+        if (item.task.id === 'ingest-fitbit' && i.provider === 'fitbit') return true
         if (item.task.id === ingestHevyTask.id && i.provider === 'hevy') return true
         return false
       })

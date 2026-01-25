@@ -32,6 +32,10 @@ export const useIntegrationStore = defineStore('integration', () => {
     () => integrationStatus.value?.integrations?.some((i) => i.provider === 'whoop') ?? false
   )
 
+  const fitbitConnected = computed(
+    () => integrationStatus.value?.integrations?.some((i) => i.provider === 'fitbit') ?? false
+  )
+
   const lastSyncTime = computed(() => {
     if (!integrationStatus.value?.integrations) return null
 
@@ -89,6 +93,7 @@ export const useIntegrationStore = defineStore('integration', () => {
     syncingData,
     intervalsConnected,
     whoopConnected,
+    fitbitConnected,
     lastSyncTime,
     fetchStatus,
     syncAllData

@@ -525,7 +525,7 @@
                           <span v-if="item.serving_quantity"> × {{ item.serving_quantity }}</span>
                         </div>
                       </div>
-                      <div class="text-xs text-gray-500">
+                      <div v-if="item.date && item.source !== 'fitbit'" class="text-xs text-gray-500">
                         {{ formatTime(item.date) }}
                       </div>
                     </div>
@@ -559,7 +559,7 @@
                           <span v-if="item.serving_quantity"> × {{ item.serving_quantity }}</span>
                         </div>
                       </div>
-                      <div class="text-xs text-gray-500">
+                      <div v-if="item.date && item.source !== 'fitbit'" class="text-xs text-gray-500">
                         {{ formatTime(item.date) }}
                       </div>
                     </div>
@@ -593,7 +593,7 @@
                           <span v-if="item.serving_quantity"> × {{ item.serving_quantity }}</span>
                         </div>
                       </div>
-                      <div class="text-xs text-gray-500">
+                      <div v-if="item.date && item.source !== 'fitbit'" class="text-xs text-gray-500">
                         {{ formatTime(item.date) }}
                       </div>
                     </div>
@@ -627,7 +627,7 @@
                           <span v-if="item.serving_quantity"> × {{ item.serving_quantity }}</span>
                         </div>
                       </div>
-                      <div class="text-xs text-gray-500">
+                      <div v-if="item.date && item.source !== 'fitbit'" class="text-xs text-gray-500">
                         {{ formatTime(item.date) }}
                       </div>
                     </div>

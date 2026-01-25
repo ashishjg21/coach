@@ -210,6 +210,52 @@
       </div>
     </UCard>
 
+    <!-- Fitbit -->
+    <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
+      <div class="flex items-start gap-4">
+        <div
+          class="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-emerald-200 dark:ring-emerald-900"
+        >
+          <span class="text-emerald-700 font-semibold text-sm">Fitbit</span>
+        </div>
+        <div>
+          <h3 class="font-semibold">Fitbit</h3>
+          <p class="text-sm text-muted">Nutrition history and food logs</p>
+        </div>
+      </div>
+
+      <div
+        class="flex items-center justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800 mt-auto"
+      >
+        <div v-if="!fitbitConnected">
+          <UButton color="neutral" variant="outline" @click="navigateTo('/connect-fitbit')">
+            Connect
+          </UButton>
+        </div>
+        <div v-else class="flex items-center gap-2">
+          <UButton
+            color="success"
+            variant="solid"
+            size="sm"
+            class="font-bold"
+            icon="i-heroicons-arrow-path"
+            :loading="syncingProviders.has('fitbit')"
+            @click="$emit('sync', 'fitbit')"
+          >
+            Sync Now
+          </UButton>
+          <UDropdownMenu :items="fitbitActions">
+            <UButton
+              color="neutral"
+              variant="outline"
+              size="sm"
+              icon="i-heroicons-ellipsis-vertical"
+            />
+          </UDropdownMenu>
+        </div>
+      </div>
+    </UCard>
+
     <!-- Hevy -->
     <UCard :ui="{ body: 'flex flex-col h-full justify-between gap-4' }">
       <div class="flex items-start gap-4">
@@ -396,6 +442,7 @@
     whoopIngestWorkouts: boolean
     withingsConnected: boolean
     yazioConnected: boolean
+    fitbitConnected: boolean
     stravaConnected: boolean
     hevyConnected: boolean
     syncingProviders: Set<string>
@@ -474,6 +521,17 @@
         icon: 'i-heroicons-trash',
         color: 'error' as const,
         onSelect: () => emit('disconnect', 'yazio')
+      }
+    ]
+  ])
+
+  const fitbitActions = computed(() => [
+    [
+      {
+        label: 'Disconnect',
+        icon: 'i-heroicons-trash',
+        color: 'error' as const,
+        onSelect: () => emit('disconnect', 'fitbit')
       }
     ]
   ])

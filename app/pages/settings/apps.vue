@@ -20,6 +20,7 @@
       :whoop-ingest-workouts="whoopIngestWorkouts"
       :withings-connected="withingsConnected"
       :yazio-connected="yazioConnected"
+      :fitbit-connected="fitbitConnected"
       :strava-connected="stravaConnected"
       :hevy-connected="hevyConnected"
       :syncing-providers="syncingProviders"
@@ -50,7 +51,7 @@
       {
         name: 'description',
         content:
-          'Manage your connected apps and integrations (Intervals.icu, WHOOP, Withings, Strava, Yazio).'
+          'Manage your connected apps and integrations (Intervals.icu, WHOOP, Withings, Strava, Yazio, Fitbit).'
       }
     ]
   })
@@ -86,6 +87,10 @@
 
   const yazioConnected = computed(
     () => integrationStatus.value?.integrations?.some((i: any) => i.provider === 'yazio') ?? false
+  )
+
+  const fitbitConnected = computed(
+    () => integrationStatus.value?.integrations?.some((i: any) => i.provider === 'fitbit') ?? false
   )
 
   const stravaConnected = computed(
@@ -138,6 +143,8 @@
               ? 'Withings'
               : provider === 'yazio'
                 ? 'Yazio'
+                : provider === 'fitbit'
+                  ? 'Fitbit'
                 : provider === 'hevy'
                   ? 'Hevy'
                   : 'Strava'
@@ -184,6 +191,8 @@
               ? 'Withings'
               : provider === 'yazio'
                 ? 'Yazio'
+                : provider === 'fitbit'
+                  ? 'Fitbit'
                 : 'Strava'
 
       toast.add({
@@ -234,6 +243,7 @@
       route.query.whoop_success ||
       route.query.withings_success ||
       route.query.strava_success ||
+      route.query.fitbit_success ||
       route.query.connected === 'yazio'
     ) {
       if (route.query.whoop_success) {
@@ -257,6 +267,13 @@
           color: 'success'
         })
         refreshIntegrations()
+      } else if (route.query.fitbit_success) {
+        toast.add({
+          title: 'Connected!',
+          description: 'Successfully connected to Fitbit',
+          color: 'success'
+        })
+        refreshIntegrations()
       } else if (route.query.connected === 'yazio') {
         toast.add({
           title: 'Connected!',
@@ -266,15 +283,23 @@
         refreshIntegrations()
       }
       router.replace({ query: {} })
-    } else if (route.query.whoop_error || route.query.withings_error || route.query.strava_error) {
+    } else if (
+      route.query.whoop_error ||
+      route.query.withings_error ||
+      route.query.strava_error ||
+      route.query.fitbit_error
+    ) {
       const errorMsg = (route.query.whoop_error ||
         route.query.withings_error ||
-        route.query.strava_error) as string
+        route.query.strava_error ||
+        route.query.fitbit_error) as string
       const provider = route.query.whoop_error
         ? 'WHOOP'
         : route.query.withings_error
           ? 'Withings'
-          : 'Strava'
+          : route.query.fitbit_error
+            ? 'Fitbit'
+            : 'Strava'
       const description =
         errorMsg === 'no_code'
           ? 'Authorization was cancelled or no code was received'

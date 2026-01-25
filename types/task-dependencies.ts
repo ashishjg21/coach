@@ -98,6 +98,18 @@ export const TASK_DEPENDENCIES: Record<string, TaskDefinition> = {
     triggerId: 'ingest-yazio'
   },
 
+  'ingest-fitbit': {
+    id: 'ingest-fitbit',
+    name: 'Sync Fitbit',
+    description: 'Import nutrition history and meal logs from Fitbit',
+    category: 'ingestion',
+    dependsOn: [],
+    estimatedDuration: 25,
+    required: false,
+    endpoint: '/api/integrations/sync',
+    triggerId: 'ingest-fitbit'
+  },
+
   'ingest-strava': {
     id: 'ingest-strava',
     name: 'Sync Strava',
@@ -145,7 +157,7 @@ export const TASK_DEPENDENCIES: Record<string, TaskDefinition> = {
     name: 'Analyze Nutrition',
     description: 'AI analysis of recent nutrition entries for quality and adherence',
     category: 'analysis',
-    dependsOn: ['ingest-yazio'],
+    dependsOn: ['ingest-yazio', 'ingest-fitbit'],
     estimatedDuration: 40,
     required: false,
     endpoint: '/api/nutrition/analyze-all',

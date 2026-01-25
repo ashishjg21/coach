@@ -16,7 +16,7 @@ defineRouteMeta({
             properties: {
               provider: {
                 type: 'string',
-                enum: ['intervals', 'whoop', 'withings', 'yazio', 'strava', 'hevy', 'all']
+                enum: ['intervals', 'whoop', 'withings', 'yazio', 'strava', 'hevy', 'fitbit', 'all']
               },
               days: {
                 type: 'number',
@@ -75,12 +75,12 @@ export default defineEventHandler(async (event) => {
 
   if (
     !provider ||
-    !['intervals', 'whoop', 'withings', 'yazio', 'strava', 'hevy', 'all'].includes(provider)
+    !['intervals', 'whoop', 'withings', 'yazio', 'strava', 'hevy', 'fitbit', 'all'].includes(provider)
   ) {
     throw createError({
       statusCode: 400,
       message:
-        'Invalid provider. Must be "intervals", "whoop", "withings", "yazio", "strava", "hevy", or "all"'
+        'Invalid provider. Must be "intervals", "whoop", "withings", "yazio", "strava", "hevy", "fitbit", or "all"'
     })
   }
 
@@ -122,7 +122,9 @@ export default defineEventHandler(async (event) => {
     // For Withings: last 90 days
     // For Yazio: last 5 days (to avoid rate limiting - older data is kept as-is)
     // For Strava: last 7 days (to respect API rate limits - 200 req/15min, 2000/day)
-    let daysBack = provider === 'yazio' ? 5 : provider === 'strava' ? 7 : 90
+    // For Fitbit: last 7 days (nutrition history)
+    let daysBack =
+      provider === 'yazio' ? 5 : provider === 'strava' ? 7 : provider === 'fitbit' ? 7 : 90
 
     // Logic for Intervals.icu:
     // If it's the first sync (initialSyncCompleted is false), fetch 90 days history
@@ -172,7 +174,9 @@ export default defineEventHandler(async (event) => {
               ? 'ingest-yazio'
               : provider === 'strava'
                 ? 'ingest-strava'
-                : 'ingest-hevy'
+                : provider === 'fitbit'
+                  ? 'ingest-fitbit'
+                  : 'ingest-hevy'
 
   try {
     const handle = await tasks.trigger(

@@ -183,6 +183,34 @@
               Connect
             </UButton>
           </UCard>
+
+          <!-- Fitbit -->
+          <UCard
+            class="hover:ring-2 hover:ring-emerald-500/20 transition-all cursor-pointer"
+            @click="navigateTo('/connect-fitbit')"
+          >
+            <div class="flex items-center gap-3 mb-3">
+              <div
+                class="w-8 h-8 bg-emerald-50 rounded-md flex items-center justify-center overflow-hidden ring-1 ring-emerald-200 dark:ring-emerald-900"
+              >
+                <span class="text-[10px] font-semibold text-emerald-700">Fitbit</span>
+              </div>
+              <h4 class="font-bold text-gray-900 dark:text-white">Fitbit</h4>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-4 h-10">
+              Pull nutrition history and daily food logs.
+            </p>
+            <UButton
+              to="/connect-fitbit"
+              variant="soft"
+              color="success"
+              size="xs"
+              block
+              icon="i-heroicons-plus"
+            >
+              Connect
+            </UButton>
+          </UCard>
         </div>
       </div>
 
