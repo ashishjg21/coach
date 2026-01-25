@@ -2,6 +2,7 @@ import { prisma } from '../db'
 import {
   fetchIntervalsAthleteProfile,
   fetchIntervalsWorkouts,
+  fetchIntervalsActivity,
   fetchIntervalsWellness,
   fetchIntervalsPlannedWorkouts,
   normalizeIntervalsWorkout,
@@ -126,7 +127,17 @@ export const IntervalsService = {
 
     let upsertedCount = 0
 
-    for (const activity of activities) {
+    for (const summaryActivity of activities) {
+      // Fetch detailed activity data to get icu_intervals and other granular fields
+      let activity = summaryActivity
+      try {
+        activity = await fetchIntervalsActivity(integration, summaryActivity.id)
+      } catch (error) {
+        console.warn(
+          `[IntervalsService] Failed to fetch detailed activity ${summaryActivity.id}, using summary data. Error: ${error}`
+        )
+      }
+
       const workout = normalizeIntervalsWorkout(activity, userId)
 
       // Link to Planned Workout if paired in Intervals.icu
@@ -437,6 +448,60 @@ export const IntervalsService = {
     }
 
     const plannedWorkouts = await fetchIntervalsPlannedWorkouts(integration, startDate, endDate)
+
+    // SMART SYNC RECONCILIATION
+    // Remove local items that no longer exist in Intervals (orphans)
+    // This handles deletions/moves that missed webhooks
+    const validExternalIds = new Set(plannedWorkouts.map((p) => String(p.id)))
+
+    // 1. Find potential orphans in PlannedWorkout
+    // Only check items that are marked as SYNCED (or default)
+    // Pending/Failed items are local-only or waiting for sync, so we keep them.
+    const localWorkouts = await prisma.plannedWorkout.findMany({
+      where: {
+        userId,
+        date: { gte: startDate, lte: endDate },
+        OR: [{ syncStatus: 'SYNCED' }, { syncStatus: null }]
+      },
+      select: { externalId: true }
+    })
+
+    // 2. Find potential orphans in CalendarNote
+    const localNotes = await prisma.calendarNote.findMany({
+      where: {
+        userId,
+        startDate: { gte: startDate, lte: endDate },
+        source: 'intervals'
+      },
+      select: { externalId: true }
+    })
+
+    // 3. Find potential orphans in Event
+    const localEvents = await prisma.event.findMany({
+      where: {
+        userId,
+        date: { gte: startDate, lte: endDate },
+        source: 'intervals'
+      },
+      select: { externalId: true }
+    })
+
+    // Collect all local IDs found in this window
+    const allLocalIds = new Set([
+      ...localWorkouts.map((w) => w.externalId!),
+      ...localNotes.map((n) => n.externalId),
+      ...localEvents.map((e) => e.externalId!)
+    ])
+
+    // Identify orphans (Local IDs NOT present in Remote Response)
+    const orphans = [...allLocalIds].filter((id) => !validExternalIds.has(id))
+
+    if (orphans.length > 0) {
+      console.log(
+        `[Intervals Sync] 🧹 Reconciliation: Deleting ${orphans.length} orphaned items (Ghosts) that no longer exist in Intervals.`
+      )
+      await IntervalsService.deletePlannedWorkouts(userId, orphans)
+    }
 
     // Fetch existing workouts to preserve local structure (exercises) if remote is text-only
     const externalIds = plannedWorkouts.map((p) => String(p.id))
