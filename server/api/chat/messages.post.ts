@@ -155,6 +155,7 @@ export default defineEventHandler(async (event) => {
     // Map approval IDs to tool call IDs to ensure consistency
     const approvalIdMap = new Map<string, string>()
     for (const m of historyMessages) {
+      // 1. Check message parts (if preserved by client)
       if (m.role === 'assistant' && Array.isArray(m.parts)) {
         m.parts.forEach((p: any) => {
           if (p.type === 'tool-approval-request' && p.approvalId && p.toolCallId) {
@@ -162,7 +163,20 @@ export default defineEventHandler(async (event) => {
           }
         })
       }
+
+      // 2. Check metadata (fallback for stripped parts)
+      if (m.role === 'assistant' && m.metadata?.toolApprovals) {
+        const approvals = m.metadata.toolApprovals
+        if (Array.isArray(approvals)) {
+          approvals.forEach((approval: any) => {
+            if (approval.approvalId && approval.toolCallId) {
+              approvalIdMap.set(approval.approvalId, approval.toolCallId)
+            }
+          })
+        }
+      }
     }
+    console.log(`[Chat API] Mapped ${approvalIdMap.size} tool approvals`)
 
     for (const msg of historyMessages) {
       if (msg.role === 'tool') {
@@ -199,6 +213,68 @@ export default defineEventHandler(async (event) => {
       const converted = await convertToModelMessages([msg])
 
       for (const coreMsg of converted) {
+        // Patch: Inject tool-call parts from tool-approval-request parts
+        // convertToModelMessages ignores our custom 'tool-approval-request' parts,
+        // leading to missing tool calls in the history which invalidates the prompt schema.
+        if (coreMsg.role === 'assistant') {
+          const approvalParts = (msg.parts || []).filter(
+            (p: any) => p.type === 'tool-approval-request'
+          )
+
+          if (approvalParts.length > 0) {
+            // Filter approvals: Only inject tool-call if a subsequent tool message specifically references it.
+            // If the user replied with text (e.g. "No"), we must NOT inject the tool-call,
+            // otherwise Gemini will error expecting a tool result.
+            const currentMsgIndex = historyMessages.indexOf(msg)
+            const subsequentMessages = historyMessages.slice(currentMsgIndex + 1)
+
+            const validApprovalParts = approvalParts.filter((ap: any) => {
+              const id = ap.toolCallId || ap.approvalId
+              if (!id) return false
+
+              return subsequentMessages.some(
+                (m: any) =>
+                  m.role === 'tool' &&
+                  (Array.isArray(m.content) ? m.content : m.parts || []).some(
+                    (p: any) => p.toolCallId === id || p.approvalId === id
+                  )
+              )
+            })
+
+            if (validApprovalParts.length > 0) {
+              // Ensure content is an array
+              if (typeof coreMsg.content === 'string') {
+                coreMsg.content = [{ type: 'text', text: coreMsg.content }]
+              } else if (!Array.isArray(coreMsg.content)) {
+                coreMsg.content = []
+              }
+
+              const existingCalls = (coreMsg.content as any[]).filter((p) => p.type === 'tool-call')
+
+              validApprovalParts.forEach((ap: any) => {
+                // Extract details from nested toolCall object or direct properties
+                const toolCallId = ap.toolCallId || ap.approvalId
+                const toolName = ap.toolCall?.toolName || ap.toolName || ap.name
+                const args = ap.toolCall?.args || ap.args
+
+                // Only add if not already present
+                if (
+                  toolCallId &&
+                  toolName &&
+                  !existingCalls.find((ec) => ec.toolCallId === toolCallId)
+                ) {
+                  ;(coreMsg.content as any[]).push({
+                    type: 'tool-call',
+                    toolCallId,
+                    toolName,
+                    args: args || {}
+                  })
+                }
+              })
+            }
+          }
+        }
+
         // Ensure no empty assistant messages
         if (
           coreMsg.role === 'assistant' &&
@@ -580,11 +656,22 @@ export default defineEventHandler(async (event) => {
     return result.toUIMessageStreamResponse({
       onError: (error) => {
         console.error('[Chat API] Stream error:', error)
-        return 'An error occurred while generating the response.'
+        console.error('[Chat API] Error Stack:', error.stack)
+        const errorMsg = error.message || 'Unknown error'
+        // Handle specific history sync errors gracefully
+        if (
+          errorMsg.includes('tool result without matching tool call') ||
+          errorMsg.includes('history')
+        ) {
+          return 'Chat history sync error. Please refresh the page or start a new chat.'
+        }
+        return `An error occurred while generating the response: ${errorMsg}`
       }
     })
   } catch (error: any) {
     console.error('[Chat] Error in streamText:', error)
+    console.error('[Chat] Error Stack:', error.stack)
+    console.error('[Chat] Request Context:', { roomId, userId, messageCount: messages?.length })
 
     // Check for history/sequence errors which often indicate corrupted legacy chats
     const errorStr = (error.message || '').toLowerCase()

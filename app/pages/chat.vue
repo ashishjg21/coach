@@ -66,6 +66,7 @@
         return
       }
       console.error('[Chat] onError triggered:', error)
+      console.error('[Chat] Error Stack:', error.stack)
     },
     onToolCall: (toolCall) => {
       console.log('[Chat] onToolCall triggered:', toolCall.toolCall.toolName)
