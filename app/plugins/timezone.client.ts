@@ -23,6 +23,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
         if (detectedTimezone) {
           // Call API to update profile
+          // @ts-expect-error -- complex types
           await $fetch('/api/profile', {
             method: 'PATCH',
             body: {
