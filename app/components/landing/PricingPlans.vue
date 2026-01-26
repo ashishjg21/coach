@@ -107,7 +107,7 @@
           </li>
         </ul>
 
-        <template #footer>
+        <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
           <UButton
             :color="plan.popular ? 'primary' : 'neutral'"
             :variant="plan.popular ? 'solid' : 'outline'"
@@ -118,7 +118,7 @@
           >
             {{ getButtonLabel(plan) }}
           </UButton>
-        </template>
+        </div>
       </UCard>
     </div>
   </div>
