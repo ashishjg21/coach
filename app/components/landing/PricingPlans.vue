@@ -154,15 +154,22 @@
       return 'Current Plan'
     }
 
-    if (plan.key === 'free') {
-      return status.value === 'authenticated' ? 'Get Started' : 'Sign Up'
+    if (status.value !== 'authenticated') {
+      return plan.key === 'free' ? 'Sign Up' : 'Get Started'
     }
 
-    if (status.value === 'authenticated') {
-      return 'Upgrade'
+    const currentTier = userStore.user?.subscriptionTier || 'FREE'
+
+    // Tier hierarchy logic
+    const tiers = ['FREE', 'SUPPORTER', 'PRO']
+    const currentLevel = tiers.indexOf(currentTier)
+    const planLevel = tiers.indexOf(plan.key.toUpperCase())
+
+    if (planLevel < currentLevel) {
+      return 'Downgrade'
     }
 
-    return plan.name === 'Supporter' ? 'Go Supporter' : 'Become Pro'
+    return 'Upgrade'
   }
 
   async function handlePlanSelect(plan: PricingPlan) {
