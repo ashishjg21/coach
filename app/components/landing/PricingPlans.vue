@@ -96,7 +96,7 @@
           </p>
         </template>
 
-        <ul class="space-y-3 flex-grow flex flex-col justify-start">
+        <ul class="space-y-3 flex-grow flex flex-col justify-start min-h-[12rem]">
           <li
             v-for="(feature, fIndex) in plan.features"
             :key="fIndex"
