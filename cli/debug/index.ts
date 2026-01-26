@@ -22,6 +22,8 @@ import compareIntervalsCommand from './compare-intervals'
 import calendarCommand from './calendar'
 import planCommand from './plan'
 import checkPlannedStepsCommand from './check-planned-steps'
+import authLogicCommand from './auth-logic'
+import subscriptionCommand from './subscription'
 
 const debugCommand = new Command('debug').description('Debugging utilities')
 
@@ -48,5 +50,7 @@ debugCommand.addCommand(compareIntervalsCommand)
 debugCommand.addCommand(calendarCommand)
 debugCommand.addCommand(planCommand)
 debugCommand.addCommand(checkPlannedStepsCommand)
+debugCommand.addCommand(authLogicCommand)
+debugCommand.addCommand(subscriptionCommand)
 
 export default debugCommand
