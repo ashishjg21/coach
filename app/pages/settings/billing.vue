@@ -7,9 +7,7 @@
       </div>
       <div v-if="userStore.user?.subscriptionStatus" class="hidden sm:block">
         <UBadge
-          :color="getStatusColor(userStore.user?.subscriptionStatus)"
-          variant="subtle"
-          size="lg"
+          :color="getStatusColor(userStore.user?.subscriptionStatus) as any"
           class="font-semibold"
         >
           {{ formatTier(userStore.user?.subscriptionTier) }} •
@@ -98,7 +96,7 @@
               <dt class="text-xs font-bold text-gray-400 uppercase tracking-wider">Status</dt>
               <dd class="mt-1">
                 <UBadge
-                  :color="getStatusColor(userStore.user?.subscriptionStatus)"
+                  :color="getStatusColor(userStore.user?.subscriptionStatus) as any"
                   variant="subtle"
                 >
                   {{ formatStatus(userStore.user?.subscriptionStatus) }}
@@ -171,7 +169,7 @@
             class="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800"
           >
             <span class="text-sm">Sync Mode</span>
-            <UBadge :color="entitlements?.autoSync ? 'green' : 'gray'" size="xs">
+            <UBadge :color="entitlements?.autoSync ? 'success' : 'neutral'" size="xs">
               {{ entitlements?.autoSync ? 'Automatic' : 'Manual' }}
             </UBadge>
           </div>
@@ -179,7 +177,7 @@
             class="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800"
           >
             <span class="text-sm">Analysis</span>
-            <UBadge :color="entitlements?.autoAnalysis ? 'green' : 'gray'" size="xs">
+            <UBadge :color="entitlements?.autoAnalysis ? 'success' : 'neutral'" size="xs">
               {{ entitlements?.autoAnalysis ? 'Always-On' : 'On-Demand' }}
             </UBadge>
           </div>
@@ -187,7 +185,7 @@
             class="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800"
           >
             <span class="text-sm">AI Engine</span>
-            <UBadge :color="entitlements?.aiModel === 'pro' ? 'purple' : 'blue'" size="xs">
+            <UBadge :color="entitlements?.aiModel === 'pro' ? 'primary' : 'info'" size="xs">
               {{ entitlements?.aiModel === 'pro' ? 'Deep' : 'Standard' }}
             </UBadge>
           </div>
@@ -195,13 +193,13 @@
             class="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800"
           >
             <span class="text-sm">Priority</span>
-            <UBadge :color="entitlements?.priorityProcessing ? 'green' : 'gray'" size="xs">
+            <UBadge :color="entitlements?.priorityProcessing ? 'success' : 'neutral'" size="xs">
               {{ entitlements?.priorityProcessing ? 'Yes' : 'No' }}
             </UBadge>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-sm">Proactive AI</span>
-            <UBadge :color="entitlements?.proactivity ? 'green' : 'gray'" size="xs">
+            <UBadge :color="entitlements?.proactivity ? 'success' : 'neutral'" size="xs">
               {{ entitlements?.proactivity ? 'Yes' : 'No' }}
             </UBadge>
           </div>

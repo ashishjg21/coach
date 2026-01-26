@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
   definePageMeta({
-    layout: 'landing',
+    layout: 'home',
     auth: false
   })
 

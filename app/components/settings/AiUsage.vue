@@ -40,10 +40,10 @@
                 Total Cost (30 days)
               </div>
               <div class="text-3xl font-bold text-emerald-900 dark:text-emerald-100 mb-1">
-                ${{ (data.summary.totalCost ?? 0).toFixed(4) }}
+                ${{ (data?.summary?.totalCost ?? 0).toFixed(4) }}
               </div>
               <div class="text-sm text-emerald-600 dark:text-emerald-400">
-                {{ data.summary.totalCalls ?? 0 }} requests
+                {{ data?.summary?.totalCalls ?? 0 }} requests
               </div>
             </div>
             <div class="bg-emerald-500/10 dark:bg-emerald-400/10 rounded-full p-3">
