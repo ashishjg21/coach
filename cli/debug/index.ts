@@ -24,6 +24,7 @@ import planCommand from './plan'
 import checkPlannedStepsCommand from './check-planned-steps'
 import authLogicCommand from './auth-logic'
 import subscriptionCommand from './subscription'
+import fixCheckinsCommand from './fix-checkins'
 
 const debugCommand = new Command('debug').description('Debugging utilities')
 
@@ -52,5 +53,6 @@ debugCommand.addCommand(planCommand)
 debugCommand.addCommand(checkPlannedStepsCommand)
 debugCommand.addCommand(authLogicCommand)
 debugCommand.addCommand(subscriptionCommand)
+debugCommand.addCommand(fixCheckinsCommand)
 
 export default debugCommand

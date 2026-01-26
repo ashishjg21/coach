@@ -2,8 +2,17 @@
   <UModal v-model:open="isOpen" title="Daily Coach Check-In">
     <template #body>
       <div class="space-y-4">
+        <!-- Header with Refreshing State -->
         <div
-          v-if="loading || isPending"
+          v-if="isPending && localQuestions.length > 0"
+          class="flex items-center justify-center gap-2 text-primary-500 bg-primary-50 dark:bg-primary-900/10 p-2 rounded-md mb-2"
+        >
+          <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
+          <span class="text-xs font-medium">Refreshing check-in...</span>
+        </div>
+
+        <div
+          v-if="loading || (isPending && localQuestions.length === 0)"
           class="flex flex-col items-center justify-center py-8 space-y-4"
         >
           <UIcon name="i-heroicons-arrow-path" class="w-10 h-10 animate-spin text-primary-500" />
@@ -208,7 +217,7 @@
   })
 
   watch(
-    () => loading.value || isPending.value,
+    () => loading.value || (isPending.value && localQuestions.value.length === 0),
     (busy) => {
       if (busy) {
         startMessages()
@@ -298,7 +307,14 @@
       const data = await $fetch<any>('/api/checkin/today')
       if (data) {
         checkin.value = data
+
+        // Populate questions if available (stale-while-revalidate)
+        if (data.questions && data.questions.length > 0) {
+          localQuestions.value = data.questions
+        }
+
         if (data.status === 'COMPLETED') {
+          // Update reliable data
           localQuestions.value = data.questions || []
           userNotes.value = data.userNotes || ''
           // Pre-fill answers if they exist
@@ -326,13 +342,18 @@
         body: { force }
       })
       checkin.value = data
+
       if (data.status === 'COMPLETED') {
         localQuestions.value = data.questions || []
       } else {
-        localQuestions.value = []
+        // If pending/processing, clear questions ONLY if force was true
+        // Otherwise keep old ones if they exist
+        if (force) {
+          localQuestions.value = []
+          answers.value = {}
+        }
       }
       userNotes.value = ''
-      answers.value = {} // Reset answers on regenerate
 
       refreshRuns()
     } catch (e: any) {

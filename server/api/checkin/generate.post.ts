@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   const today = getUserLocalDate(timezone)
 
   // Check if already exists
-  let checkin = await dailyCheckinRepository.getByDate(userId, today)
+  const checkin = await dailyCheckinRepository.getByDate(userId, today)
 
   // Check if stuck in PENDING state (older than 30s)
   const isStuckPending =
@@ -29,30 +29,19 @@ export default defineEventHandler(async (event) => {
     return checkin
   }
 
-  if (checkin && (force || isStuckPending)) {
-    // Update status to PENDING (refresh timestamp)
-    checkin = await dailyCheckinRepository.update(checkin.id, { status: 'PENDING' })
-  } else {
-    // Create new
-    checkin = await dailyCheckinRepository.create({
-      user: { connect: { id: userId } },
-      date: today,
-      questions: [],
-      status: 'PENDING'
-    })
-  }
-
-  // Trigger the task
+  // Trigger the task (without creating a DB record first)
   // If forced or stuck, use a unique key to bypass idempotency TTL
   const idempotencyKey =
-    force || isStuckPending ? `${checkin.id}-${Date.now()}` : checkin.id
+    checkin && (force || isStuckPending)
+      ? `${userId}-${today.getTime()}-${Date.now()}`
+      : `${userId}-${today.getTime()}`
 
-  await tasks.trigger<typeof generateDailyCheckinTask>(
+  const handle = await tasks.trigger<typeof generateDailyCheckinTask>(
     'generate-daily-checkin',
     {
       userId,
       date: today,
-      checkinId: checkin.id
+      checkinId: checkin?.id // Pass ID if it exists, otherwise task handles it
     },
     {
       concurrencyKey: userId,
@@ -62,5 +51,15 @@ export default defineEventHandler(async (event) => {
     }
   )
 
-  return checkin
+  // Return existing checkin if available, otherwise a placeholder
+  // The UI will switch to "Loading" because of the task trigger + WebSocket
+  if (checkin) {
+    return { ...checkin, status: 'PENDING' } // Hint to UI that it's updating
+  }
+
+  return {
+    status: 'PENDING',
+    date: today,
+    questions: []
+  }
 })

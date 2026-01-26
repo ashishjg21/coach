@@ -43,185 +43,211 @@ export const generateDailyCheckinTask = task({
   id: 'generate-daily-checkin',
   maxDuration: 300,
   queue: userReportsQueue,
-  run: async (payload: { userId: string; date: Date; checkinId: string }) => {
-    const { userId, date, checkinId } = payload
-    const today = new Date(date)
+  run: async (payload: { userId: string; date: Date; checkinId?: string }) => {
+    const { userId, date } = payload
+    let { checkinId } = payload
 
-    logger.log('Generating daily check-in questions', { userId, date: today })
+    try {
+      const today = new Date(date)
 
-    const aiSettings = await getUserAiSettings(userId)
-    logger.log('Using AI settings', {
-      model: aiSettings.aiModelPreference,
-      persona: aiSettings.aiPersona
-    })
+      logger.log('Generating daily check-in questions', { userId, date: today })
 
-    // Fetch all required data
-    const [
-      plannedWorkout,
-      todayMetric,
-      recentWorkouts,
-      user,
-      athleteProfile,
-      activeGoals,
-      currentFitness,
-      pastCheckins,
-      futureWorkouts,
-      currentPlan,
-      upcomingEvents
-    ] = await Promise.all([
-      // Today's planned workout
-      prisma.plannedWorkout.findFirst({
-        where: { userId, date: today },
-        orderBy: { createdAt: 'desc' }
-      }),
+      // Ensure we have a checkin record
+      if (!checkinId) {
+        // Try to find existing
+        const existing = await dailyCheckinRepository.getByDate(userId, today)
+        if (existing) {
+          checkinId = existing.id
+          // Reset status to PROCESSING
+          await dailyCheckinRepository.update(checkinId, { status: 'PROCESSING' })
+        } else {
+          // Create new
+          const newCheckin = await dailyCheckinRepository.create({
+            user: { connect: { id: userId } },
+            date: today,
+            questions: [],
+            status: 'PROCESSING'
+          })
+          checkinId = newCheckin.id
+        }
+      } else {
+        // Update existing to PROCESSING
+        await dailyCheckinRepository.update(checkinId, { status: 'PROCESSING' })
+      }
 
-      // Today's recovery metrics
-      wellnessRepository.getByDate(userId, today),
+      const aiSettings = await getUserAiSettings(userId)
+      logger.log('Using AI settings', {
+        model: aiSettings.aiModelPreference,
+        persona: aiSettings.aiPersona
+      })
 
-      // Last 14 days of workouts (Increased from 7 for better context)
-      workoutRepository.getForUser(userId, {
-        startDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-        orderBy: { date: 'desc' },
-        includeDuplicates: false,
-        include: {
-          streams: {
-            select: {
-              hrZoneTimes: true,
-              powerZoneTimes: true
+      // Fetch all required data
+      const [
+        plannedWorkout,
+        todayMetric,
+        recentWorkouts,
+        user,
+        athleteProfile,
+        activeGoals,
+        currentFitness,
+        pastCheckins,
+        futureWorkouts,
+        currentPlan,
+        upcomingEvents
+      ] = await Promise.all([
+        // Today's planned workout
+        prisma.plannedWorkout.findFirst({
+          where: { userId, date: today },
+          orderBy: { createdAt: 'desc' }
+        }),
+
+        // Today's recovery metrics
+        wellnessRepository.getByDate(userId, today),
+
+        // Last 14 days of workouts (Increased from 7 for better context)
+        workoutRepository.getForUser(userId, {
+          startDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+          orderBy: { date: 'desc' },
+          includeDuplicates: false,
+          include: {
+            streams: {
+              select: {
+                hrZoneTimes: true,
+                powerZoneTimes: true
+              }
             }
           }
-        }
-      }),
+        }),
 
-      // User profile
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          ftp: true,
-          weight: true,
-          timezone: true,
-          maxHr: true,
-          lthr: true,
-          dob: true,
-          sex: true
-        }
-      }),
-
-      // Latest athlete profile
-      prisma.report.findFirst({
-        where: {
-          userId,
-          type: 'ATHLETE_PROFILE',
-          status: 'COMPLETED'
-        },
-        orderBy: { createdAt: 'desc' },
-        select: { analysisJson: true, createdAt: true }
-      }),
-
-      // Active goals
-      prisma.goal.findMany({
-        where: {
-          userId,
-          status: 'ACTIVE'
-        },
-        orderBy: { priority: 'desc' },
-        select: {
-          title: true,
-          type: true,
-          description: true,
-          targetDate: true,
-          eventDate: true,
-          priority: true
-        }
-      }),
-
-      // Current Fitness State
-      getCurrentFitnessSummary(userId),
-
-      // Past 7 days check-ins
-      dailyCheckinRepository.getHistory(
-        userId,
-        new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000),
-        new Date(today.getTime() - 1)
-      ),
-
-      // Future planned workouts (next 7 days)
-      prisma.plannedWorkout.findMany({
-        where: {
-          userId,
-          date: {
-            gt: today,
-            lte: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+        // User profile
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            ftp: true,
+            weight: true,
+            timezone: true,
+            maxHr: true,
+            lthr: true,
+            dob: true,
+            sex: true
           }
-        },
-        orderBy: { date: 'asc' },
-        select: {
-          date: true,
-          title: true,
-          type: true,
-          tss: true,
-          description: true
-        }
-      }),
+        }),
 
-      // Current active training plan
-      prisma.weeklyTrainingPlan.findFirst({
-        where: {
-          userId,
-          status: 'ACTIVE',
-          weekStartDate: {
-            lte: today
+        // Latest athlete profile
+        prisma.report.findFirst({
+          where: {
+            userId,
+            type: 'ATHLETE_PROFILE',
+            status: 'COMPLETED'
           },
-          weekEndDate: {
-            gte: today
-          }
-        },
-        select: {
-          planJson: true
-        }
-      }),
+          orderBy: { createdAt: 'desc' },
+          select: { analysisJson: true, createdAt: true }
+        }),
 
-      // Upcoming Events (next 14 days)
-      prisma.event.findMany({
-        where: {
+        // Active goals
+        prisma.goal.findMany({
+          where: {
+            userId,
+            status: 'ACTIVE'
+          },
+          orderBy: { priority: 'desc' },
+          select: {
+            title: true,
+            type: true,
+            description: true,
+            targetDate: true,
+            eventDate: true,
+            priority: true
+          }
+        }),
+
+        // Current Fitness State
+        getCurrentFitnessSummary(userId),
+
+        // Past 7 days check-ins
+        dailyCheckinRepository.getHistory(
           userId,
-          date: {
-            gte: today,
-            lte: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000)
+          new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000),
+          new Date(today.getTime() - 1)
+        ),
+
+        // Future planned workouts (next 7 days)
+        prisma.plannedWorkout.findMany({
+          where: {
+            userId,
+            date: {
+              gt: today,
+              lte: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+            }
+          },
+          orderBy: { date: 'asc' },
+          select: {
+            date: true,
+            title: true,
+            type: true,
+            tss: true,
+            description: true
           }
-        },
-        orderBy: { date: 'asc' }
-      })
-    ])
+        }),
 
-    const userTimezone = user?.timezone || 'UTC'
-    const userAge = calculateAge(user?.dob)
+        // Current active training plan
+        prisma.weeklyTrainingPlan.findFirst({
+          where: {
+            userId,
+            status: 'ACTIVE',
+            weekStartDate: {
+              lte: today
+            },
+            weekEndDate: {
+              gte: today
+            }
+          },
+          select: {
+            planJson: true
+          }
+        }),
 
-    // Normalize today to represent the user's local calendar day at UTC midnight
-    // This ensures PMC calculation aligns with database dates
-    const todayNormalized = getUserLocalDate(userTimezone, today)
+        // Upcoming Events (next 14 days)
+        prisma.event.findMany({
+          where: {
+            userId,
+            date: {
+              gte: today,
+              lte: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000)
+            }
+          },
+          orderBy: { date: 'asc' }
+        })
+      ])
 
-    // Calculate Projected PMC Trends
-    const projectedMetrics = calculateProjectedPMC(
-      todayNormalized,
-      new Date(todayNormalized.getTime() + 7 * 24 * 60 * 60 * 1000),
-      currentFitness.ctl,
-      currentFitness.atl,
-      futureWorkouts
-    )
+      const userTimezone = user?.timezone || 'UTC'
+      const userAge = calculateAge(user?.dob)
 
-    // Build context strings
-    let athleteContext = ''
-    if (athleteProfile?.analysisJson) {
-      const profile = athleteProfile.analysisJson as any
-      athleteContext = `
+      // Normalize today to represent the user's local calendar day at UTC midnight
+      // This ensures PMC calculation aligns with database dates
+      const todayNormalized = getUserLocalDate(userTimezone, today)
+
+      // Calculate Projected PMC Trends
+      const projectedMetrics = calculateProjectedPMC(
+        todayNormalized,
+        new Date(todayNormalized.getTime() + 7 * 24 * 60 * 60 * 1000),
+        currentFitness.ctl,
+        currentFitness.atl,
+        futureWorkouts
+      )
+
+      // Build context strings
+      let athleteContext = ''
+      if (athleteProfile?.analysisJson) {
+        const profile = athleteProfile.analysisJson as any
+        athleteContext = `
 ATHLETE PROFILE (Generated ${formatUserDate(athleteProfile.createdAt, userTimezone)}):
 ${profile.executive_summary ? `Summary: ${profile.executive_summary}` : ''}
 Current Fitness: ${profile.current_fitness?.status_label || 'Unknown'}
 Training Style: ${profile.training_characteristics?.training_style || 'Unknown'}
 `
-    } else {
-      athleteContext = `
+      } else {
+        athleteContext = `
 ATHLETE BASIC INFO:
 - Age: ${userAge || 'Unknown'}
 - Sex: ${user?.sex || 'Unknown'}
@@ -229,11 +255,11 @@ ATHLETE BASIC INFO:
 - Weight: ${user?.weight || 'Unknown'} kg
 - Max HR: ${user?.maxHr || 'Unknown'} bpm
 `
-    }
+      }
 
-    let goalsContext = ''
-    if (activeGoals.length > 0) {
-      goalsContext = `
+      let goalsContext = ''
+      if (activeGoals.length > 0) {
+        goalsContext = `
 CURRENT GOALS:
 ${activeGoals
   .map((g) => {
@@ -246,50 +272,50 @@ ${activeGoals
   })
   .join('\n')}
 `
-    }
+      }
 
-    // Build plan context
-    let planContext = ''
-    if (currentPlan) {
-      const plan = currentPlan.planJson as any
-      planContext = `
+      // Build plan context
+      let planContext = ''
+      if (currentPlan) {
+        const plan = currentPlan.planJson as any
+        planContext = `
 CURRENT TRAINING PLAN:
 - Weekly Focus: ${plan.weekSummary || 'Not specified'}
 - Planned TSS: ${plan.totalTSS || 'Unknown'}
 `
-    }
+      }
 
-    // Upcoming Events
-    let eventsContext = ''
-    if (upcomingEvents.length > 0) {
-      eventsContext = `
+      // Upcoming Events
+      let eventsContext = ''
+      if (upcomingEvents.length > 0) {
+        eventsContext = `
 UPCOMING EVENTS (Next 14 Days):
 ${upcomingEvents.map((e) => `- ${formatDateUTC(e.date, 'EEE MMM dd')}: ${e.title} (${e.priority || 'B'})`).join('\n')}
 `
-    }
+      }
 
-    // Future Workouts
-    let upcomingWorkoutsContext = ''
-    if (futureWorkouts.length > 0) {
-      upcomingWorkoutsContext = `
+      // Future Workouts
+      let upcomingWorkoutsContext = ''
+      if (futureWorkouts.length > 0) {
+        upcomingWorkoutsContext = `
 UPCOMING PLANNED WORKOUTS (Next 7 Days):
 ${futureWorkouts.map((w) => `- ${formatDateUTC(w.date, 'EEE dd')}: ${w.title} (TSS: ${w.tss || 'N/A'})`).join('\n')}
 `
-    }
+      }
 
-    // Projected Trends
-    let projectedMetricsContext = ''
-    if (projectedMetrics.length > 0) {
-      projectedMetricsContext = `
+      // Projected Trends
+      let projectedMetricsContext = ''
+      if (projectedMetrics.length > 0) {
+        projectedMetricsContext = `
 PROJECTED FITNESS TRENDS (Next 7 Days):
 ${projectedMetrics.map((m) => `- ${formatDateUTC(m.date, 'EEE dd')}: TSB=${Math.round(m.tsb)}`).join('\n')}
 `
-    }
+      }
 
-    // Process past check-ins
-    let historyContext = ''
-    if (pastCheckins.length > 0) {
-      historyContext = `
+      // Process past check-ins
+      let historyContext = ''
+      if (pastCheckins.length > 0) {
+        historyContext = `
 PAST CHECK-INS (Last 7 days):
 ${pastCheckins
   .map((c) => {
@@ -306,9 +332,9 @@ ${pastCheckins
   })
   .join('\n\n')}
 `
-    }
+      }
 
-    const prompt = `You are a **${aiSettings.aiPersona}** cycling coach conducting a daily check-in with your athlete.
+      const prompt = `You are a **${aiSettings.aiPersona}** cycling coach conducting a daily check-in with your athlete.
 Adopt your **${aiSettings.aiPersona}** persona in your tone and questioning style.
 
 DATE: ${formatUserDate(today, userTimezone, 'yyyy-MM-dd')}
@@ -371,37 +397,49 @@ OUTPUT JSON FORMAT:
 }
 `
 
-    logger.log(`Generating questions with Gemini (${aiSettings.aiModelPreference})`)
+      logger.log(`Generating questions with Gemini (${aiSettings.aiModelPreference})`)
 
-    let currentLlmUsageId: string | undefined
+      let currentLlmUsageId: string | undefined
 
-    const analysis = await generateStructuredAnalysis<CheckinAnalysis>(
-      prompt,
-      checkinSchema,
-      aiSettings.aiModelPreference,
-      {
-        userId,
-        operation: 'daily_checkin',
-        entityType: 'DailyCheckin',
-        entityId: checkinId,
-        onUsageLogged: (usageId) => {
-          currentLlmUsageId = usageId
+      const analysis = await generateStructuredAnalysis<CheckinAnalysis>(
+        prompt,
+        checkinSchema,
+        aiSettings.aiModelPreference,
+        {
+          userId,
+          operation: 'daily_checkin',
+          entityType: 'DailyCheckin',
+          entityId: checkinId,
+          onUsageLogged: (usageId) => {
+            currentLlmUsageId = usageId
+          }
         }
+      )
+
+      // Save questions
+      await dailyCheckinRepository.update(checkinId, {
+        questions: analysis.questions,
+        openingRemark: analysis.openingRemark,
+        status: 'COMPLETED',
+        modelVersion: aiSettings.aiModelPreference,
+        llmUsageId: currentLlmUsageId
+      })
+
+      return {
+        success: true,
+        questions: analysis.questions
       }
-    )
+    } catch (error: any) {
+      logger.error('Error generating daily check-in', { error: error.message, stack: error.stack })
 
-    // Save questions
-    await dailyCheckinRepository.update(checkinId, {
-      questions: analysis.questions,
-      openingRemark: analysis.openingRemark,
-      status: 'COMPLETED',
-      modelVersion: aiSettings.aiModelPreference,
-      llmUsageId: currentLlmUsageId
-    })
+      // Update DB to failed state so UI stops spinning
+      if (checkinId) {
+        await dailyCheckinRepository.update(checkinId, {
+          status: 'FAILED'
+        })
+      }
 
-    return {
-      success: true,
-      questions: analysis.questions
+      throw error
     }
   }
 })
