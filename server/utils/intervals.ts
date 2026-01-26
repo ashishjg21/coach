@@ -945,6 +945,139 @@ export function cleanIntervalsDescription(description: string): string {
   return cleanDesc
 }
 
+function normalizeWorkoutSteps(steps: any[]): any[] {
+  if (!Array.isArray(steps)) return []
+
+  return steps.map((step: any) => {
+    // 1. Recurse for nested steps (repeats)
+    if (step.steps && Array.isArray(step.steps)) {
+      step.steps = normalizeWorkoutSteps(step.steps)
+    }
+
+    // Map legacy/short field names
+    if (step.hr && !step.heartRate) {
+      step.heartRate = step.hr
+      delete step.hr
+    }
+
+    // Duration
+    if (step.duration !== undefined && step.durationSeconds === undefined) {
+      step.durationSeconds = step.duration
+    }
+    if (step.durationSeconds !== undefined && step.duration === undefined) {
+      step.duration = step.durationSeconds
+    }
+
+    // Power
+    if (step.power) {
+      // Structure: start/end -> range
+      if (step.power.start !== undefined && step.power.end !== undefined && !step.power.range) {
+        step.power.range = {
+          start: step.power.start,
+          end: step.power.end
+        }
+        delete step.power.start
+        delete step.power.end
+      }
+
+      // Scale: % -> Ratio (e.g. 90 -> 0.90)
+      // Heuristic: if units contain % OR value is > 5 (assuming nobody targets > 500% FTP often without units)
+      // Note: Absolute watts (e.g. 200) usually don't have units='%', so we skip if units='watts'
+      const units = step.power.units || ''
+      const isPercent =
+        units.includes('%') || (!units && (step.power.value > 5 || step.power.range?.start > 5))
+
+      if (isPercent) {
+        if (step.power.value !== undefined) step.power.value /= 100
+        if (step.power.range) {
+          step.power.range.start /= 100
+          step.power.range.end /= 100
+        }
+      }
+    }
+
+    // Heart Rate
+    if (step.heartRate) {
+      // Structure: start/end -> range
+      if (
+        step.heartRate.start !== undefined &&
+        step.heartRate.end !== undefined &&
+        !step.heartRate.range
+      ) {
+        step.heartRate.range = {
+          start: step.heartRate.start,
+          end: step.heartRate.end
+        }
+        delete step.heartRate.start
+        delete step.heartRate.end
+      }
+
+      // Scale: % -> Ratio
+      const units = step.heartRate.units || ''
+      const isPercent =
+        units.includes('%') ||
+        (!units && (step.heartRate.value > 5 || step.heartRate.range?.start > 5))
+
+      if (isPercent) {
+        if (step.heartRate.value !== undefined) step.heartRate.value /= 100
+
+        if (step.heartRate.range) {
+          step.heartRate.range.start /= 100
+
+          step.heartRate.range.end /= 100
+        }
+      }
+    }
+
+    // Cadence
+    // Intervals often returns { value: 90, units: 'rpm' } or { start: 80, end: 90, units: 'rpm' }
+    if (step.cadence && typeof step.cadence === 'object') {
+      if (step.cadence.value !== undefined) {
+        step.cadence = step.cadence.value
+      } else if (step.cadence.start !== undefined && step.cadence.end !== undefined) {
+        // Average the range for a single value representation
+        step.cadence = Math.round((step.cadence.start + step.cadence.end) / 2)
+      } else {
+        // Fallback: If we can't parse it, better to delete it than crash UI with object
+        delete step.cadence
+      }
+    }
+
+    // Name (Intervals uses 'text' for the step description/name)
+    if (!step.name && step.text) {
+      step.name = step.text
+    }
+
+    // Type (Intervals uses boolean flags or implicit types)
+    if (!step.type) {
+      if (step.warmup) {
+        step.type = 'Warmup'
+      } else if (step.cooldown) {
+        step.type = 'Cooldown'
+      } else {
+        // Heuristic: Low intensity (< 60%) is likely Rest/Recovery
+        // Check power first, then HR
+        let intensity = 0
+
+        if (step.power?.value) intensity = step.power.value
+        else if (step.power?.range) intensity = (step.power.range.start + step.power.range.end) / 2
+        else if (step.heartRate?.value) intensity = step.heartRate.value
+        else if (step.heartRate?.range)
+          intensity = (step.heartRate.range.start + step.heartRate.range.end) / 2
+
+        // If we have nested steps, assume it's Active (container) unless explicitly Rest
+        if (step.steps && step.steps.length > 0) {
+          step.type = 'Active'
+        } else {
+          step.type = intensity < 0.6 ? 'Rest' : 'Active'
+        }
+      }
+    }
+
+    return step
+  })
+}
+
 export function normalizeIntervalsPlannedWorkout(event: IntervalsPlannedWorkout, userId: string) {
   // Intervals.icu sometimes uses different field names for planned metrics depending on the source/type
   const durationSec = event.duration ?? event.moving_time ?? event.workout_doc?.duration ?? null
@@ -964,126 +1097,9 @@ export function normalizeIntervalsPlannedWorkout(event: IntervalsPlannedWorkout,
   // Structured workout data
   const structuredWorkout = event.workout_doc ?? (event.steps ? { steps: event.steps } : null)
 
-  // Normalize steps to ensure durationSeconds is present (Intervals.icu uses 'duration')
-  // Also normalize power/HR structure (Intervals uses flat start/end and % values, we use nested range and ratios)
+  // Normalize steps recursively
   if (structuredWorkout && Array.isArray(structuredWorkout.steps)) {
-    structuredWorkout.steps = structuredWorkout.steps.map((step: any) => {
-      // Map legacy/short field names
-      if (step.hr && !step.heartRate) {
-        step.heartRate = step.hr
-        delete step.hr
-      }
-
-      // Duration
-      if (step.duration !== undefined && step.durationSeconds === undefined) {
-        step.durationSeconds = step.duration
-      }
-      if (step.durationSeconds !== undefined && step.duration === undefined) {
-        step.duration = step.durationSeconds
-      }
-
-      // Power
-      if (step.power) {
-        // Structure: start/end -> range
-        if (step.power.start !== undefined && step.power.end !== undefined && !step.power.range) {
-          step.power.range = {
-            start: step.power.start,
-            end: step.power.end
-          }
-          delete step.power.start
-          delete step.power.end
-        }
-
-        // Scale: % -> Ratio (e.g. 90 -> 0.90)
-        // Heuristic: if units contain % OR value is > 5 (assuming nobody targets > 500% FTP often without units)
-        // Note: Absolute watts (e.g. 200) usually don't have units='%', so we skip if units='watts'
-        const units = step.power.units || ''
-        const isPercent =
-          units.includes('%') || (!units && (step.power.value > 5 || step.power.range?.start > 5))
-
-        if (isPercent) {
-          if (step.power.value !== undefined) step.power.value /= 100
-          if (step.power.range) {
-            step.power.range.start /= 100
-            step.power.range.end /= 100
-          }
-        }
-      }
-
-      // Heart Rate
-      if (step.heartRate) {
-        // Structure: start/end -> range
-        if (
-          step.heartRate.start !== undefined &&
-          step.heartRate.end !== undefined &&
-          !step.heartRate.range
-        ) {
-          step.heartRate.range = {
-            start: step.heartRate.start,
-            end: step.heartRate.end
-          }
-          delete step.heartRate.start
-          delete step.heartRate.end
-        }
-
-        // Scale: % -> Ratio
-        const units = step.heartRate.units || ''
-        const isPercent =
-          units.includes('%') ||
-          (!units && (step.heartRate.value > 5 || step.heartRate.range?.start > 5))
-
-        if (isPercent) {
-          if (step.heartRate.value !== undefined) step.heartRate.value /= 100
-
-          if (step.heartRate.range) {
-            step.heartRate.range.start /= 100
-
-            step.heartRate.range.end /= 100
-          }
-        }
-      }
-
-      // Cadence
-
-      // Intervals often returns { value: 90, units: 'rpm' } but we expect a number
-
-      if (step.cadence && typeof step.cadence === 'object' && step.cadence.value !== undefined) {
-        step.cadence = step.cadence.value
-      }
-
-      // Name (Intervals uses 'text' for the step description/name)
-
-      if (!step.name && step.text) {
-        step.name = step.text
-      }
-
-      // Type (Intervals uses boolean flags or implicit types)
-
-      if (!step.type) {
-        if (step.warmup) {
-          step.type = 'Warmup'
-        } else if (step.cooldown) {
-          step.type = 'Cooldown'
-        } else {
-          // Heuristic: Low intensity (< 60%) is likely Rest/Recovery
-
-          // Check power first, then HR
-
-          let intensity = 0
-
-          if (step.power?.value) intensity = step.power.value
-          else if (step.power?.range)
-            intensity = (step.power.range.start + step.power.range.end) / 2
-          else if (step.heartRate?.value) intensity = step.heartRate.value
-          else if (step.heartRate?.range)
-            intensity = (step.heartRate.range.start + step.heartRate.range.end) / 2
-
-          step.type = intensity < 0.6 ? 'Rest' : 'Active'
-        }
-      }
-
-      return step
-    })
+    structuredWorkout.steps = normalizeWorkoutSteps(structuredWorkout.steps)
   }
   // Detect CoachWatts management
   const isCoachWatts = event.description?.includes('[CoachWatts]')
