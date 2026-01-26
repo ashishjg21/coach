@@ -774,7 +774,24 @@ This workout was linked to a planned training session. Compare the actual execut
 
 - **Planned Intensity**: ${plannedWorkout.workIntensity ? (plannedWorkout.workIntensity * 100).toFixed(0) + '%' : 'N/A'}
 
+`
 
+    // Extract detailed structured plan if available
+    const structure = plannedWorkout.structuredWorkout
+    if (structure && Array.isArray(structure) && structure.length > 0) {
+      prompt += `### Structured Plan (Target Intervals)\n`
+      structure.forEach((step: any, idx: number) => {
+        const duration = step.duration_s ? `${Math.round(step.duration_s / 60)}m` : 'Lap'
+        const target = step.target_value
+          ? `${step.target_value}${step.target_type === 'POWER' ? 'W' : ''}`
+          : 'N/A'
+        const type = step.type || 'Interval'
+        prompt += `- Step ${idx + 1} [${type}]: ${duration} @ ${target}\n`
+      })
+      prompt += `\nUse this detailed plan structure to precisely evaluate if the athlete hit the specific interval targets (Power/Duration) listed above.\n`
+    }
+
+    prompt += `
 
 When analyzing "Execution" and "Effort", specifically reference how well the athlete stuck to this plan. Did they go too hard? Too easy? Did they match the duration?
 
