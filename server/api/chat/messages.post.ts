@@ -213,40 +213,41 @@ export default defineEventHandler(async (event) => {
       const converted = await convertToModelMessages([msg])
 
       for (const coreMsg of converted) {
-        // Fix role mapping for Google Generative AI (assistant -> model)
-        if (coreMsg.role === 'assistant') {
-          coreMsg.role = 'model'
-        }
-
-        // Patch: Inject tool-call parts from tool-approval-request parts
-        // convertToModelMessages ignores our custom 'tool-approval-request' parts,
-        // leading to missing tool calls in the history which invalidates the prompt schema.
-        if (coreMsg.role === 'model') {
-          const approvalParts = (msg.parts || []).filter(
-            (p: any) => p.type === 'tool-approval-request'
+        // Patch: Inject tool-call parts from UI parts (approvals or invocations)
+        // convertToModelMessages ignores our custom 'tool-approval-request' parts and
+        // sometimes mishandles 'tool-invocation' parts when they are results.
+        if (coreMsg.role === 'assistant' || coreMsg.role === 'model') {
+          const uiParts = (msg.parts || []) as any[]
+          const toolParts = uiParts.filter(
+            (p: any) => p.type === 'tool-approval-request' || p.type === 'tool-invocation'
           )
 
-          if (approvalParts.length > 0) {
-            // Filter approvals: Only inject tool-call if a subsequent tool message specifically references it.
-            // If the user replied with text (e.g. "No"), we must NOT inject the tool-call,
-            // otherwise Gemini will error expecting a tool result.
+          if (toolParts.length > 0) {
+            // Filter: Only inject tool-call if a subsequent tool message or a manual result part exists.
+            // This satisfies the "Every tool call must have a result" rule in Gemini history.
             const currentMsgIndex = historyMessages.indexOf(msg)
             const subsequentMessages = historyMessages.slice(currentMsgIndex + 1)
 
-            const validApprovalParts = approvalParts.filter((ap: any) => {
-              const id = ap.toolCallId || ap.approvalId
+            const validToolParts = toolParts.filter((tp: any) => {
+              const id = tp.toolCallId || tp.approvalId
               if (!id) return false
 
-              return subsequentMessages.some(
+              // Check subsequent messages for this ID
+              const hasSubsequentResult = subsequentMessages.some(
                 (m: any) =>
                   m.role === 'tool' &&
                   (Array.isArray(m.content) ? m.content : m.parts || []).some(
                     (p: any) => p.toolCallId === id || p.approvalId === id
                   )
               )
+
+              // Check if it's an invocation with a result already attached (same-message result)
+              const isResolvedInvocation = tp.type === 'tool-invocation' && tp.state === 'result'
+
+              return hasSubsequentResult || isResolvedInvocation
             })
 
-            if (validApprovalParts.length > 0) {
+            if (validToolParts.length > 0) {
               // Ensure content is an array
               if (typeof coreMsg.content === 'string') {
                 coreMsg.content = [{ type: 'text', text: coreMsg.content }]
@@ -256,11 +257,9 @@ export default defineEventHandler(async (event) => {
 
               const existingCalls = (coreMsg.content as any[]).filter((p) => p.type === 'tool-call')
 
-              validApprovalParts.forEach((ap: any) => {
-                // Extract details from nested toolCall object or direct properties
-                const toolCallId = ap.toolCallId || ap.approvalId
-                const toolName = ap.toolCall?.toolName || ap.toolName || ap.name
-                const args = ap.toolCall?.args || ap.args
+              validToolParts.forEach((tp: any) => {
+                const toolCallId = tp.toolCallId || tp.approvalId
+                const toolName = tp.toolCall?.toolName || tp.toolName || tp.name
 
                 // Only add if not already present
                 if (
@@ -272,7 +271,7 @@ export default defineEventHandler(async (event) => {
                     type: 'tool-call',
                     toolCallId,
                     toolName,
-                    args: args || {}
+                    args: tp.toolCall?.args || tp.args || tp.input || {}
                   })
                 }
               })
@@ -280,15 +279,18 @@ export default defineEventHandler(async (event) => {
           }
         }
 
-        // Ensure no empty model messages (Google GenAI strictness)
+        // Ensure no empty model/assistant messages (Google GenAI strictness)
         if (
-          coreMsg.role === 'model' &&
+          (coreMsg.role === 'assistant' || coreMsg.role === 'model') &&
           (!coreMsg.content || (Array.isArray(coreMsg.content) && coreMsg.content.length === 0))
         ) {
           coreMsg.content = [{ type: 'text', text: ' ' }]
         }
 
-        if (coreMsg.role === 'model' && Array.isArray(coreMsg.content)) {
+        if (
+          (coreMsg.role === 'assistant' || coreMsg.role === 'model') &&
+          Array.isArray(coreMsg.content)
+        ) {
           // If the Assistant message contains tool-invocation parts with state: 'result',
           // we need to move them to a separate Tool message to satisfy Gemini requirements.
           const uiParts = (msg.parts || []) as any[]
@@ -441,6 +443,25 @@ export default defineEventHandler(async (event) => {
         }
       }
     }
+
+    // Debug log for coreMessages structure
+    console.log('[Chat API] Final coreMessages structure:')
+    coreMessages.forEach((m, i) => {
+      let preview = ''
+      if (typeof m.content === 'string') {
+        preview = m.content.substring(0, 50)
+      } else if (Array.isArray(m.content)) {
+        preview = m.content
+          .map((p: any) => {
+            if (p.type === 'text') return `[Text: ${p.text.substring(0, 20)}...]`
+            if (p.type === 'tool-call') return `[ToolCall: ${p.toolName} (${p.toolCallId})]`
+            if (p.type === 'tool-result') return `[ToolResult: ${p.toolName} (${p.toolCallId})]`
+            return `[${p.type}]`
+          })
+          .join(', ')
+      }
+      console.log(`  [${i}] Role: ${m.role}, Content: ${preview}`)
+    })
 
     const result = await streamText({
       model: google(modelName),
