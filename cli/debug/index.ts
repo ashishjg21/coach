@@ -25,6 +25,7 @@ import checkPlannedStepsCommand from './check-planned-steps'
 import authLogicCommand from './auth-logic'
 import subscriptionCommand from './subscription'
 import fixCheckinsCommand from './fix-checkins'
+import pmcCommand from './pmc'
 
 const debugCommand = new Command('debug').description('Debugging utilities')
 
@@ -54,5 +55,6 @@ debugCommand.addCommand(checkPlannedStepsCommand)
 debugCommand.addCommand(authLogicCommand)
 debugCommand.addCommand(subscriptionCommand)
 debugCommand.addCommand(fixCheckinsCommand)
+debugCommand.addCommand(pmcCommand)
 
 export default debugCommand
