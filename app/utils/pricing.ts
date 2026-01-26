@@ -1,0 +1,107 @@
+export type BillingInterval = 'monthly' | 'annual'
+export type PricingTier = 'free' | 'supporter' | 'pro'
+
+export interface PricingPlan {
+  key: PricingTier
+  name: string
+  monthlyPrice: number
+  annualPrice: number | null
+  description: string
+  features: string[]
+  popular: boolean
+  stripePriceIds?: {
+    monthly?: string
+    annual?: string
+  }
+}
+
+export const PRICING_PLANS: PricingPlan[] = [
+  {
+    key: 'free',
+    name: 'Free',
+    monthlyPrice: 0,
+    annualPrice: null,
+    description: "The smartest logbook you've ever used.",
+    features: [
+      'Unlimited data history',
+      'Manual sync mode',
+      'On-demand workout analysis',
+      'Standard AI engine (Fast)',
+      'Basic training metrics'
+    ],
+    popular: false
+  },
+  {
+    key: 'supporter',
+    name: 'Supporter',
+    monthlyPrice: 8.99,
+    annualPrice: 89.99,
+    description: 'Automated insights for the self-coached athlete.',
+    features: [
+      'Everything in Free',
+      'Automatic sync mode',
+      'Always-on automatic analysis',
+      'Priority processing',
+      'Standard AI engine (Fast)'
+    ],
+    popular: true,
+    stripePriceIds: {
+      monthly: 'price_1StpC5FnNyGK7WMpR7bszI8V',
+      annual: 'price_1StpC6FnNyGK7WMpbF7QUd2G'
+    }
+  },
+  {
+    key: 'pro',
+    name: 'Pro',
+    monthlyPrice: 14.99,
+    annualPrice: 119.0,
+    description: 'Your full-service Digital Twin and Coach.',
+    features: [
+      'Everything in Supporter',
+      'Deep Reasoning AI engine',
+      'Proactive AI coaching',
+      'Priority processing',
+      'Advanced insights'
+    ],
+    popular: false,
+    stripePriceIds: {
+      monthly: 'price_1StpC6FnNyGK7WMpnE86oZan',
+      annual: 'price_1StpC7FnNyGK7WMpeFbStqjH'
+    }
+  }
+]
+
+/**
+ * Calculate savings percentage for annual plans
+ */
+export function calculateAnnualSavings(plan: PricingPlan): number {
+  if (!plan.annualPrice) return 0
+  const monthlyTotal = plan.monthlyPrice * 12
+  const savings = ((monthlyTotal - plan.annualPrice) / monthlyTotal) * 100
+  return Math.round(savings)
+}
+
+/**
+ * Format price for display
+ */
+export function formatPrice(price: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: price % 1 === 0 ? 0 : 2
+  }).format(price)
+}
+
+/**
+ * Get price for a specific interval
+ */
+export function getPrice(plan: PricingPlan, interval: BillingInterval): number {
+  return interval === 'annual' && plan.annualPrice ? plan.annualPrice : plan.monthlyPrice
+}
+
+/**
+ * Get Stripe price ID for a plan and interval
+ */
+export function getStripePriceId(plan: PricingPlan, interval: BillingInterval): string | undefined {
+  return plan.stripePriceIds?.[interval]
+}
