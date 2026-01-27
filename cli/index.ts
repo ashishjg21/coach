@@ -16,6 +16,7 @@ import llmCommand from './llm'
 import triggerCommand from './trigger'
 import monitorCommand from './monitor'
 import telegramCommand from './telegram'
+import { ouraCommand } from './integrations/oura'
 
 const program = new Command()
 
@@ -35,6 +36,7 @@ program.addCommand(llmCommand)
 program.addCommand(triggerCommand)
 program.addCommand(monitorCommand)
 program.addCommand(telegramCommand)
+program.addCommand(ouraCommand)
 
 program.parse(process.argv)
 
