@@ -26,6 +26,7 @@ import authLogicCommand from './auth-logic'
 import subscriptionCommand from './subscription'
 import fixCheckinsCommand from './fix-checkins'
 import pmcCommand from './pmc'
+import chatHistoryCommand from './chat-history'
 
 const debugCommand = new Command('debug').description('Debugging utilities')
 
@@ -56,5 +57,6 @@ debugCommand.addCommand(authLogicCommand)
 debugCommand.addCommand(subscriptionCommand)
 debugCommand.addCommand(fixCheckinsCommand)
 debugCommand.addCommand(pmcCommand)
+debugCommand.addCommand(chatHistoryCommand)
 
 export default debugCommand
