@@ -103,6 +103,26 @@ Search workouts by criteria.
 
 **Returns:** Matching workouts
 
+### 8. `calculate_training_metrics`
+
+Calculate training metrics like pace, heart rate zones, power zones, unit conversions, or optimal running cadence.
+
+**Parameters:**
+
+- `operation` (string, required): 'calculate_pace', 'calculate_zones', 'convert_units', 'calculate_optimal_cadence'
+- `distance_meters` (number, optional): For pace calc
+- `duration_seconds` (number, optional): For pace calc
+- `speed_kmh` (number, optional): For optimal cadence
+- `height_cm` (number, optional): For optimal cadence adjustment
+- `ftp` (number, optional): For power zones
+- `lthr` (number, optional): For HR zones
+- `max_hr` (number, optional): For HR zones
+- `value` (number, optional): For conversion
+- `from_unit` (string, optional): For conversion
+- `to_unit` (string, optional): For conversion
+
+**Returns:** Calculated metrics or converted values.
+
 ## Implementation Example
 
 ### Tool Schema Definition
