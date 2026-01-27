@@ -55,6 +55,12 @@ export default defineEventHandler(async (event) => {
     }
   })
 
+  // Mark original plan as saved as template
+  await (prisma as any).trainingPlan.update({
+    where: { id: planId },
+    data: { hasBeenSavedAsTemplate: true }
+  })
+
   // Clone Blocks
   for (const block of plan.blocks) {
     const newBlock = await (prisma as any).trainingBlock.create({

@@ -1386,6 +1386,7 @@ model TrainingPlan {
   name        String?   // Template name
   description String?   @db.Text
   isTemplate  Boolean   @default(false)
+  hasBeenSavedAsTemplate Boolean @default(false)
   
   // Lineage
   fromTemplateId String?

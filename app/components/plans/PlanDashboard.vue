@@ -48,6 +48,7 @@
             <span class="hidden sm:inline">Adapt</span>
           </UButton>
           <UButton
+            v-if="!plan.isTemplate && !plan.hasBeenSavedAsTemplate"
             size="xs"
             color="neutral"
             variant="ghost"
@@ -1570,6 +1571,7 @@
       })
       toast.add({ title: 'Template Saved', color: 'success' })
       showSaveTemplateModal.value = false
+      emit('refresh')
     } catch (error: any) {
       console.error('[Dashboard] Save template failed', error)
       toast.add({ title: 'Failed to save template', description: error.message, color: 'error' })
