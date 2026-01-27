@@ -2,14 +2,24 @@ import Stripe from 'stripe'
 
 const config = useRuntimeConfig()
 
-if (!config.stripeSecretKey) {
-  throw new Error('STRIPE_SECRET_KEY is not defined in environment variables')
-}
-
-export const stripe = new Stripe(config.stripeSecretKey, {
-  apiVersion: '2025-12-15.clover',
-  typescript: true
-})
+// Check if Stripe is configured to avoid startup crashes in self-hosted environments
+export const stripe = config.stripeSecretKey
+  ? new Stripe(config.stripeSecretKey, {
+      apiVersion: '2025-12-15.clover' as any,
+      typescript: true
+    })
+  : (new Proxy(
+      {},
+      {
+        get: (_target, prop) => {
+          throw new Error(
+            `Stripe is not configured (missing STRIPE_SECRET_KEY). Cannot access stripe.${String(
+              prop
+            )}`
+          )
+        }
+      }
+    ) as unknown as Stripe)
 
 /**
  * Get Stripe price IDs from environment

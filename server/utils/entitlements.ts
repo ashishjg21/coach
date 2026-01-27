@@ -19,6 +19,20 @@ export interface UserEntitlements {
 export function getUserEntitlements(
   user: Pick<User, 'subscriptionTier' | 'subscriptionStatus' | 'subscriptionPeriodEnd'>
 ): UserEntitlements {
+  const config = useRuntimeConfig()
+
+  // If Stripe is not configured (self-hosted mode), everyone is PRO
+  if (!config.stripeSecretKey) {
+    return {
+      tier: 'PRO',
+      autoSync: true,
+      autoAnalysis: true,
+      aiModel: 'pro',
+      priorityProcessing: true,
+      proactivity: true
+    }
+  }
+
   const now = new Date()
   const periodEnd = user.subscriptionPeriodEnd ? new Date(user.subscriptionPeriodEnd) : new Date(0)
 

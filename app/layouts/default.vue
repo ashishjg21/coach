@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import type { NavigationMenuItem } from '@nuxt/ui'
 
+  const config = useRuntimeConfig()
   const { data, signOut, refresh } = useAuth()
   const user = computed(() => data.value?.user)
   const toast = useToast()
@@ -202,14 +203,18 @@
             open.value = false
           }
         },
-        {
-          label: 'Billing',
-          icon: 'i-lucide-credit-card',
-          to: '/settings/billing',
-          onSelect: () => {
-            open.value = false
-          }
-        },
+        ...(config.public.stripePublishableKey
+          ? [
+              {
+                label: 'Billing',
+                icon: 'i-lucide-credit-card',
+                to: '/settings/billing',
+                onSelect: () => {
+                  open.value = false
+                }
+              }
+            ]
+          : []),
         {
           label: 'Apps',
           icon: 'i-lucide-layout-grid',

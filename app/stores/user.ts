@@ -52,6 +52,20 @@ export const useUserStore = defineStore('user', () => {
   const entitlements = computed<UserEntitlements | null>(() => {
     if (!user.value) return null
 
+    const config = useRuntimeConfig()
+
+    // If Stripe is not configured (self-hosted mode), everyone is PRO
+    if (!config.public.stripePublishableKey) {
+      return {
+        tier: 'PRO',
+        autoSync: true,
+        autoAnalysis: true,
+        aiModel: 'pro',
+        priorityProcessing: true,
+        proactivity: true
+      }
+    }
+
     const now = new Date()
     const periodEnd = user.value.subscriptionPeriodEnd
       ? new Date(user.value.subscriptionPeriodEnd)
