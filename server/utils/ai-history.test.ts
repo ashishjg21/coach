@@ -23,7 +23,7 @@ describe('transformHistoryToCoreMessages', () => {
     expect(result).toHaveLength(2)
     expect(result[0]).toMatchObject({ role: 'user', content: [{ type: 'text', text: 'Hello' }] })
     expect(result[1]).toMatchObject({
-      role: 'model',
+      role: 'assistant',
       content: [{ type: 'text', text: 'Hi there' }]
     })
   })
@@ -60,7 +60,7 @@ describe('transformHistoryToCoreMessages', () => {
     const result = await transformHistoryToCoreMessages(history)
 
     const assistantMsg = result[0]
-    expect(assistantMsg.role).toBe('model')
+    expect(assistantMsg.role).toBe('assistant')
     // Expect correct tool name 'test_tool'
     expect(assistantMsg.content).toEqual(
       expect.arrayContaining([
@@ -114,7 +114,7 @@ describe('transformHistoryToCoreMessages', () => {
     const result = await transformHistoryToCoreMessages(history)
 
     const assistantMsg = result[0]
-    expect(assistantMsg.role).toBe('model')
+    expect(assistantMsg.role).toBe('assistant')
     const toolCalls = (assistantMsg.content as any[]).filter((p) => p.type === 'tool-call')
 
     // We expect 0 tool calls because the user didn't approve it
@@ -136,7 +136,7 @@ describe('transformHistoryToCoreMessages', () => {
       }
     ]
     const result = await transformHistoryToCoreMessages(history)
-    expect(result[0].role).toBe('model')
+    expect(result[0].role).toBe('assistant')
   })
 
   it('ensures "model" messages never have empty content', async () => {
@@ -179,7 +179,7 @@ describe('transformHistoryToCoreMessages', () => {
     const result = await transformHistoryToCoreMessages(history)
 
     const assistantMsg = result[0]
-    expect(assistantMsg.role).toBe('model')
+    expect(assistantMsg.role).toBe('assistant')
 
     const toolCalls = (assistantMsg.content as any[]).filter((p) => p.type === 'tool-call')
     expect(toolCalls).toHaveLength(1)
