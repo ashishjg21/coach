@@ -4,7 +4,7 @@ export const coachingRepository = {
   // --- Relationship Management ---
 
   async getAthletesForCoach(coachId: string) {
-    return (prisma as any).coachingRelationship.findMany({
+    const relationships = await (prisma as any).coachingRelationship.findMany({
       where: { coachId, status: 'ACTIVE' },
       include: {
         athlete: {
@@ -18,11 +18,81 @@ export const coachingRepository = {
             recommendations: {
               orderBy: { generatedAt: 'desc' },
               take: 1
+            },
+            // Fetch latest wellness for current CTL/ATL/TSB
+            wellness: {
+              orderBy: { date: 'desc' },
+              take: 1
+            },
+            // Fetch upcoming planned workouts
+            plannedWorkouts: {
+              where: {
+                date: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+                category: 'WORKOUT'
+              },
+              orderBy: { date: 'asc' },
+              take: 2
+            },
+            // Fetch next major event
+            events: {
+              where: {
+                date: { gte: new Date() },
+                priority: 'A'
+              },
+              orderBy: { date: 'asc' },
+              take: 1
             }
           }
         }
       }
     })
+
+    // For each athlete, we need some aggregated data that's hard to do in one query efficiently
+    // We'll fetch 7-day adherence and 30-day trend in parallel for all athletes
+    const enrichedAthletes = await Promise.all(
+      relationships.map(async (rel: any) => {
+        const athleteId = rel.athlete.id
+        const sevenDaysAgo = new Date()
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+        const [recentWorkouts, recentPlanned, wellnessHistory] = await Promise.all([
+          prisma.workout.count({
+            where: { userId: athleteId, date: { gte: sevenDaysAgo }, isDuplicate: false }
+          }),
+          prisma.plannedWorkout.count({
+            where: {
+              userId: athleteId,
+              date: { gte: sevenDaysAgo, lte: new Date() },
+              category: 'WORKOUT'
+            }
+          }),
+          prisma.wellness.findMany({
+            where: { userId: athleteId, date: { gte: thirtyDaysAgo } },
+            orderBy: { date: 'asc' },
+            select: { date: true, ctl: true, atl: true }
+          })
+        ])
+
+        return {
+          ...rel,
+          athlete: {
+            ...rel.athlete,
+            stats: {
+              adherence7d:
+                recentPlanned > 0 ? Math.round((recentWorkouts / recentPlanned) * 100) : 100,
+              completedCount: recentWorkouts,
+              plannedCount: recentPlanned,
+              wellnessHistory // For sparkline
+            }
+          }
+        }
+      })
+    )
+
+    return enrichedAthletes
   },
 
   async getCoachesForAthlete(athleteId: string) {
