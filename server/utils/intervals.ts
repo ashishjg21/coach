@@ -1184,8 +1184,8 @@ export function normalizeIntervalsPlannedWorkout(event: IntervalsPlannedWorkout,
 
 function mapIntervalsMood(val: number | undefined | null): number | null {
   if (!val) return null
-  // Intervals: 1=Great, 2=Good, 3=Avg, 4=Bad
-  // Coach Watts (1-10): 10=Great
+  // Intervals: 1=Great, 2=Good, 3=OK, 4=Grumpy
+  // Coach Watts (1-10): 10=Great, 1=Grumpy
   const map: Record<number, number> = { 1: 10, 2: 7, 3: 4, 4: 1 }
   return map[val] || null
 }
@@ -1195,6 +1195,38 @@ function mapIntervalsSoreness(val: number | undefined | null): number | null {
   // Intervals: 1=Low, 2=Avg, 3=High, 4=Extreme
   // Coach Watts (1-10): 10=Extreme (High Soreness)
   const map: Record<number, number> = { 1: 1, 2: 4, 3: 7, 4: 10 }
+  return map[val] || null
+}
+
+function mapIntervalsFatigue(val: number | undefined | null): number | null {
+  if (!val) return null
+  // Intervals: 1=Low, 2=Avg, 3=High, 4=Extreme
+  // Coach Watts (1-10): 10=Extreme (High Fatigue)
+  const map: Record<number, number> = { 1: 1, 2: 4, 3: 7, 4: 10 }
+  return map[val] || null
+}
+
+function mapIntervalsStress(val: number | undefined | null): number | null {
+  if (!val) return null
+  // Intervals: 1=Low, 2=Avg, 3=High, 4=Extreme
+  // Coach Watts (1-10): 10=Extreme (High Stress)
+  const map: Record<number, number> = { 1: 1, 2: 4, 3: 7, 4: 10 }
+  return map[val] || null
+}
+
+function mapIntervalsSleepQuality(val: number | undefined | null): number | null {
+  if (!val) return null
+  // Intervals: 1=Great, 2=Good, 3=Avg, 4=Poor
+  // Coach Watts (1-10): 10=Great, 1=Poor
+  const map: Record<number, number> = { 1: 10, 2: 7, 3: 4, 4: 1 }
+  return map[val] || null
+}
+
+function mapIntervalsMotivation(val: number | undefined | null): number | null {
+  if (!val) return null
+  // Intervals: 1=Extreme (High), 2=High, 3=Avg, 4=Low
+  // Coach Watts (1-10): 10=High, 1=Low
+  const map: Record<number, number> = { 1: 10, 2: 7, 3: 4, 4: 1 }
   return map[val] || null
 }
 
@@ -1219,7 +1251,7 @@ export function normalizeIntervalsWellness(
     sleepSecs: wellness.sleepSecs || null,
     sleepHours: wellness.sleepSecs ? Math.round((wellness.sleepSecs / 3600) * 10) / 10 : null,
     sleepScore: wellness.sleepScore || null,
-    sleepQuality: wellness.sleepQuality || null,
+    sleepQuality: mapIntervalsSleepQuality(wellness.sleepQuality),
 
     // Recovery
     readiness: wellness.readiness || null,
@@ -1227,10 +1259,10 @@ export function normalizeIntervalsWellness(
 
     // Subjective
     soreness: mapIntervalsSoreness(wellness.soreness),
-    fatigue: wellness.fatigue || null,
-    stress: wellness.stress || null,
+    fatigue: mapIntervalsFatigue(wellness.fatigue),
+    stress: mapIntervalsStress(wellness.stress),
     mood: mapIntervalsMood(wellness.mood),
-    motivation: wellness.motivation || null,
+    motivation: mapIntervalsMotivation(wellness.motivation),
 
     // Physical
     weight: wellness.weight ? roundToTwoDecimals(wellness.weight) : null,
