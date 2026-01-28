@@ -103,6 +103,27 @@ export const recommendTodayActivityTask = task({
 
     const aiSettings = await getUserAiSettings(userId)
 
+    // Helper to map subjective scores to text labels for AI context
+    const getLabel = (val: number | null | undefined, type: string) => {
+      if (val === null || val === undefined) return 'N/A'
+      if (type === 'mood') {
+        if (val >= 8) return 'Great'
+        if (val >= 6) return 'Good'
+        if (val >= 4) return 'OK'
+        return 'Grumpy'
+      }
+      if (type === 'motivation') {
+        if (val >= 8) return 'Extreme'
+        if (val >= 6) return 'High'
+        if (val >= 4) return 'Average'
+        return 'Low'
+      }
+      if (val >= 8) return 'Extreme'
+      if (val >= 6) return 'High'
+      if (val >= 4) return 'Average'
+      return 'Low'
+    }
+
     // 1. Fetch User Profile & Timezone FIRST to establish "Today" correctly
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -656,6 +677,12 @@ ${
 - Resting HR: ${enrichedTodayMetric.restingHr ?? 'Unknown'} bpm
 - Sleep: ${enrichedTodayMetric.sleepHours?.toFixed(1) ?? 'Unknown'} hours (Score: ${enrichedTodayMetric.sleepScore ?? 'Unknown'}%)
 ${enrichedTodayMetric.spO2 ? `- SpO2: ${enrichedTodayMetric.spO2}%` : ''}
+- Subjective:
+  * Stress: ${enrichedTodayMetric.stress ?? 'N/A'}/10 (${getLabel(enrichedTodayMetric.stress, 'stress')})
+  * Fatigue: ${enrichedTodayMetric.fatigue ?? 'N/A'}/10 (${getLabel(enrichedTodayMetric.fatigue, 'fatigue')})
+  * Soreness: ${enrichedTodayMetric.soreness ?? 'N/A'}/10 (${getLabel(enrichedTodayMetric.soreness, 'soreness')})
+  * Mood: ${enrichedTodayMetric.mood ?? 'N/A'}/10 (${getLabel(enrichedTodayMetric.mood, 'mood')})
+  * Motivation: ${enrichedTodayMetric.motivation ?? 'N/A'}/10 (${getLabel(enrichedTodayMetric.motivation, 'motivation')})
 `
     : 'No recovery data available'
 }

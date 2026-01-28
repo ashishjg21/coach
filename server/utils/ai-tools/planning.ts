@@ -13,7 +13,7 @@ import {
 import { tags } from '@trigger.dev/sdk/v3'
 import { plannedWorkoutRepository } from '../repositories/plannedWorkoutRepository'
 import { workoutRepository } from '../repositories/workoutRepository'
-import { getUserLocalDate, formatUserDate } from '../../utils/date'
+import { getUserLocalDate, formatUserDate, formatDateUTC } from '../../utils/date'
 
 export const planningTools = (userId: string, timezone: string) => ({
   get_current_plan: tool({
@@ -53,8 +53,8 @@ export const planningTools = (userId: string, timezone: string) => ({
       return {
         plan: {
           id: plan.id,
-          week_start: formatUserDate(plan.weekStartDate, timezone),
-          week_end: formatUserDate(plan.weekEndDate, timezone),
+          week_start: formatDateUTC(plan.weekStartDate),
+          week_end: formatDateUTC(plan.weekEndDate),
           days_planned: plan.daysPlanned,
           status: plan.status,
           total_tss: plan.totalTSS,

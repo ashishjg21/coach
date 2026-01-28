@@ -81,6 +81,27 @@ export const generateDailyCheckinTask = task({
         persona: aiSettings.aiPersona
       })
 
+      // Helper to map subjective scores to text labels for AI context
+      const getLabel = (val: number | null | undefined, type: string) => {
+        if (val === null || val === undefined) return 'N/A'
+        if (type === 'mood') {
+          if (val >= 8) return 'Great'
+          if (val >= 6) return 'Good'
+          if (val >= 4) return 'OK'
+          return 'Grumpy'
+        }
+        if (type === 'motivation') {
+          if (val >= 8) return 'Extreme'
+          if (val >= 6) return 'High'
+          if (val >= 4) return 'Average'
+          return 'Low'
+        }
+        if (val >= 8) return 'Extreme'
+        if (val >= 6) return 'High'
+        if (val >= 4) return 'Average'
+        return 'Low'
+      }
+
       // Fetch all required data
       const [
         plannedWorkout,
@@ -351,7 +372,21 @@ TODAY'S PLANNED WORKOUT:
 ${plannedWorkout ? `${plannedWorkout.title} (TSS: ${plannedWorkout.tss || 'N/A'})` : 'No workout planned'}
 
 TODAY'S RECOVERY:
-${todayMetric ? `Recovery: ${todayMetric.recoveryScore ?? 'N/A'}%, HRV: ${todayMetric.hrv ?? 'N/A'}ms, Sleep: ${todayMetric.sleepHours?.toFixed(1) ?? 'N/A'}h` : 'No recovery data'}
+${
+  todayMetric
+    ? `
+- Recovery Score: ${todayMetric.recoveryScore ?? 'N/A'}%
+- HRV: ${todayMetric.hrv ?? 'N/A'}ms
+- Sleep: ${todayMetric.sleepHours?.toFixed(1) ?? 'N/A'}h (Score: ${todayMetric.sleepScore ?? 'N/A'}%)
+- Subjective:
+  * Stress: ${todayMetric.stress ?? 'N/A'}/10 (${getLabel(todayMetric.stress, 'stress')})
+  * Fatigue: ${todayMetric.fatigue ?? 'N/A'}/10 (${getLabel(todayMetric.fatigue, 'fatigue')})
+  * Soreness: ${todayMetric.soreness ?? 'N/A'}/10 (${getLabel(todayMetric.soreness, 'soreness')})
+  * Mood: ${todayMetric.mood ?? 'N/A'}/10 (${getLabel(todayMetric.mood, 'mood')})
+  * Motivation: ${todayMetric.motivation ?? 'N/A'}/10 (${getLabel(todayMetric.motivation, 'motivation')})
+`
+    : 'No recovery data available'
+}
 
 RECENT TRAINING (Last 14 Days):
 ${recentWorkouts.length > 0 ? buildWorkoutSummary(recentWorkouts.slice(0, 5), userTimezone) : 'None'}

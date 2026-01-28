@@ -1,7 +1,12 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 import { workoutRepository } from '../repositories/workoutRepository'
-import { getStartOfDaysAgoUTC, formatUserDate } from '../../utils/date'
+import {
+  getStartOfDaysAgoUTC,
+  formatUserDate,
+  getStartOfDayUTC,
+  getEndOfDayUTC
+} from '../../utils/date'
 import { analyzeWorkoutTask } from '../../../trigger/analyze-workout'
 
 export const workoutTools = (userId: string, timezone: string) => ({
@@ -67,10 +72,20 @@ export const workoutTools = (userId: string, timezone: string) => ({
       if (title_search) where.title = { contains: title_search, mode: 'insensitive' }
       if (type) where.type = { contains: type, mode: 'insensitive' }
       if (date) {
-        const start = new Date(date)
-        const end = new Date(date)
-        end.setDate(end.getDate() + 1)
-        where.date = { gte: start, lt: end }
+        const parts = date.split('-')
+        if (parts.length === 3) {
+          // Create local date from parts (Month is 0-indexed)
+          const localDate = new Date(
+            parseInt(parts[0]!),
+            parseInt(parts[1]!) - 1,
+            parseInt(parts[2]!)
+          )
+
+          where.date = {
+            gte: getStartOfDayUTC(timezone, localDate),
+            lte: getEndOfDayUTC(timezone, localDate)
+          }
+        }
       }
 
       const workouts = await workoutRepository.getForUser(userId, {
