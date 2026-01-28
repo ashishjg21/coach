@@ -1191,6 +1191,7 @@
 
   function getInjuryColorClass(val: string | number | null | undefined): string {
     const score = typeof val === 'string' ? parseInt(val) : val
+    if (!score) return 'text-gray-900 dark:text-white'
     if (score === 2) return 'text-amber-600 dark:text-amber-400'
     if (score >= 3) return 'text-red-600 dark:text-red-400'
     return 'text-gray-900 dark:text-white'
@@ -1198,6 +1199,7 @@
 
   function getHydrationColorClass(val: string | number | null | undefined): string {
     const score = typeof val === 'string' ? parseInt(val) : val
+    if (!score) return 'text-gray-900 dark:text-white'
     if (score === 3) return 'text-amber-600 dark:text-amber-400'
     if (score >= 4) return 'text-red-600 dark:text-red-400'
     return 'text-gray-900 dark:text-white'
