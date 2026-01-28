@@ -31,6 +31,8 @@ export const useCoachingStore = defineStore('coaching', () => {
     if (import.meta.client) {
       localStorage.removeItem('coaching_act_as_id')
       localStorage.removeItem('coaching_act_as_name')
+      // Force reload to clear all states and re-fetch session
+      window.location.reload()
     }
   }
 

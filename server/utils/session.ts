@@ -1,7 +1,8 @@
 import type { H3Event } from 'h3'
-import { getCookie } from 'h3'
+import { getCookie, getHeader } from 'h3'
 import { getServerSession as getBaseSession } from '#auth'
 import { prisma } from './db'
+import { coachingRepository } from './repositories/coachingRepository'
 
 export interface CustomSession {
   user?: {
@@ -11,6 +12,7 @@ export interface CustomSession {
     id: string
     isAdmin: boolean
     isImpersonating?: boolean
+    isCoaching?: boolean
     originalUserId?: string
     originalUserEmail?: string | null
   }
@@ -53,6 +55,38 @@ export async function getServerSession(event: H3Event): Promise<CustomSession | 
           originalUserEmail: session.user.email
         }
       } as CustomSession
+    }
+  }
+
+  // 3. Handle Coaching "Act As"
+  const actAsUserId = getHeader(event, 'x-act-as-user')
+  const currentUserId = (session.user as any).id
+
+  if (actAsUserId && actAsUserId !== currentUserId) {
+    // Verify coaching relationship
+    const hasRelationship = await coachingRepository.checkRelationship(currentUserId, actAsUserId)
+
+    if (hasRelationship) {
+      const targetUser = await prisma.user.findUnique({
+        where: { id: actAsUserId }
+      })
+
+      if (targetUser) {
+        return {
+          ...session,
+          user: {
+            ...session.user,
+            id: targetUser.id,
+            name: targetUser.name,
+            email: targetUser.email,
+            image: targetUser.image,
+            isAdmin: (targetUser as any).isAdmin || false,
+            isCoaching: true,
+            originalUserId: currentUserId,
+            originalUserEmail: session.user.email
+          }
+        } as CustomSession
+      }
     }
   }
 

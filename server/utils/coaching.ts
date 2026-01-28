@@ -1,8 +1,9 @@
 import type { H3Event } from 'h3'
-import { getServerSession } from '#auth'
-import { coachingRepository } from './repositories/coachingRepository'
+import { getHeader } from 'h3'
+import { getServerSession } from './session'
 import { oauthRepository } from './repositories/oauthRepository'
 import { validateApiKey } from './auth-api-key'
+import { prisma } from './db'
 
 /**
  * Validates an OAuth Bearer token and returns the associated user.
@@ -42,44 +43,23 @@ async function validateOAuthToken(event: H3Event) {
  * after verifying the coaching relationship.
  */
 export async function getEffectiveUserId(event: H3Event): Promise<string> {
-  // 1. Try session (NuxtAuth)
+  // 1. Try centralized session (handles Acting As and Impersonation)
   const session = await getServerSession(event)
-  let userId: string | null = null
-
-  if (session?.user) {
-    userId = (session.user as any).id
-  } else {
-    // 2. Try API key
-    const user = await validateApiKey(event)
-    if (user) {
-      userId = user.id
-    } else {
-      // 3. Try OAuth Bearer Token
-      const oauthUser = await validateOAuthToken(event)
-      if (oauthUser) {
-        userId = oauthUser.id
-      }
-    }
+  if (session?.user?.id) {
+    return session.user.id
   }
 
-  if (!userId) {
-    throw createError({ statusCode: 401, message: 'Unauthorized' })
+  // 2. Try API key
+  const user = await validateApiKey(event)
+  if (user) {
+    return user.id
   }
 
-  const actAsUserId = getHeader(event, 'x-act-as-user')
-
-  if (!actAsUserId || actAsUserId === userId) {
-    return userId
+  // 3. Try OAuth Bearer Token
+  const oauthUser = await validateOAuthToken(event)
+  if (oauthUser) {
+    return oauthUser.id
   }
 
-  // Verify coaching relationship
-  const hasRelationship = await coachingRepository.checkRelationship(userId, actAsUserId)
-  if (!hasRelationship) {
-    throw createError({
-      statusCode: 403,
-      message: "You do not have permission to access this athlete's data"
-    })
-  }
-
-  return actAsUserId
+  throw createError({ statusCode: 401, message: 'Unauthorized' })
 }
